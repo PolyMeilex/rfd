@@ -1,0 +1,21 @@
+[package]
+name = "rfd"
+version = "0.1.0"
+authors = ["Poly <bartek.marynczak@op.pl>"]
+edition = "2018"
+
+
+[dependencies]
+libc = "0.2.74"
+
+[target.'cfg(target_os="macos")'.dependencies]
+objc = "0.2.7"
+objc_id = "0.1.1"
+block = "0.1.6"
+
+[target.'cfg(windows)'.dependencies]
+winapi= {version="0.3.8",features=["commdlg"]}
+
+[target.'cfg(target_os="linux")'.dependencies]
+gtk-sys="0.9.2"
+
