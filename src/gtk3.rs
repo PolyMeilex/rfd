@@ -1,4 +1,4 @@
-use crate::DialogParams;
+use crate::file_dialog::DialogParams;
 use std::path::PathBuf;
 
 pub fn open(params: DialogParams) -> Option<PathBuf> {
