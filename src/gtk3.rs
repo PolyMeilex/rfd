@@ -6,7 +6,7 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
         gtk_sys::gtk_init_check(std::ptr::null_mut(), std::ptr::null_mut());
 
         let dialog = gtk_sys::gtk_file_chooser_dialog_new(
-            "Title\0".as_ptr() as *const i8,
+            "Open File\0".as_ptr() as *const i8,
             std::ptr::null_mut(),
             gtk_sys::GTK_FILE_CHOOSER_ACTION_OPEN,
             "Cancel\0".as_ptr() as *const i8,
@@ -45,8 +45,18 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
             None
         };
 
+        wait_for_cleanup();
         gtk_sys::gtk_widget_destroy(dialog);
+        wait_for_cleanup();
 
         out
+    }
+}
+
+fn wait_for_cleanup() {
+    unsafe {
+        while gtk_sys::gtk_events_pending() == 1 {
+            gtk_sys::gtk_main_iteration();
+        }
     }
 }
