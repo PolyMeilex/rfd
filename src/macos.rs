@@ -62,7 +62,7 @@ extern "C" {
     fn CGShieldingWindowLevel() -> i32;
 }
 
-pub fn open(params: DialogParams) -> Option<PathBuf> {
+pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         // NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
         let pool = NSAutoreleasePool::new(nil);

@@ -5,7 +5,7 @@ extern "C" {
     fn wcslen(buf: *const u16) -> usize;
 }
 
-pub fn open(params: DialogParams) -> Option<PathBuf> {
+pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
     use winapi::shared::windef::HWND;
     use winapi::um::commdlg::GetOpenFileNameW;
     use winapi::um::commdlg::OPENFILENAMEW;
@@ -19,8 +19,7 @@ pub fn open(params: DialogParams) -> Option<PathBuf> {
     }
 
     let out = unsafe {
-        // Don't use Vec::with_capacity(260) here
-        // This vec needs to bo filled with 0.
+        // This vec needs to be initialized with zeros, so we do not use `Vec::with_capacity` here
         let mut name: Vec<u16> = vec![0; 260];
         use std::ffi::OsStr;
         use std::iter::once;

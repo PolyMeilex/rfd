@@ -1,7 +1,7 @@
 use crate::DialogParams;
 use std::path::PathBuf;
 
-pub fn open(params: DialogParams) -> Option<PathBuf> {
+pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         gtk_sys::gtk_init_check(std::ptr::null_mut(), std::ptr::null_mut());
 
@@ -9,7 +9,7 @@ pub fn open(params: DialogParams) -> Option<PathBuf> {
             "Title\0".as_ptr() as *const i8,
             std::ptr::null_mut(),
             gtk_sys::GTK_FILE_CHOOSER_ACTION_OPEN,
-            "_Cancel\0".as_ptr() as *const i8,
+            "Cancel\0".as_ptr() as *const i8,
             gtk_sys::GTK_RESPONSE_CANCEL,
             "Open\0".as_ptr() as *const i8,
             gtk_sys::GTK_RESPONSE_ACCEPT,
