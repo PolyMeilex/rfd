@@ -74,6 +74,17 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
         // let cls = class!(NSOpenPanel);
         // let panel: id = msg_send![cls, openPanel];
 
+	{
+	    let sa: *mut Object = msg_send![class!(NSApplication), sharedApplication];
+	    //let i: i32 = msg_send![sa, activationPolicy];
+	    //println!("{}",i);
+
+	    let _: () = msg_send![sa, setActivationPolicy:0];
+
+	    let i: i32 = msg_send![sa, activationPolicy];
+	    println!("{}",i);
+	 }
+
         let p = {
             let panel = panel();
 
@@ -92,7 +103,7 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
             panel as *mut Object
         };
 
-        println!("{}", retain_count(p));
+        //println!("{}", retain_count(p));
 
         pool.release();
 

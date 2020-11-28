@@ -23,3 +23,6 @@ name = "simple"
 
 [[example]]
 name = "filter"
+
+[dev-dependencies]
+winit="*"
