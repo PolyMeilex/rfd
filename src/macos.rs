@@ -13,6 +13,8 @@ pub const nil: *mut Object = 0 as *mut Object;
 #[allow(non_upper_case_globals)]
 pub const Nil: *mut Class = 0 as *mut Class;
 
+type id = *mut Object;
+
 pub trait NSAutoreleasePool: Sized {
     unsafe fn new(_: Self) -> *mut Object {
         msg_send![class!(NSAutoreleasePool), new]
@@ -80,7 +82,7 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
             pol
         };
 
-        let p = {
+        let res = {
             let panel = panel();
 
             let level = CGShieldingWindowLevel();
@@ -89,16 +91,28 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
             let _: () = msg_send![panel, setCanChooseDirectories: YES];
             let _: () = msg_send![panel, setCanChooseFiles: YES];
 
-            let _: () = msg_send![panel, runModal];
+            let res: i32 = msg_send![panel, runModal];
 
-            panel as *mut Object
+            if res == 1 {
+                let url: id = msg_send![panel, URL];
+                let path: id = msg_send![url, path];
+                let utf8: *const i32 = msg_send![path, UTF8String];
+                let len: usize = msg_send![path, lengthOfBytesUsingEncoding:4 /*UTF8*/];
+
+                let slice = std::slice::from_raw_parts(utf8 as *const _, len);
+                let result = std::str::from_utf8_unchecked(slice);
+
+                Some(result.into())
+            } else {
+                None
+            }
         };
 
         let _: () = msg_send![key_window, makeKeyAndOrderFront: nil];
         let _: () = msg_send![shared_app, setActivationPolicy: prev_policy];
 
         pool.release();
-    }
 
-    None
+        res
+    }
 }
