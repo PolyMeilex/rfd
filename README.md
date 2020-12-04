@@ -11,6 +11,10 @@ All examples are located in `examples` directory.
 
 # State
 
+| API Stability |
+| ------------- |
+| :x:           |
+
 | Feature      | Linux              | Windows            | MacOS                  |
 | ------------ | ------------------ | ------------------ | ---------------------- |
 | SingleFile   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: [1] |
