@@ -25,3 +25,13 @@ All examples are located in `examples` directory.
 | SaveFile     | :heavy_check_mark: |                    |                        |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
+
+# rfd-extras
+
+AKA features that will be either in a separate `rfd-extras` crate, or behind a feature flag
+
+| Feature       | Linux | Windows | MacOS |
+| ------------- | ----- | ------- | ----- |
+| MessageDialog |       |         |       |
+| PromptDialog  |       |         |       |
+| ColorPicker   |       |         |       |
