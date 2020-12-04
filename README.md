@@ -12,6 +12,7 @@ All examples are located in `examples` directory.
 - Run `cargo run --example save`.
 
 # State
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PolyMeilex/rfd/Rust/master?style=flat-square)
 
 | API Stability |
 | ------------- |
