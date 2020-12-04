@@ -20,6 +20,6 @@ All examples are located in `examples` directory.
 | SingleFile   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: [1] |
 | MultipleFile | :heavy_check_mark: | :construction:     | :construction:         |
 | PickFolder   |                    |                    |                        |
-| SaveFile     |                    |                    |                        |
+| SaveFile     | :heavy_check_mark: |                    |                        |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
