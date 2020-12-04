@@ -12,6 +12,7 @@ All examples are located in `examples` directory.
 - Run `cargo run --example save`.
 
 # State
+
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PolyMeilex/rfd/Rust/master?style=flat-square)
 
 | API Stability |
@@ -21,9 +22,9 @@ All examples are located in `examples` directory.
 | Feature      | Linux              | Windows            | MacOS                  |
 | ------------ | ------------------ | ------------------ | ---------------------- |
 | SingleFile   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: [1] |
-| MultipleFile | :heavy_check_mark: | :construction:     | :construction:         |
+| MultipleFile | :heavy_check_mark: | :heavy_check_mark: | :construction:         |
 | PickFolder   | :heavy_check_mark: |                    |                        |
-| SaveFile     | :heavy_check_mark: |                    |                        |
+| SaveFile     | :heavy_check_mark: | :heavy_check_mark: |                        |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
