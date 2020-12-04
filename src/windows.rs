@@ -14,7 +14,7 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
 
     let mut path = String::new();
 
-    for f in &params.filters {
+    for f in params.filters.iter() {
         path += &format!("{}\0{}\0", f.0, f.1);
     }
 
@@ -50,4 +50,8 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
     } else {
         None
     }
+}
+
+pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
+    unimplemented!("open_multiple_with_params");
 }

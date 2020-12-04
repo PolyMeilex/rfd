@@ -116,3 +116,7 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
         res
     }
 }
+
+pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
+    unimplemented!("open_multiple_with_params");
+}

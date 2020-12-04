@@ -53,6 +53,10 @@ pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
+pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
+    unimplemented!("open_multiple_with_params");
+}
+
 fn wait_for_cleanup() {
     unsafe {
         while gtk_sys::gtk_events_pending() == 1 {
