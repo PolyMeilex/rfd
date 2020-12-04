@@ -1,25 +1,19 @@
 use crate::DialogParams;
 use std::path::PathBuf;
 
-// use block::ConcreteBlock;
-
 use objc::runtime::{Class, Object};
 use objc::{class, msg_send, sel, sel_impl};
-// use objc_id::ShareId;
 
 use objc::runtime;
 
 pub use objc::runtime::{BOOL, NO, YES};
 
-// pub type Class = *mut runtime::Class;
-// #[allow(non_camel_case_types)]
-// pub type id = *mut runtime::Object;
-// pub type SEL = runtime::Sel;
-
 #[allow(non_upper_case_globals)]
 pub const nil: *mut Object = 0 as *mut Object;
 #[allow(non_upper_case_globals)]
 pub const Nil: *mut Class = 0 as *mut Class;
+
+type id = *mut Object;
 
 pub trait NSAutoreleasePool: Sized {
     unsafe fn new(_: Self) -> *mut Object {
@@ -35,13 +29,13 @@ impl NSAutoreleasePool for *mut Object {
     }
 }
 
-pub unsafe fn NSApp() -> *mut Object {
+pub unsafe fn shared_application() -> *mut Object {
     msg_send![class!(NSApplication), sharedApplication]
 }
 
 pub unsafe fn key_window() -> *mut Object {
-    let sa: *mut Object = msg_send![class!(NSApplication), sharedApplication];
-    msg_send![sa, keyWindow]
+    let shared_app = shared_application();
+    msg_send![shared_app, keyWindow]
 }
 
 fn retain_count(obj: *mut Object) -> usize {
@@ -52,8 +46,6 @@ fn panel() -> *mut Object {
     unsafe {
         let cls = class!(NSOpenPanel);
         let panel: *mut Object = msg_send![cls, openPanel];
-        // println!("{}", retain_count(&*panel));
-        // ShareId::from_ptr(panel)
         panel
     }
 }
@@ -62,19 +54,35 @@ extern "C" {
     fn CGShieldingWindowLevel() -> i32;
 }
 
-pub fn open(params: DialogParams) -> Option<PathBuf> {
+#[repr(i32)]
+#[derive(Debug, PartialEq)]
+enum ApplicationActivationPolicy {
+    Regular = 0,
+    Accessory = 1,
+    Prohibited = 2,
+    Error = -1,
+}
+
+pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
-        // NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
         let pool = NSAutoreleasePool::new(nil);
 
+        let shared_app = shared_application();
         // NSWindow *keyWindow = [[NSApplication sharedApplication] keyWindow];
-        // let _app = key_window();
+        let key_window = key_window();
 
-        // NSOpenPanel *dialog = [NSOpenPanel openPanel];
-        // let cls = class!(NSOpenPanel);
-        // let panel: id = msg_send![cls, openPanel];
+        let prev_policy = {
+            let sa: *mut Object = msg_send![class!(NSApplication), sharedApplication];
+            let pol: i32 = msg_send![sa, activationPolicy];
 
-        let p = {
+            if pol == ApplicationActivationPolicy::Prohibited as i32 {
+                let new_pol = ApplicationActivationPolicy::Accessory as i32;
+                let _: () = msg_send![sa, setActivationPolicy: new_pol];
+            }
+            pol
+        };
+
+        let res = {
             let panel = panel();
 
             let level = CGShieldingWindowLevel();
@@ -83,22 +91,28 @@ pub fn open(params: DialogParams) -> Option<PathBuf> {
             let _: () = msg_send![panel, setCanChooseDirectories: YES];
             let _: () = msg_send![panel, setCanChooseFiles: YES];
 
-            // println!("{}", retain_count(panel));
+            let res: i32 = msg_send![panel, runModal];
 
-            let _: () = msg_send![panel, runModal];
+            if res == 1 {
+                let url: id = msg_send![panel, URL];
+                let path: id = msg_send![url, path];
+                let utf8: *const i32 = msg_send![path, UTF8String];
+                let len: usize = msg_send![path, lengthOfBytesUsingEncoding:4 /*UTF8*/];
 
-            // println!("{}", retain_count(panel));
+                let slice = std::slice::from_raw_parts(utf8 as *const _, len);
+                let result = std::str::from_utf8_unchecked(slice);
 
-            panel as *mut Object
+                Some(result.into())
+            } else {
+                None
+            }
         };
 
-        println!("{}", retain_count(p));
+        let _: () = msg_send![key_window, makeKeyAndOrderFront: nil];
+        let _: () = msg_send![shared_app, setActivationPolicy: prev_policy];
 
         pool.release();
 
-        // pool.autorelease();
-        // let id = ShareId::from_ptr(x)
+        res
     }
-
-    None
 }

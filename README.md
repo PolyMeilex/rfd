@@ -1,4 +1,8 @@
 # rfd
-It is just a proof of concept, nothing more...
+Very WIP and untested native file dialogs for Windows, Linux (GTK), MacOS.
 
-It is quick dirty unsafe untested ugly prototype of rusty file dialogs for win,gtk and macos
+# Examples
+All examples are located in `examples` directory.
+
+- Run `cargo run --example simple` for the simple example.
+- Run `cargo run --example filter` for an example utilizing a filter.
