@@ -1,61 +1,71 @@
 //! Windows Common Item Dialog
 //! Win32 Vista
 use crate::DialogParams;
-use std::ffi::OsString;
-use std::os::windows::prelude::OsStringExt;
-use std::{path::PathBuf, ptr};
-use winapi::shared::winerror::HRESULT;
-use winapi::um::combaseapi::CoTaskMemFree;
-use winapi::um::shobjidl_core::SIGDN_FILESYSPATH;
 
-use winapi::shared::minwindef::LPVOID;
-use winapi::shared::ntdef::LPWSTR;
-use winapi::shared::winerror::SUCCEEDED;
-use winapi::shared::wtypesbase::CLSCTX_INPROC_SERVER;
-use winapi::um::shobjidl_core::IShellItem;
+use std::{path::PathBuf, ptr};
 
 use winapi::{
+    shared::{
+        minwindef::LPVOID, ntdef::LPWSTR, winerror::HRESULT, wtypesbase::CLSCTX_INPROC_SERVER,
+    },
     um::{
-        combaseapi::{CoCreateInstance, CoInitializeEx},
-        objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE},
+        combaseapi::CoCreateInstance,
+        combaseapi::CoTaskMemFree,
         shobjidl::{IFileDialog, IFileOpenDialog},
         shobjidl_core::CLSID_FileOpenDialog,
+        shobjidl_core::IShellItem,
+        shobjidl_core::SIGDN_FILESYSPATH,
     },
     Interface,
 };
 
-trait ToResult {
-    fn check(self) -> Result<(), HRESULT>;
-}
+mod utils {
+    use std::ffi::OsString;
+    use std::os::windows::prelude::OsStringExt;
+    use std::ptr;
+    use winapi::shared::ntdef::LPWSTR;
+    use winapi::shared::winerror::{HRESULT, SUCCEEDED};
 
-impl ToResult for HRESULT {
-    fn check(self) -> Result<(), HRESULT> {
-        if SUCCEEDED(self) {
-            Ok(())
-        } else {
-            Err(self)
+    use winapi::um::{
+        combaseapi::CoInitializeEx,
+        objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE},
+    };
+
+    pub trait ToResult {
+        fn check(self) -> Result<(), HRESULT>;
+    }
+
+    impl ToResult for HRESULT {
+        fn check(self) -> Result<(), HRESULT> {
+            if SUCCEEDED(self) {
+                Ok(())
+            } else {
+                Err(self)
+            }
         }
+    }
+
+    pub unsafe fn init() -> Result<(), HRESULT> {
+        CoInitializeEx(
+            ptr::null_mut(),
+            COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE,
+        )
+        .check()
+    }
+
+    pub fn to_os_string(s: &LPWSTR) -> OsString {
+        let slice = unsafe {
+            let mut len = 0;
+            while *s.offset(len) != 0 {
+                len += 1;
+            }
+            std::slice::from_raw_parts(*s, len as usize)
+        };
+        OsStringExt::from_wide(slice)
     }
 }
 
-unsafe fn init() -> Result<(), HRESULT> {
-    CoInitializeEx(
-        ptr::null_mut(),
-        COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE,
-    )
-    .check()
-}
-
-fn to_os_string(s: &LPWSTR) -> OsString {
-    let slice = unsafe {
-        let mut len = 0;
-        while *s.offset(len) != 0 {
-            len += 1;
-        }
-        std::slice::from_raw_parts(*s, len as usize)
-    };
-    OsStringExt::from_wide(slice)
-}
+use utils::*;
 
 pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {

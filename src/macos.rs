@@ -8,60 +8,74 @@ use objc::runtime;
 
 pub use objc::runtime::{BOOL, NO, YES};
 
-#[allow(non_upper_case_globals)]
-pub const nil: *mut Object = 0 as *mut Object;
-#[allow(non_upper_case_globals)]
-pub const Nil: *mut Class = 0 as *mut Class;
+mod utils {
+    use crate::DialogParams;
+    use std::path::PathBuf;
 
-type id = *mut Object;
+    use objc::runtime::{Class, Object};
+    use objc::{class, msg_send, sel, sel_impl};
 
-pub trait NSAutoreleasePool: Sized {
-    unsafe fn new(_: Self) -> *mut Object {
-        msg_send![class!(NSAutoreleasePool), new]
+    use objc::runtime;
+
+    pub use objc::runtime::{BOOL, NO, YES};
+
+    #[allow(non_upper_case_globals)]
+    pub const nil: *mut Object = 0 as *mut Object;
+    #[allow(non_upper_case_globals)]
+    pub const Nil: *mut Class = 0 as *mut Class;
+
+    type id = *mut Object;
+
+    pub trait NSAutoreleasePool: Sized {
+        unsafe fn new(_: Self) -> *mut Object {
+            msg_send![class!(NSAutoreleasePool), new]
+        }
+
+        unsafe fn release(self);
     }
 
-    unsafe fn release(self);
-}
+    impl NSAutoreleasePool for *mut Object {
+        unsafe fn release(self) {
+            msg_send![self, release]
+        }
+    }
 
-impl NSAutoreleasePool for *mut Object {
-    unsafe fn release(self) {
-        msg_send![self, release]
+    pub unsafe fn shared_application() -> *mut Object {
+        msg_send![class!(NSApplication), sharedApplication]
+    }
+
+    pub unsafe fn key_window() -> *mut Object {
+        let shared_app = shared_application();
+        msg_send![shared_app, keyWindow]
+    }
+
+    fn retain_count(obj: *mut Object) -> usize {
+        unsafe { msg_send![obj, retainCount] }
+    }
+
+    fn panel() -> *mut Object {
+        unsafe {
+            let cls = class!(NSOpenPanel);
+            let panel: *mut Object = msg_send![cls, openPanel];
+            panel
+        }
+    }
+
+    extern "C" {
+        fn CGShieldingWindowLevel() -> i32;
+    }
+
+    #[repr(i32)]
+    #[derive(Debug, PartialEq)]
+    enum ApplicationActivationPolicy {
+        Regular = 0,
+        Accessory = 1,
+        Prohibited = 2,
+        Error = -1,
     }
 }
 
-pub unsafe fn shared_application() -> *mut Object {
-    msg_send![class!(NSApplication), sharedApplication]
-}
-
-pub unsafe fn key_window() -> *mut Object {
-    let shared_app = shared_application();
-    msg_send![shared_app, keyWindow]
-}
-
-fn retain_count(obj: *mut Object) -> usize {
-    unsafe { msg_send![obj, retainCount] }
-}
-
-fn panel() -> *mut Object {
-    unsafe {
-        let cls = class!(NSOpenPanel);
-        let panel: *mut Object = msg_send![cls, openPanel];
-        panel
-    }
-}
-
-extern "C" {
-    fn CGShieldingWindowLevel() -> i32;
-}
-
-#[repr(i32)]
-#[derive(Debug, PartialEq)]
-enum ApplicationActivationPolicy {
-    Regular = 0,
-    Accessory = 1,
-    Prohibited = 2,
-    Error = -1,
-}
+use utils::*;
 
 pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {

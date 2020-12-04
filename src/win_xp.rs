@@ -2,50 +2,64 @@
 //! Win32 XP
 use crate::DialogParams;
 
-use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt, path::PathBuf};
+use std::path::PathBuf;
 
 use winapi::um::commdlg::{
     GetOpenFileNameW, GetSaveFileNameW, OFN_ALLOWMULTISELECT, OFN_EXPLORER, OFN_FILEMUSTEXIST,
-    OFN_NOCHANGEDIR, OFN_OVERWRITEPROMPT, OFN_PATHMUSTEXIST, OPENFILENAMEW,
+    OFN_NOCHANGEDIR, OFN_OVERWRITEPROMPT, OFN_PATHMUSTEXIST,
 };
 
 extern "C" {
     fn wcslen(buf: *const u16) -> usize;
 }
 
-unsafe fn build_ofn(path: &mut Vec<u16>, filters: Option<&Vec<u16>>, flags: u32) -> OPENFILENAMEW {
-    let mut ofn: OPENFILENAMEW = std::mem::zeroed();
-    ofn.lStructSize = mem::size_of::<OPENFILENAMEW>() as u32;
-    ofn.hwndOwner = std::mem::zeroed();
+mod utils {
+    use crate::DialogParams;
 
-    ofn.lpstrFile = path.as_mut_ptr();
-    ofn.nMaxFile = path.len() as _;
+    use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt};
 
-    if let Some(filters) = filters {
-        ofn.lpstrFilter = filters.as_ptr();
-        ofn.nFilterIndex = 1;
+    use winapi::um::commdlg::OPENFILENAMEW;
+
+    pub unsafe fn build_ofn(
+        path: &mut Vec<u16>,
+        filters: Option<&Vec<u16>>,
+        flags: u32,
+    ) -> OPENFILENAMEW {
+        let mut ofn: OPENFILENAMEW = std::mem::zeroed();
+        ofn.lStructSize = mem::size_of::<OPENFILENAMEW>() as u32;
+        ofn.hwndOwner = std::mem::zeroed();
+
+        ofn.lpstrFile = path.as_mut_ptr();
+        ofn.nMaxFile = path.len() as _;
+
+        if let Some(filters) = filters {
+            ofn.lpstrFilter = filters.as_ptr();
+            ofn.nFilterIndex = 1;
+        }
+
+        ofn.Flags = flags;
+
+        ofn
     }
 
-    ofn.Flags = flags;
+    pub fn build_filters(params: &DialogParams) -> Option<Vec<u16>> {
+        let mut filters = String::new();
 
-    ofn
-}
+        for f in params.filters.iter() {
+            filters += &format!("{}\0{}\0", f.0, f.1);
+        }
 
-fn build_filters(params: &DialogParams) -> Option<Vec<u16>> {
-    let mut filters = String::new();
+        let filter: Option<Vec<u16>> = if !params.filters.is_empty() {
+            Some(OsStr::new(&filters).encode_wide().chain(once(0)).collect())
+        } else {
+            None
+        };
 
-    for f in params.filters.iter() {
-        filters += &format!("{}\0{}\0", f.0, f.1);
+        filter
     }
-
-    let filter: Option<Vec<u16>> = if !params.filters.is_empty() {
-        Some(OsStr::new(&filters).encode_wide().chain(once(0)).collect())
-    } else {
-        None
-    };
-
-    filter
 }
+
+use utils::*;
 
 pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     let filters = build_filters(&params);
