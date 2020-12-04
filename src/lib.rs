@@ -1,12 +1,12 @@
 #[cfg(target_os = "windows")]
 mod windows;
 #[cfg(target_os = "windows")]
-pub use windows::open_with_params;
+pub use windows::open_file_with_params;
 
 #[cfg(target_os = "linux")]
 mod gtk3;
 #[cfg(target_os = "linux")]
-pub use gtk3::open_with_params;
+pub use gtk3::open_file_with_params;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -14,7 +14,7 @@ mod macos;
 pub use macos::open_with_params;
 
 pub fn open() -> Option<std::path::PathBuf> {
-    open_with_params(DialogParams::new())
+    open_file_with_params(DialogParams::new())
 }
 
 /// Paramaters to pass to the file dialog.

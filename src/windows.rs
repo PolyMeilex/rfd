@@ -5,7 +5,7 @@ extern "C" {
     fn wcslen(buf: *const u16) -> usize;
 }
 
-pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     use winapi::shared::windef::HWND;
     use winapi::um::commdlg::GetOpenFileNameW;
     use winapi::um::commdlg::OPENFILENAMEW;

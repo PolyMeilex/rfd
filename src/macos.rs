@@ -63,7 +63,7 @@ enum ApplicationActivationPolicy {
     Error = -1,
 }
 
-pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         let pool = NSAutoreleasePool::new(nil);
 

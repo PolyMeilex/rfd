@@ -55,7 +55,7 @@ unsafe fn wait_for_cleanup() {
     }
 }
 
-pub fn open_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         let gtk_inited = init_check();
 

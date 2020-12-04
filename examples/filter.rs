@@ -4,7 +4,7 @@ const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt")];
 
 fn main() {
     let params = DialogParams::new().set_filters(FILTERS);
-    let path = rfd::open_with_params(params);
+    let path = rfd::open_file_with_params(params);
 
     println!(
         "{}",
