@@ -97,5 +97,70 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
 }
 
 pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
-    unimplemented!("open_multiple_with_params");
+    #[derive(Debug)]
+    struct FileList(*mut glib_sys::GSList);
+
+    impl Iterator for FileList {
+        type Item = glib_sys::GSList;
+        fn next(&mut self) -> Option<Self::Item> {
+            let curr_ptr = self.0;
+
+            if !curr_ptr.is_null() {
+                let curr = unsafe { *curr_ptr };
+
+                self.0 = curr.next;
+
+                Some(curr)
+            } else {
+                None
+            }
+        }
+    }
+
+    unsafe {
+        let gtk_inited = init_check();
+
+        if gtk_inited {
+            let dialog = build_gtk_dialog(
+                "Open File\0",
+                GtkFileChooserAction::Open,
+                "Cancel\0",
+                "Open\0",
+            );
+
+            gtk_sys::gtk_file_chooser_set_select_multiple(dialog, 1);
+
+            add_filters(dialog, &params.filters);
+
+            let res = gtk_sys::gtk_dialog_run(dialog as *mut _);
+
+            let out = if res == gtk_sys::GTK_RESPONSE_ACCEPT {
+                let chosen_filenames = gtk_sys::gtk_file_chooser_get_filenames(dialog as *mut _);
+
+                let paths: Vec<PathBuf> = FileList(chosen_filenames)
+                    .filter_map(|item| {
+                        let cstr = CStr::from_ptr(item.data as _).to_str();
+
+                        if let Ok(cstr) = cstr {
+                            Some(PathBuf::from(cstr.to_owned()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                Some(paths)
+            } else {
+                None
+            };
+
+            wait_for_cleanup();
+            gtk_sys::gtk_widget_destroy(dialog as *mut _);
+            wait_for_cleanup();
+
+            out
+        } else {
+            None
+        }
+    }
 }
