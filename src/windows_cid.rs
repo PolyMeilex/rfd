@@ -24,11 +24,11 @@ use winapi::{
     Interface,
 };
 
-trait ToResoult {
+trait ToResult {
     fn check(self) -> Result<(), HRESULT>;
 }
 
-impl ToResoult for HRESULT {
+impl ToResult for HRESULT {
     fn check(self) -> Result<(), HRESULT> {
         if SUCCEEDED(self) {
             Ok(())
