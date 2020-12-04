@@ -1,54 +1,54 @@
 use crate::DialogParams;
-use std::path::PathBuf;
+
+use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt, path::PathBuf};
+
+use winapi::um::commdlg::{
+    GetOpenFileNameW, OFN_FILEMUSTEXIST, OFN_NOCHANGEDIR, OFN_OVERWRITEPROMPT, OFN_PATHMUSTEXIST,
+    OPENFILENAMEW,
+};
 
 extern "C" {
     fn wcslen(buf: *const u16) -> usize;
 }
 
 pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
-    use winapi::shared::windef::HWND;
-    use winapi::um::commdlg::GetOpenFileNameW;
-    use winapi::um::commdlg::OPENFILENAMEW;
-
-    let size = std::mem::size_of::<OPENFILENAMEW>() as u32;
-
-    let mut path = String::new();
+    let mut filter = String::new();
 
     for f in params.filters.iter() {
-        path += &format!("{}\0{}\0", f.0, f.1);
+        filter += &format!("{}\0{}\0", f.0, f.1);
     }
 
-    let out = unsafe {
+    unsafe {
         // This vec needs to be initialized with zeros, so we do not use `Vec::with_capacity` here
-        let mut name: Vec<u16> = vec![0; 260];
-        use std::ffi::OsStr;
-        use std::iter::once;
-        use std::os::windows::ffi::OsStrExt;
+        let mut path: Vec<u16> = vec![0; 260];
 
-        let lpstrFilter: Vec<u16> = OsStr::new(&path).encode_wide().chain(once(0)).collect();
+        let filter: Vec<u16> = OsStr::new(&filter).encode_wide().chain(once(0)).collect();
 
         let mut ofn: OPENFILENAMEW = std::mem::zeroed();
-        ofn.lStructSize = size;
-        ofn.lpstrFile = name.as_mut_ptr();
-        ofn.lpstrFilter = lpstrFilter.as_ptr();
-        ofn.nMaxFile = 260;
+        ofn.lStructSize = mem::size_of::<OPENFILENAMEW>() as u32;
         ofn.hwndOwner = std::mem::zeroed();
+
+        ofn.lpstrFile = path.as_mut_ptr();
+        ofn.nMaxFile = path.len() as _;
+
+        if !params.filters.is_empty() {
+            ofn.lpstrFilter = filter.as_ptr();
+            ofn.nFilterIndex = 1;
+        }
+
+        ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
         let out = GetOpenFileNameW(&mut ofn);
 
         if out == 1 {
-            name.set_len(wcslen(ofn.lpstrFile));
+            let l = wcslen(ofn.lpstrFile);
+            // Trim string
+            path.set_len(l);
 
-            String::from_utf16(&name).ok()
+            String::from_utf16(&path).ok().map(PathBuf::from)
         } else {
             None
         }
-    };
-
-    if let Some(out) = out {
-        Some(PathBuf::from(out))
-    } else {
-        None
     }
 }
 
