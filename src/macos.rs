@@ -17,14 +17,14 @@ mod utils {
 
     use objc::runtime;
 
-    pub use objc::runtime::{BOOL, NO, YES};
+    use objc::runtime::{BOOL, NO, YES};
 
     #[allow(non_upper_case_globals)]
     pub const nil: *mut Object = 0 as *mut Object;
     #[allow(non_upper_case_globals)]
     pub const Nil: *mut Class = 0 as *mut Class;
 
-    type id = *mut Object;
+    pub type id = *mut Object;
 
     pub trait NSAutoreleasePool: Sized {
         unsafe fn new(_: Self) -> *mut Object {
@@ -49,11 +49,11 @@ mod utils {
         msg_send![shared_app, keyWindow]
     }
 
-    fn retain_count(obj: *mut Object) -> usize {
+    pub fn retain_count(obj: *mut Object) -> usize {
         unsafe { msg_send![obj, retainCount] }
     }
 
-    fn panel() -> *mut Object {
+    pub fn panel() -> *mut Object {
         unsafe {
             let cls = class!(NSOpenPanel);
             let panel: *mut Object = msg_send![cls, openPanel];
@@ -62,12 +62,12 @@ mod utils {
     }
 
     extern "C" {
-        fn CGShieldingWindowLevel() -> i32;
+        pub fn CGShieldingWindowLevel() -> i32;
     }
 
     #[repr(i32)]
     #[derive(Debug, PartialEq)]
-    enum ApplicationActivationPolicy {
+    pub enum ApplicationActivationPolicy {
         Regular = 0,
         Accessory = 1,
         Prohibited = 2,
