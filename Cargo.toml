@@ -20,10 +20,15 @@ gtk-sys = "0.10.0"
 glib-sys = "0.10.1"
 
 [[example]]
-name = "simple"
-
+name = "pick_file"
 [[example]]
-name = "filter"
+name = "pick_file_filter"
+[[example]]
+name = "pick_multiple"
+[[example]]
+name = "pick_folder"
+[[example]]
+name = "save"
 
 [dev-dependencies]
 winit="*"

@@ -139,6 +139,45 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
+pub fn pick_folder() -> Option<PathBuf> {
+    unsafe {
+        let gtk_inited = init_check();
+
+        if gtk_inited {
+            let dialog = build_gtk_dialog(
+                "Select Folder\0",
+                GtkFileChooserAction::SelectFolder,
+                "Cancel\0",
+                "Select\0",
+            );
+
+            let res = gtk_sys::gtk_dialog_run(dialog as *mut _);
+
+            let out = if res == gtk_sys::GTK_RESPONSE_ACCEPT {
+                let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(dialog as *mut _);
+
+                let cstr = CStr::from_ptr(chosen_filename).to_str();
+
+                if let Ok(cstr) = cstr {
+                    Some(PathBuf::from(cstr.to_owned()))
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            wait_for_cleanup();
+            gtk_sys::gtk_widget_destroy(dialog as *mut _);
+            wait_for_cleanup();
+
+            out
+        } else {
+            None
+        }
+    }
+}
+
 pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
     #[derive(Debug)]
     struct FileList(*mut glib_sys::GSList);

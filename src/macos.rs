@@ -117,6 +117,14 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
+pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
+    unimplemented!("save_file_with_params");
+}
+
+pub fn pick_folder() -> Option<PathBuf> {
+    unimplemented!("pick_folder");
+}
+
 pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
     unimplemented!("open_multiple_with_params");
 }
