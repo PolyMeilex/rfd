@@ -1,15 +1,15 @@
 // Old Windows API
 #[cfg(target_os = "windows")]
-mod windows_ofn;
+mod win_xp;
 #[cfg(target_os = "windows")]
-pub use windows_ofn::{
+pub use win_xp::{
     open_file_with_params, open_multiple_files_with_params, pick_folder, save_file_with_params,
 };
 
 // New Windows API
 #[cfg(target_os = "windows")]
-mod windows_cid;
-// pub use windows_cid::{
+mod win_vista;
+// pub use win_vista::{
 //     open_file_with_params, open_multiple_files_with_params, pick_folder, save_file_with_params,
 // };
 
