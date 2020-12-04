@@ -1,9 +1,17 @@
+// Old Windows API
 #[cfg(target_os = "windows")]
-mod windows;
+mod windows_ofn;
 #[cfg(target_os = "windows")]
-pub use windows::{
+pub use windows_ofn::{
     open_file_with_params, open_multiple_files_with_params, pick_folder, save_file_with_params,
 };
+
+// New Windows API
+#[cfg(target_os = "windows")]
+mod windows_cid;
+// pub use windows_cid::{
+//     open_file_with_params, open_multiple_files_with_params, pick_folder, save_file_with_params,
+// };
 
 #[cfg(target_os = "linux")]
 mod gtk3;

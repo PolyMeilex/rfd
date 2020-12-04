@@ -19,14 +19,17 @@ All examples are located in `examples` directory.
 | ------------- |
 | :x:           |
 
-| Feature      | Linux              | Windows            | MacOS                  |
-| ------------ | ------------------ | ------------------ | ---------------------- |
-| SingleFile   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: [1] |
-| MultipleFile | :heavy_check_mark: | :heavy_check_mark: | :construction:         |
-| PickFolder   | :heavy_check_mark: |                    |                        |
-| SaveFile     | :heavy_check_mark: | :heavy_check_mark: |                        |
+| Feature      | Linux              | Windows                               | MacOS                  |
+| ------------ | ------------------ | ------------------------------------- | ---------------------- |
+| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: [1] |
+| MultipleFile | :heavy_check_mark: | :white_check_mark:                    | :construction:         |
+| PickFolder   | :heavy_check_mark: |                                       |                        |
+| SaveFile     | :heavy_check_mark: | :white_check_mark:                    |                        |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
+
+- :white_check_mark: = Old `commdlg.h` API
+- :heavy_check_mark: = Up to date API
 
 # rfd-extras
 

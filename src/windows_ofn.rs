@@ -1,3 +1,5 @@
+//! Windows commdlg.h dialogs
+//! Win32 XP
 use crate::DialogParams;
 
 use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt, path::PathBuf};
