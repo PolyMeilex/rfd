@@ -1,0 +1,25 @@
+name: Rust
+
+on: [push, pull_request]
+
+jobs:
+  build_ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install gtk
+        run: sudo apt update && sudo apt install libgtk-3-dev
+      - name: Run tests
+        run: cargo test --verbose
+  build_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests
+        run: cargo test --verbose
+  build_macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run tests
+        run: cargo test --verbose
