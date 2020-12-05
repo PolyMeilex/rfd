@@ -1,45 +1,45 @@
 //! Windows Common Item Dialog
 //! Win32 Vista
 use crate::DialogParams;
+
 use winapi::shared::minwindef::DWORD;
 use winapi::um::shobjidl::FOS_ALLOWMULTISELECT;
 use winapi::um::shobjidl::FOS_PICKFOLDERS;
-use winapi::um::shtypes::COMDLG_FILTERSPEC;
 
 use std::{path::PathBuf, ptr};
 
 use winapi::{
-    shared::{
-        minwindef::LPVOID, ntdef::LPWSTR, winerror::HRESULT, wtypesbase::CLSCTX_INPROC_SERVER,
-    },
-    um::{
-        combaseapi::CoCreateInstance,
-        combaseapi::CoTaskMemFree,
-        shobjidl::{IFileDialog, IFileOpenDialog},
-        shobjidl_core::CLSID_FileOpenDialog,
-        shobjidl_core::IShellItem,
-        shobjidl_core::SIGDN_FILESYSPATH,
-    },
-    Interface,
+    shared::{minwindef::LPVOID, ntdef::LPWSTR, winerror::HRESULT},
+    um::{combaseapi::CoTaskMemFree, shobjidl_core::IShellItem, shobjidl_core::SIGDN_FILESYSPATH},
 };
 
 mod utils {
     use crate::DialogParams;
-    use std::ffi::OsStr;
-    use std::ffi::OsString;
-    use std::iter::once;
-    use std::os::windows::prelude::OsStringExt;
-    use std::ptr;
-    use winapi::um::shtypes::COMDLG_FILTERSPEC;
 
-    use std::os::windows::ffi::OsStrExt;
+    use std::{
+        ffi::{OsStr, OsString},
+        iter::once,
+        ops::Deref,
+        os::windows::{ffi::OsStrExt, prelude::OsStringExt},
+        ptr,
+    };
 
-    use winapi::shared::ntdef::LPWSTR;
-    use winapi::shared::winerror::{HRESULT, SUCCEEDED};
-
-    use winapi::um::{
-        combaseapi::{CoInitializeEx, CoUninitialize},
-        objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE},
+    use winapi::{
+        shared::{
+            guiddef::GUID,
+            minwindef::LPVOID,
+            ntdef::LPWSTR,
+            winerror::{HRESULT, SUCCEEDED},
+            wtypesbase::CLSCTX_INPROC_SERVER,
+        },
+        um::{
+            combaseapi::{CoCreateInstance, CoInitializeEx, CoUninitialize},
+            objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE},
+            shobjidl::{IFileDialog, IFileOpenDialog, IFileSaveDialog},
+            shobjidl_core::{CLSID_FileOpenDialog, CLSID_FileSaveDialog},
+            shtypes::COMDLG_FILTERSPEC,
+        },
+        Interface,
     };
 
     pub trait ToResult {
@@ -111,6 +111,46 @@ mod utils {
                 .collect()
         }
     }
+
+    pub struct Dialog(*mut IFileDialog);
+
+    impl Dialog {
+        pub fn new(class: &GUID, id: &GUID) -> Result<Self, HRESULT> {
+            let mut dialog: *mut IFileDialog = ptr::null_mut();
+
+            unsafe {
+                CoCreateInstance(
+                    class,
+                    ptr::null_mut(),
+                    CLSCTX_INPROC_SERVER,
+                    id,
+                    &mut dialog as *mut *mut IFileDialog as *mut LPVOID,
+                )
+                .check()?;
+            }
+
+            Ok(Self(dialog))
+        }
+        pub fn new_open_dialog() -> Result<Self, HRESULT> {
+            Self::new(&CLSID_FileOpenDialog, &IFileOpenDialog::uuidof())
+        }
+        pub fn new_save_dialog() -> Result<Self, HRESULT> {
+            Self::new(&CLSID_FileSaveDialog, &IFileSaveDialog::uuidof())
+        }
+    }
+
+    impl Deref for Dialog {
+        type Target = IFileDialog;
+        fn deref(&self) -> &Self::Target {
+            unsafe { &*self.0 }
+        }
+    }
+
+    impl Drop for Dialog {
+        fn drop(&mut self) {
+            unsafe { (*self.0).Release() };
+        }
+    }
 }
 
 use utils::*;
@@ -118,30 +158,21 @@ use utils::*;
 pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {
         let res = init_com(|| {
-            let mut dialog: *mut IFileDialog = ptr::null_mut();
-
-            CoCreateInstance(
-                &CLSID_FileOpenDialog,
-                ptr::null_mut(),
-                CLSCTX_INPROC_SERVER,
-                &IFileOpenDialog::uuidof(),
-                &mut dialog as *mut *mut IFileDialog as *mut LPVOID,
-            )
-            .check()?;
+            let dialog = Dialog::new_open_dialog()?;
 
             let filters = Filters::build(&params);
             let spec = filters.as_spec();
 
             if !spec.is_empty() {
-                (*dialog)
+                dialog
                     .SetFileTypes(spec.len() as _, spec.as_ptr())
                     .check()?;
             }
 
-            (*dialog).Show(ptr::null_mut()).check()?;
+            dialog.Show(ptr::null_mut()).check()?;
 
             let mut res_item: *mut IShellItem = ptr::null_mut();
-            (*dialog).GetResult(&mut res_item).check()?;
+            dialog.GetResult(&mut res_item).check()?;
 
             let mut display_name: LPWSTR = ptr::null_mut();
 
@@ -162,31 +193,55 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
 }
 
 pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
-    unimplemented!("pick_folder");
+    unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {
+        let res = init_com(|| {
+            let dialog = Dialog::new_save_dialog()?;
+
+            let filters = Filters::build(&params);
+            let spec = filters.as_spec();
+
+            if !spec.is_empty() {
+                dialog
+                    .SetFileTypes(spec.len() as _, spec.as_ptr())
+                    .check()?;
+            }
+
+            dialog.Show(ptr::null_mut()).check()?;
+
+            let mut res_item: *mut IShellItem = ptr::null_mut();
+            dialog.GetResult(&mut res_item).check()?;
+
+            let mut display_name: LPWSTR = ptr::null_mut();
+
+            (*res_item)
+                .GetDisplayName(SIGDN_FILESYSPATH, &mut display_name)
+                .check()?;
+
+            let filename = to_os_string(&display_name);
+            CoTaskMemFree(display_name as LPVOID);
+
+            Ok(PathBuf::from(filename))
+        })?;
+
+        res
+    }
+
+    unsafe { run(params).ok() }
 }
 
 pub fn pick_folder() -> Option<PathBuf> {
     unsafe fn run() -> Result<PathBuf, HRESULT> {
         let res = init_com(|| {
-            let mut dialog: *mut IFileDialog = ptr::null_mut();
-
-            CoCreateInstance(
-                &CLSID_FileOpenDialog,
-                ptr::null_mut(),
-                CLSCTX_INPROC_SERVER,
-                &IFileOpenDialog::uuidof(),
-                &mut dialog as *mut *mut IFileDialog as *mut LPVOID,
-            )
-            .check()?;
+            let dialog = Dialog::new_open_dialog()?;
 
             let flags: DWORD = FOS_PICKFOLDERS;
 
-            (*dialog).SetOptions(flags).check()?;
+            dialog.SetOptions(flags).check()?;
 
-            (*dialog).Show(ptr::null_mut()).check()?;
+            dialog.Show(ptr::null_mut()).check()?;
 
             let mut res_item: *mut IShellItem = ptr::null_mut();
-            (*dialog).GetResult(&mut res_item).check()?;
+            dialog.GetResult(&mut res_item).check()?;
 
             let mut display_name: LPWSTR = ptr::null_mut();
 
