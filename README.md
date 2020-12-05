@@ -22,7 +22,7 @@ All examples are located in `examples` directory.
 | Feature      | Linux              | Windows                               | MacOS                  |
 | ------------ | ------------------ | ------------------------------------- | ---------------------- |
 | SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: [1] |
-| MultipleFile | :heavy_check_mark: | :white_check_mark:                    | :construction:         |
+| MultipleFile | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :construction:         |
 | PickFolder   | :heavy_check_mark: | :heavy_minus_sign: :heavy_check_mark: |                        |
 | SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: |                        |
 

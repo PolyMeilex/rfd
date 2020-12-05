@@ -2,15 +2,19 @@
 //! Win32 Vista
 use crate::DialogParams;
 
-use winapi::shared::minwindef::DWORD;
-use winapi::um::shobjidl::FOS_ALLOWMULTISELECT;
-use winapi::um::shobjidl::FOS_PICKFOLDERS;
-
 use std::{path::PathBuf, ptr};
 
 use winapi::{
-    shared::{minwindef::LPVOID, ntdef::LPWSTR, winerror::HRESULT},
-    um::{combaseapi::CoTaskMemFree, shobjidl_core::IShellItem, shobjidl_core::SIGDN_FILESYSPATH},
+    shared::{
+        minwindef::{DWORD, LPVOID},
+        ntdef::LPWSTR,
+        winerror::HRESULT,
+    },
+    um::{
+        combaseapi::CoTaskMemFree,
+        shobjidl::{IFileOpenDialog, IFileSaveDialog, FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS},
+        shobjidl_core::{IShellItem, IShellItemArray, SIGDN_FILESYSPATH},
+    },
 };
 
 mod utils {
@@ -112,10 +116,10 @@ mod utils {
         }
     }
 
-    pub struct Dialog(*mut IFileDialog);
+    pub struct Dialog<T>(pub *mut T);
 
-    impl Dialog {
-        pub fn new(class: &GUID, id: &GUID) -> Result<Self, HRESULT> {
+    impl<T> Dialog<T> {
+        fn new_file_dialog(class: &GUID, id: &GUID) -> Result<*mut T, HRESULT> {
             let mut dialog: *mut IFileDialog = ptr::null_mut();
 
             unsafe {
@@ -129,26 +133,34 @@ mod utils {
                 .check()?;
             }
 
-            Ok(Self(dialog))
-        }
-        pub fn new_open_dialog() -> Result<Self, HRESULT> {
-            Self::new(&CLSID_FileOpenDialog, &IFileOpenDialog::uuidof())
-        }
-        pub fn new_save_dialog() -> Result<Self, HRESULT> {
-            Self::new(&CLSID_FileSaveDialog, &IFileSaveDialog::uuidof())
+            Ok(dialog as *mut T)
         }
     }
 
-    impl Deref for Dialog {
-        type Target = IFileDialog;
-        fn deref(&self) -> &Self::Target {
+    impl Dialog<IFileOpenDialog> {
+        pub fn new() -> Result<Self, HRESULT> {
+            let ptr = Self::new_file_dialog(&CLSID_FileOpenDialog, &IFileOpenDialog::uuidof())?;
+            Ok(Self(ptr))
+        }
+    }
+
+    impl Dialog<IFileSaveDialog> {
+        pub fn new() -> Result<Self, HRESULT> {
+            let ptr = Self::new_file_dialog(&CLSID_FileSaveDialog, &IFileSaveDialog::uuidof())?;
+            Ok(Self(ptr))
+        }
+    }
+
+    impl<T> Deref for Dialog<T> {
+        type Target = T;
+        fn deref(&self) -> &T {
             unsafe { &*self.0 }
         }
     }
 
-    impl Drop for Dialog {
+    impl<T> Drop for Dialog<T> {
         fn drop(&mut self) {
-            unsafe { (*self.0).Release() };
+            unsafe { (*(self.0 as *mut IFileDialog)).Release() };
         }
     }
 }
@@ -157,8 +169,8 @@ use utils::*;
 
 pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {
-        let res = init_com(|| {
-            let dialog = Dialog::new_open_dialog()?;
+        init_com(|| {
+            let dialog = Dialog::<IFileOpenDialog>::new()?;
 
             let filters = Filters::build(&params);
             let spec = filters.as_spec();
@@ -184,9 +196,7 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
             CoTaskMemFree(display_name as LPVOID);
 
             Ok(PathBuf::from(filename))
-        })?;
-
-        res
+        })?
     }
 
     unsafe { run(params).ok() }
@@ -194,8 +204,8 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
 
 pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {
-        let res = init_com(|| {
-            let dialog = Dialog::new_save_dialog()?;
+        init_com(|| {
+            let dialog = Dialog::<IFileSaveDialog>::new()?;
 
             let filters = Filters::build(&params);
             let spec = filters.as_spec();
@@ -221,9 +231,7 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
             CoTaskMemFree(display_name as LPVOID);
 
             Ok(PathBuf::from(filename))
-        })?;
-
-        res
+        })?
     }
 
     unsafe { run(params).ok() }
@@ -231,8 +239,8 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
 
 pub fn pick_folder() -> Option<PathBuf> {
     unsafe fn run() -> Result<PathBuf, HRESULT> {
-        let res = init_com(|| {
-            let dialog = Dialog::new_open_dialog()?;
+        init_com(|| {
+            let dialog = Dialog::<IFileOpenDialog>::new()?;
 
             let flags: DWORD = FOS_PICKFOLDERS;
 
@@ -253,14 +261,67 @@ pub fn pick_folder() -> Option<PathBuf> {
             CoTaskMemFree(display_name as LPVOID);
 
             Ok(PathBuf::from(filename))
-        })?;
-
-        res
+        })?
     }
 
     unsafe { run().ok() }
 }
 
 pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
-    unimplemented!("open_multiple_files_with_params");
+    unsafe fn run(params: DialogParams) -> Result<Vec<PathBuf>, HRESULT> {
+        init_com(|| {
+            let dialog = Dialog::<IFileOpenDialog>::new()?;
+
+            let flags: DWORD = FOS_ALLOWMULTISELECT;
+            dialog.SetOptions(flags).check()?;
+
+            let filters = Filters::build(&params);
+            let spec = filters.as_spec();
+
+            if !spec.is_empty() {
+                dialog
+                    .SetFileTypes(spec.len() as _, spec.as_ptr())
+                    .check()?;
+            }
+
+            dialog.Show(ptr::null_mut()).check()?;
+
+            let paths = {
+                let mut res_items: *mut IShellItemArray = ptr::null_mut();
+                dialog.GetResults(&mut res_items).check()?;
+
+                let items = &*res_items;
+
+                let mut count = 0;
+                items.GetCount(&mut count);
+
+                let mut paths = Vec::new();
+                for id in 0..count {
+                    let mut res_item: *mut IShellItem = ptr::null_mut();
+                    items.GetItemAt(id, &mut res_item).check()?;
+
+                    let mut display_name: LPWSTR = ptr::null_mut();
+
+                    (*res_item)
+                        .GetDisplayName(SIGDN_FILESYSPATH, &mut display_name)
+                        .check()?;
+
+                    let filename = to_os_string(&display_name);
+                    CoTaskMemFree(display_name as LPVOID);
+
+                    let path = PathBuf::from(filename);
+
+                    paths.push(path);
+                }
+
+                items.Release();
+
+                paths
+            };
+
+            Ok(paths)
+        })?
+    }
+
+    unsafe { run(params).ok() }
 }
