@@ -1,6 +1,6 @@
 use rfd::DialogParams;
 
-const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt")];
+const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt"), (".rs", "*.rs")];
 
 fn main() {
     let params = DialogParams::new().set_filters(FILTERS);

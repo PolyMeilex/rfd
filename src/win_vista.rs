@@ -4,6 +4,7 @@ use crate::DialogParams;
 use winapi::shared::minwindef::DWORD;
 use winapi::um::shobjidl::FOS_ALLOWMULTISELECT;
 use winapi::um::shobjidl::FOS_PICKFOLDERS;
+use winapi::um::shtypes::COMDLG_FILTERSPEC;
 
 use std::{path::PathBuf, ptr};
 
@@ -23,9 +24,16 @@ use winapi::{
 };
 
 mod utils {
+    use crate::DialogParams;
+    use std::ffi::OsStr;
     use std::ffi::OsString;
+    use std::iter::once;
     use std::os::windows::prelude::OsStringExt;
     use std::ptr;
+    use winapi::um::shtypes::COMDLG_FILTERSPEC;
+
+    use std::os::windows::ffi::OsStrExt;
+
     use winapi::shared::ntdef::LPWSTR;
     use winapi::shared::winerror::{HRESULT, SUCCEEDED};
 
@@ -77,6 +85,32 @@ mod utils {
         };
         OsStringExt::from_wide(slice)
     }
+
+    pub struct Filters(Vec<(Vec<u16>, Vec<u16>)>);
+
+    impl Filters {
+        pub fn build(params: &DialogParams) -> Self {
+            let mut filters = Vec::new();
+
+            for f in params.filters.iter() {
+                let name: Vec<u16> = OsStr::new(&f.0).encode_wide().chain(once(0)).collect();
+                let ext: Vec<u16> = OsStr::new(&f.1).encode_wide().chain(once(0)).collect();
+
+                filters.push((name, ext));
+            }
+
+            Self(filters)
+        }
+        pub fn as_spec(&self) -> Vec<COMDLG_FILTERSPEC> {
+            self.0
+                .iter()
+                .map(|(name, ext)| COMDLG_FILTERSPEC {
+                    pszName: name.as_ptr(),
+                    pszSpec: ext.as_ptr(),
+                })
+                .collect()
+        }
+    }
 }
 
 use utils::*;
@@ -94,6 +128,15 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
                 &mut dialog as *mut *mut IFileDialog as *mut LPVOID,
             )
             .check()?;
+
+            let filters = Filters::build(&params);
+            let spec = filters.as_spec();
+
+            if !spec.is_empty() {
+                (*dialog)
+                    .SetFileTypes(spec.len() as _, spec.as_ptr())
+                    .check()?;
+            }
 
             (*dialog).Show(ptr::null_mut()).check()?;
 

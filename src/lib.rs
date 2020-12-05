@@ -2,7 +2,9 @@
 #[cfg(target_os = "windows")]
 mod win_xp;
 #[cfg(target_os = "windows")]
-pub use win_xp::{open_file_with_params, open_multiple_files_with_params, save_file_with_params};
+pub use win_xp::{
+    /*open_file_with_params,*/ open_multiple_files_with_params, save_file_with_params,
+};
 
 // New Windows API
 #[cfg(target_os = "windows")]
@@ -11,7 +13,7 @@ mod win_vista;
 //     open_file_with_params, open_multiple_files_with_params, pick_folder, save_file_with_params,
 // };
 #[cfg(target_os = "windows")]
-pub use win_vista::pick_folder;
+pub use win_vista::{open_file_with_params, pick_folder};
 
 #[cfg(target_os = "linux")]
 mod gtk3;
