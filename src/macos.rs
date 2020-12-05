@@ -13,8 +13,8 @@ mod utils {
     use std::path::PathBuf;
 
     use cocoa_foundation::base::{id, nil};
-    use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool, NSString};
-    use objc::runtime::Object;
+    use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool, NSString, NSURL};
+    use objc::runtime::{Object, YES};
     use objc::{class, msg_send, sel, sel_impl};
 
     extern "C" {
@@ -53,6 +53,15 @@ mod utils {
 
         let array = NSArray::arrayWithObjects(nil, f_raw.as_slice());
         let _: () = msg_send![panel, setAllowedFileTypes: array];
+    }
+
+    pub unsafe fn set_path(panel: id, path: &PathBuf) {
+        if let Some(path) = path.to_str() {
+            let url = NSURL::alloc(nil)
+                .initFileURLWithPath_isDirectory_(make_nsstring(path), YES)
+                .autorelease();
+            let () = msg_send![panel, setDirectoryURL: url];
+        }
     }
 
     pub unsafe fn get_result(panel: id) -> PathBuf {
@@ -148,6 +157,10 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
                 add_filters(panel, &params);
             }
 
+            if let Some(path) = &params.starting_directory {
+                set_path(panel, path);
+            }
+
             let res: i32 = msg_send![panel, runModal];
 
             if res == 1 {
@@ -165,7 +178,7 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn save_file_with_params(_params: DialogParams) -> Option<PathBuf> {
+pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         let pool = NSAutoreleasePool::new(nil);
 
@@ -183,6 +196,10 @@ pub fn save_file_with_params(_params: DialogParams) -> Option<PathBuf> {
             //add_filters(panel, &params);
             //}
 
+            if let Some(path) = &params.starting_directory {
+                set_path(panel, path);
+            }
+
             let res: i32 = msg_send![panel, runModal];
 
             if res == 1 {
@@ -200,7 +217,7 @@ pub fn save_file_with_params(_params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn pick_folder() -> Option<PathBuf> {
+pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         let pool = NSAutoreleasePool::new(nil);
 
@@ -215,6 +232,10 @@ pub fn pick_folder() -> Option<PathBuf> {
 
             let _: () = msg_send![panel, setCanChooseDirectories: YES];
             let _: () = msg_send![panel, setCanChooseFiles: NO];
+
+            if let Some(path) = &params.starting_directory {
+                set_path(panel, path);
+            }
 
             let res: i32 = msg_send![panel, runModal];
 
@@ -252,6 +273,10 @@ pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathB
 
             if !params.filters.is_empty() {
                 add_filters(panel, &params);
+            }
+
+            if let Some(path) = &params.starting_directory {
+                set_path(panel, path);
             }
 
             let res: i32 = msg_send![panel, runModal];

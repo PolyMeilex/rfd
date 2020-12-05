@@ -114,7 +114,7 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn pick_folder() -> Option<PathBuf> {
+pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
     unimplemented!("pick_folder");
 }
 

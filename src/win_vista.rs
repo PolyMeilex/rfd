@@ -237,7 +237,7 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe { run(params).ok() }
 }
 
-pub fn pick_folder() -> Option<PathBuf> {
+pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe fn run() -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::<IFileOpenDialog>::new()?;

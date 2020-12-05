@@ -3,7 +3,10 @@ use rfd::DialogParams;
 const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt"), (".rs", "*.rs")];
 
 fn main() {
-    let params = DialogParams::new().set_filters(FILTERS);
+    let params = DialogParams::new()
+        .set_filters(FILTERS)
+        .set_starting_directory("/");
+
     let path = rfd::open_file_with_params(params);
 
     println!(

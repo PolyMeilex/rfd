@@ -144,7 +144,7 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn pick_folder() -> Option<PathBuf> {
+pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         let gtk_inited = init_check();
 
