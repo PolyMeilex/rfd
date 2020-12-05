@@ -19,12 +19,12 @@ All examples are located in `examples` directory.
 | ------------- |
 | :x:           |
 
-| Feature      | Linux              | Windows                               | MacOS                  |
+| Feature      | Linux              | Windows                               | MacOS [1]              |
 | ------------ | ------------------ | ------------------------------------- | ---------------------- |
-| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: [1] |
+| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark:     |
 | MultipleFile | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :construction:         |
-| PickFolder   | :heavy_check_mark: | :heavy_check_mark:                    |                        |
-| SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: |                        |
+| PickFolder   | :heavy_check_mark: | :heavy_check_mark:                    | :heavy_check_mark:     |
+| SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark:     |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 

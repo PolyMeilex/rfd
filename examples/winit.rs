@@ -13,7 +13,6 @@ fn main() {
             } => {
                 println!("event");
 
-                //nfd2::open_file_dialog(None,None).unwrap();
                 rfd::open();
             }
             _ => {}
