@@ -1,64 +1,30 @@
 use crate::DialogParams;
 use std::path::PathBuf;
 
-use objc::runtime::{Class, Object};
+use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
 
-use objc::runtime;
-
+use cocoa_foundation::base::{id, nil};
+use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool};
 pub use objc::runtime::{BOOL, NO, YES};
 
 mod utils {
-    use crate::DialogParams;
-    use std::path::PathBuf;
-
-    use objc::runtime::{Class, Object};
+    use cocoa_foundation::base::{id, nil};
+    use cocoa_foundation::foundation::{NSAutoreleasePool, NSString};
+    use objc::runtime::Object;
     use objc::{class, msg_send, sel, sel_impl};
 
-    use objc::runtime;
-
-    use objc::runtime::{BOOL, NO, YES};
-
-    #[allow(non_upper_case_globals)]
-    pub const nil: *mut Object = 0 as *mut Object;
-    #[allow(non_upper_case_globals)]
-    pub const Nil: *mut Class = 0 as *mut Class;
-
-    pub type id = *mut Object;
-
-    pub trait NSAutoreleasePool: Sized {
-        unsafe fn new(_: Self) -> *mut Object {
-            msg_send![class!(NSAutoreleasePool), new]
-        }
-
-        unsafe fn release(self);
-    }
-
-    impl NSAutoreleasePool for *mut Object {
-        unsafe fn release(self) {
-            msg_send![self, release]
-        }
-    }
-
-    pub unsafe fn shared_application() -> *mut Object {
+    pub unsafe fn app() -> *mut Object {
         msg_send![class!(NSApplication), sharedApplication]
     }
 
     pub unsafe fn key_window() -> *mut Object {
-        let shared_app = shared_application();
-        msg_send![shared_app, keyWindow]
+        let app = app();
+        msg_send![app, keyWindow]
     }
 
-    pub fn retain_count(obj: *mut Object) -> usize {
-        unsafe { msg_send![obj, retainCount] }
-    }
-
-    pub fn panel() -> *mut Object {
-        unsafe {
-            let cls = class!(NSOpenPanel);
-            let panel: *mut Object = msg_send![cls, openPanel];
-            panel
-        }
+    pub fn open_panel() -> *mut Object {
+        unsafe { msg_send![class!(NSOpenPanel), openPanel] }
     }
 
     extern "C" {
@@ -73,6 +39,10 @@ mod utils {
         Prohibited = 2,
         Error = -1,
     }
+
+    pub fn make_nsstring(s: &str) -> id {
+        unsafe { NSString::alloc(nil).init_str(s).autorelease() }
+    }
 }
 
 use utils::*;
@@ -81,29 +51,41 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe {
         let pool = NSAutoreleasePool::new(nil);
 
-        let shared_app = shared_application();
-        // NSWindow *keyWindow = [[NSApplication sharedApplication] keyWindow];
+        let app = app();
         let key_window = key_window();
 
         let prev_policy = {
-            let sa: *mut Object = msg_send![class!(NSApplication), sharedApplication];
-            let pol: i32 = msg_send![sa, activationPolicy];
+            let pol: i32 = msg_send![app, activationPolicy];
 
             if pol == ApplicationActivationPolicy::Prohibited as i32 {
                 let new_pol = ApplicationActivationPolicy::Accessory as i32;
-                let _: () = msg_send![sa, setActivationPolicy: new_pol];
+                let _: () = msg_send![app, setActivationPolicy: new_pol];
             }
             pol
         };
 
         let res = {
-            let panel = panel();
+            let panel = open_panel();
 
             let level = CGShieldingWindowLevel();
             let _: () = msg_send![panel, setLevel: level];
 
             let _: () = msg_send![panel, setCanChooseDirectories: YES];
             let _: () = msg_send![panel, setCanChooseFiles: YES];
+
+            if !params.filters.is_empty() {
+                let new_filters: Vec<String> = params
+                    .filters
+                    .iter()
+                    .map(|(_, ext)| ext.to_string().replace("*.", ""))
+                    .collect();
+
+                let f_raw: Vec<_> = new_filters.iter().map(|ext| make_nsstring(ext)).collect();
+
+                let array_raw = NSArray::arrayWithObjects(nil, f_raw.as_slice());
+
+                let _: () = msg_send![panel, setAllowedFileTypes: array_raw];
+            }
 
             let res: i32 = msg_send![panel, runModal];
 
@@ -123,9 +105,9 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
         };
 
         let _: () = msg_send![key_window, makeKeyAndOrderFront: nil];
-        let _: () = msg_send![shared_app, setActivationPolicy: prev_policy];
+        let _: () = msg_send![app, setActivationPolicy: prev_policy];
 
-        pool.release();
+        pool.drain();
 
         res
     }
