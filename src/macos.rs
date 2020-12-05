@@ -3,8 +3,8 @@ use std::path::PathBuf;
 
 use objc::{msg_send, sel, sel_impl};
 
-use cocoa_foundation::base::{id, nil};
-use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool};
+use cocoa_foundation::base::nil;
+use cocoa_foundation::foundation::NSAutoreleasePool;
 pub use objc::runtime::{BOOL, NO, YES};
 
 mod utils {
@@ -65,6 +65,26 @@ mod utils {
         let result = std::str::from_utf8_unchecked(slice);
 
         result.into()
+    }
+
+    pub unsafe fn get_results(panel: id) -> Vec<PathBuf> {
+        let urls: id = msg_send![panel, URLs];
+
+        let count = urls.count();
+
+        let mut res = Vec::new();
+        for id in 0..count {
+            let url = urls.objectAtIndex(id);
+            let path: id = msg_send![url, path];
+            let utf8: *const i32 = msg_send![path, UTF8String];
+            let len: usize = msg_send![path, lengthOfBytesUsingEncoding:4 /*UTF8*/];
+
+            let slice = std::slice::from_raw_parts(utf8 as *const _, len);
+            let result = std::str::from_utf8_unchecked(slice);
+            res.push(result.into());
+        }
+
+        res
     }
 
     #[repr(i32)]
@@ -160,7 +180,7 @@ pub fn save_file_with_params(_params: DialogParams) -> Option<PathBuf> {
 
             // Save filters are unsupported on macos
             //if !params.filters.is_empty() {
-                //add_filters(panel, &params);
+            //add_filters(panel, &params);
             //}
 
             let res: i32 = msg_send![panel, runModal];
@@ -214,5 +234,39 @@ pub fn pick_folder() -> Option<PathBuf> {
 }
 
 pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
-    unimplemented!("open_multiple_with_params");
+    unsafe {
+        let pool = NSAutoreleasePool::new(nil);
+
+        let key_window = key_window();
+
+        let _policy_manager = AppPolicyManager::new();
+
+        let res = {
+            let panel = open_panel();
+
+            let _: () = msg_send![panel, setLevel: CGShieldingWindowLevel()];
+
+            let _: () = msg_send![panel, setCanChooseDirectories: NO];
+            let _: () = msg_send![panel, setCanChooseFiles: YES];
+            let _: () = msg_send![panel, setAllowsMultipleSelection: YES];
+
+            if !params.filters.is_empty() {
+                add_filters(panel, &params);
+            }
+
+            let res: i32 = msg_send![panel, runModal];
+
+            if res == 1 {
+                Some(get_results(panel))
+            } else {
+                None
+            }
+        };
+
+        let _: () = msg_send![key_window, makeKeyAndOrderFront: nil];
+
+        pool.drain();
+
+        res
+    }
 }
