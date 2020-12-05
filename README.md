@@ -15,16 +15,19 @@ All examples are located in `examples` directory.
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PolyMeilex/rfd/Rust/master?style=flat-square)
 
-| API Stability |
-| ------------- |
-| :x:           |
+| API Stability               |
+| --------------------------- |
+| :x: API is not designed yet |
 
-| Feature      | Linux              | Windows                               | MacOS [1]              |
-| ------------ | ------------------ | ------------------------------------- | ---------------------- |
-| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark:     |
-| MultipleFile | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark:     |
-| PickFolder   | :heavy_check_mark: | :heavy_check_mark:                    | :heavy_check_mark:     |
-| SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark:     |
+| Feature      | Linux              | Windows                               | MacOS [1]          |
+| ------------ | ------------------ | ------------------------------------- | ------------------ |
+| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
+| MultipleFile | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
+| PickFolder   | :heavy_check_mark: | :heavy_check_mark:                    | :heavy_check_mark: |
+| SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
+|              |                    |                                       |                    |
+| Filters      | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
+| DefaultPath  |                    |                                       |                    |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
