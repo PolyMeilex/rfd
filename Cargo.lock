@@ -776,6 +776,7 @@ version = "0.1.0"
 dependencies = [
  "cocoa-foundation",
  "glib-sys",
+ "gobject-sys",
  "gtk-sys",
  "libc",
  "objc",

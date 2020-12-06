@@ -18,6 +18,7 @@ wio = "0.2.2"
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-sys = "0.10.0"
 glib-sys = "0.10.1"
+gobject-sys = "0.10.0"
 
 [[example]]
 name = "pick_file"
