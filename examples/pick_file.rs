@@ -1,5 +1,5 @@
 fn main() {
-    let path = rfd::open();
+    let path = rfd::pick_file(None);
 
     println!(
         "{}",

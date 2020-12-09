@@ -1,13 +1,13 @@
-use rfd::DialogParams;
+use rfd::DialogOptions;
 
 const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt"), (".rs", "*.rs")];
 
 fn main() {
-    let params = DialogParams::new()
+    let params = DialogOptions::new()
         .set_filters(FILTERS)
         .set_starting_directory("/");
 
-    let path = rfd::open_file_with_params(params);
+    let path = rfd::pick_file(params);
 
     println!(
         "{}",

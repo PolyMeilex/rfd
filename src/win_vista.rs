@@ -1,6 +1,6 @@
 //! Windows Common Item Dialog
 //! Win32 Vista
-use crate::DialogParams;
+use crate::DialogOptions;
 
 use std::{path::PathBuf, ptr};
 
@@ -18,7 +18,7 @@ use winapi::{
 };
 
 mod utils {
-    use crate::DialogParams;
+    use crate::DialogOptions;
 
     use std::{
         ffi::{OsStr, OsString},
@@ -93,7 +93,7 @@ mod utils {
     pub struct Filters(Vec<(Vec<u16>, Vec<u16>)>);
 
     impl Filters {
-        pub fn build(params: &DialogParams) -> Self {
+        pub fn build(params: &DialogOptions) -> Self {
             let mut filters = Vec::new();
 
             for f in params.filters.iter() {
@@ -167,8 +167,10 @@ mod utils {
 
 use utils::*;
 
-pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
-    unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {
+pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    let params = params.into().unwrap_or_default();
+
+    unsafe fn run(params: DialogOptions) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::<IFileOpenDialog>::new()?;
 
@@ -202,8 +204,10 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe { run(params).ok() }
 }
 
-pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
-    unsafe fn run(params: DialogParams) -> Result<PathBuf, HRESULT> {
+pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    let params = params.into().unwrap_or_default();
+
+    unsafe fn run(params: DialogOptions) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::<IFileSaveDialog>::new()?;
 
@@ -237,7 +241,9 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe { run(params).ok() }
 }
 
-pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    let params = params.into().unwrap_or_default();
+
     unsafe fn run() -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::<IFileOpenDialog>::new()?;
@@ -267,8 +273,10 @@ pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
     unsafe { run().ok() }
 }
 
-pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
-    unsafe fn run(params: DialogParams) -> Result<Vec<PathBuf>, HRESULT> {
+pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
+    let params = params.into().unwrap_or_default();
+
+    unsafe fn run(params: DialogOptions) -> Result<Vec<PathBuf>, HRESULT> {
         init_com(|| {
             let dialog = Dialog::<IFileOpenDialog>::new()?;
 

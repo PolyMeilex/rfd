@@ -1,5 +1,5 @@
-use crate::DialogParams;
-use std::{ffi::CStr, path::PathBuf};
+use crate::DialogOptions;
+use std::path::PathBuf;
 
 mod utils {
     use gtk_sys::{GtkFileChooser, GtkResponseType};
@@ -180,7 +180,9 @@ mod utils {
 
 use utils::*;
 
-pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    let params = params.into().unwrap_or_default();
+
     unsafe {
         let gtk_inited = init_check();
 
@@ -213,7 +215,9 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    let params = params.into().unwrap_or_default();
+
     unsafe {
         let gtk_inited = init_check();
 
@@ -248,7 +252,9 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    let params = params.into().unwrap_or_default();
+
     unsafe {
         let gtk_inited = init_check();
 
@@ -279,7 +285,9 @@ pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
+pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
+    let params = params.into().unwrap_or_default();
+
     #[derive(Debug)]
     struct FileList(*mut glib_sys::GSList);
 

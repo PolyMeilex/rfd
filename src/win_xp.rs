@@ -1,6 +1,6 @@
 //! Windows commdlg.h dialogs
 //! Win32 XP
-use crate::DialogParams;
+use crate::DialogOptions;
 
 use std::path::PathBuf;
 
@@ -14,7 +14,7 @@ extern "C" {
 }
 
 mod utils {
-    use crate::DialogParams;
+    use crate::DialogOptions;
 
     use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt};
 
@@ -61,7 +61,7 @@ mod utils {
 
 use utils::*;
 
-pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn open_file_with_params(params: DialogOptions) -> Option<PathBuf> {
     let filters = build_filters(&params);
 
     unsafe {
@@ -86,7 +86,7 @@ pub fn open_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn save_file_with_params(params: DialogOptions) -> Option<PathBuf> {
     let filters = build_filters(&params);
 
     unsafe {
@@ -114,11 +114,11 @@ pub fn save_file_with_params(params: DialogParams) -> Option<PathBuf> {
     }
 }
 
-pub fn pick_folder_with_params(params: DialogParams) -> Option<PathBuf> {
+pub fn pick_folder_with_params(params: DialogOptions) -> Option<PathBuf> {
     unimplemented!("pick_folder");
 }
 
-pub fn open_multiple_files_with_params(params: DialogParams) -> Option<Vec<PathBuf>> {
+pub fn open_multiple_files_with_params(params: DialogOptions) -> Option<Vec<PathBuf>> {
     let filters = build_filters(&params);
 
     unsafe {

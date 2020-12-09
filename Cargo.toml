@@ -30,6 +30,3 @@ name = "pick_multiple"
 name = "pick_folder"
 [[example]]
 name = "save"
-
-[dev-dependencies]
-winit="*"

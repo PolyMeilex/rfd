@@ -1,5 +1,5 @@
 fn main() {
-    let path = rfd::pick_folder();
+    let path = rfd::pick_folder(None);
 
     println!(
         "{}",
