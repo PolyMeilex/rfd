@@ -18,4 +18,4 @@ pub use macos::{
 };
 
 pub mod dialog;
-pub use dialog::{Dialog, DialogOptions};
+pub use dialog::{Dialog, DialogOptions, Filter};

@@ -1,11 +1,20 @@
-use rfd::DialogOptions;
+use rfd::{DialogOptions, Filter};
 
-const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt"), (".rs", "*.rs")];
+const FILTERS: &[Filter] = &[
+    Filter {
+        name: "text",
+        extensions: &["txt", "rs"],
+    },
+    Filter {
+        name: "rust",
+        extensions: &["rs", "toml"],
+    },
+];
 
 fn main() {
     let params = DialogOptions::new()
         .set_filters(FILTERS)
-        .set_starting_directory("/");
+        .set_starting_directory(&"/");
 
     let path = rfd::pick_file(params);
 

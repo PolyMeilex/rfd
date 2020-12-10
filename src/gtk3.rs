@@ -37,15 +37,18 @@ mod utils {
         dialog as _
     }
 
-    pub unsafe fn add_filters(dialog: *mut GtkFileChooser, filters: &[(&str, &str)]) {
+    pub unsafe fn add_filters(dialog: *mut GtkFileChooser, filters: &[crate::Filter]) {
         for f in filters.iter() {
             let filter = gtk_sys::gtk_file_filter_new();
 
-            let name = format!("{}\0", f.0);
-            let pat = format!("{}\0", f.1);
+            let name = format!("{}\0", f.name);
+            let paterns: Vec<_> = f.extensions.iter().map(|e| format!("*.{}\0", e)).collect();
 
             gtk_sys::gtk_file_filter_set_name(filter, name.as_ptr() as *const _);
-            gtk_sys::gtk_file_filter_add_pattern(filter, pat.as_ptr() as *const _);
+
+            for p in paterns.iter() {
+                gtk_sys::gtk_file_filter_add_pattern(filter, p.as_ptr() as *const _);
+            }
 
             gtk_sys::gtk_file_chooser_add_filter(dialog, filter);
         }

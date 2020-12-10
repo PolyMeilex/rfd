@@ -1,10 +1,5 @@
-use rfd::DialogOptions;
-
-const FILTERS: &[(&str, &str)] = &[(".txt", "*.txt"), (".rs", "*.rs")];
-
 fn main() {
-    let params = DialogOptions::new().set_filters(FILTERS);
-    let path = rfd::save_file(params);
+    let path = rfd::save_file(None);
 
     println!(
         "{}",

@@ -97,8 +97,17 @@ mod utils {
             let mut filters = Vec::new();
 
             for f in params.filters.iter() {
-                let name: Vec<u16> = OsStr::new(&f.0).encode_wide().chain(once(0)).collect();
-                let ext: Vec<u16> = OsStr::new(&f.1).encode_wide().chain(once(0)).collect();
+                let name: Vec<u16> = OsStr::new(&f.name).encode_wide().chain(once(0)).collect();
+                let mut ext_string = String::new();
+
+                for e in f.extensions.iter() {
+                    ext_string += &format!("*.{};", e);
+                }
+
+                let ext: Vec<u16> = OsStr::new(&ext_string)
+                    .encode_wide()
+                    .chain(once(0))
+                    .collect();
 
                 filters.push((name, ext));
             }
