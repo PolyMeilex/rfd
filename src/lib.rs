@@ -12,10 +12,7 @@ pub use gtk3::{pick_file, pick_files, pick_folder, save_file};
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
-pub use macos::{
-    open_file_with_params, open_multiple_files_with_params, pick_folder_with_params,
-    save_file_with_params,
-};
+pub use macos::{pick_file, pick_files, pick_folder, save_file};
 
 pub mod dialog;
 pub use dialog::{Dialog, DialogOptions, Filter};

@@ -23,7 +23,7 @@ gobject-sys = "0.10.0"
 [[example]]
 name = "pick_file"
 [[example]]
-name = "pick_file_filter"
+name = "filter"
 [[example]]
 name = "pick_multiple"
 [[example]]

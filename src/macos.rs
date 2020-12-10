@@ -1,4 +1,5 @@
 use crate::DialogOptions;
+use std::path::Path;
 use std::path::PathBuf;
 
 use objc::{msg_send, sel, sel_impl};
@@ -8,7 +9,8 @@ use cocoa_foundation::foundation::NSAutoreleasePool;
 pub use objc::runtime::{BOOL, NO, YES};
 
 mod utils {
-    use crate::DialogParams;
+    use crate::DialogOptions;
+    use std::path::Path;
 
     use std::path::PathBuf;
 
@@ -42,11 +44,11 @@ mod utils {
         unsafe { NSString::alloc(nil).init_str(s).autorelease() }
     }
 
-    pub unsafe fn add_filters(panel: id, params: &mut DialogParams) {
-        let mut exts = Vec::new();
-        
-        for filter in params.filters.iter_mut(){
-            exts.append(&mut filter.extensions);
+    pub unsafe fn add_filters(panel: id, params: &DialogOptions) {
+        let mut exts: Vec<&str> = Vec::new();
+
+        for filter in params.filters.iter() {
+            exts.append(&mut filter.extensions.to_vec());
         }
 
         let f_raw: Vec<_> = exts.iter().map(|ext| make_nsstring(ext)).collect();
@@ -55,7 +57,7 @@ mod utils {
         let _: () = msg_send![panel, setAllowedFileTypes: array];
     }
 
-    pub unsafe fn set_path(panel: id, path: &PathBuf) {
+    pub unsafe fn set_path(panel: id, path: &Path) {
         if let Some(path) = path.to_str() {
             let url = NSURL::alloc(nil)
                 .initFileURLWithPath_isDirectory_(make_nsstring(path), YES)
@@ -156,7 +158,7 @@ pub fn pick_file<'a>(mut params: impl Into<Option<DialogOptions<'a>>>) -> Option
             let _: () = msg_send![panel, setCanChooseFiles: YES];
 
             if !params.filters.is_empty() {
-                add_filters(panel, &mut params);
+                add_filters(panel, &params);
             }
 
             if let Some(path) = &params.starting_directory {
@@ -260,7 +262,7 @@ pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<P
     }
 }
 
-pub fn pick_files<'a>(mut params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
+pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
     let params = params.into().unwrap_or_default();
 
     unsafe {
@@ -280,7 +282,7 @@ pub fn pick_files<'a>(mut params: impl Into<Option<DialogOptions<'a>>>) -> Optio
             let _: () = msg_send![panel, setAllowsMultipleSelection: YES];
 
             if !params.filters.is_empty() {
-                add_filters(panel, &mut params);
+                add_filters(panel, &params);
             }
 
             if let Some(path) = &params.starting_directory {
