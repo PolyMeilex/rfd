@@ -15,4 +15,4 @@ mod macos;
 pub use macos::{pick_file, pick_files, pick_folder, save_file};
 
 pub mod dialog;
-pub use dialog::{Dialog, DialogOptions, Filter};
+pub use dialog::{Dialog, DialogOptions, Filter, Response};
