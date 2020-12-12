@@ -14,5 +14,10 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::{pick_file, pick_files, pick_folder, save_file};
 
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+#[cfg(target_arch = "wasm32")]
+pub use wasm::{pick_file, pick_files, pick_folder, save_file};
+
 pub mod dialog;
 pub use dialog::{Dialog, DialogOptions, Filter, Response};

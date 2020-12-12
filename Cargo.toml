@@ -19,6 +19,21 @@ gtk-sys = "0.10.0"
 glib-sys = "0.10.1"
 gobject-sys = "0.10.0"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen="0.2.69"
+js-sys="*"
+web-sys={version="0.3.46",features = [
+  'Document',
+  'Element',
+  'HtmlInputElement',
+  'HtmlButtonElement',
+  'Window',
+  'File',
+  'FileList',
+  'FileReader',
+]}
+
+
 [[example]]
 name = "builder"
 [[example]]
