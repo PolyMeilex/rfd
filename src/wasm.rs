@@ -12,6 +12,42 @@ extern "C" {
     fn alert(s: &str);
 }
 
+pub struct FileHandle(web_sys::File);
+
+impl FileHandle {
+    pub async fn read(self) -> Vec<u8> {
+        let promise = js_sys::Promise::new(&mut move |res, _rej| {
+            let file_reader = web_sys::FileReader::new().unwrap();
+
+            let fr = file_reader.clone();
+            let closure = Closure::wrap(Box::new(move || {
+                res.call1(&JsValue::undefined(), &fr.result().unwrap())
+                    .unwrap();
+            }) as Box<dyn FnMut()>);
+
+            file_reader.set_onload(Some(closure.as_ref().unchecked_ref()));
+
+            closure.forget();
+
+            file_reader.read_as_array_buffer(&self.0).unwrap();
+        });
+
+        let future = wasm_bindgen_futures::JsFuture::from(promise);
+
+        let res = future.await.unwrap();
+
+        let buffer: js_sys::Uint8Array = js_sys::Uint8Array::new(&res);
+        let mut vec = vec![0; buffer.length() as usize];
+        buffer.copy_to(&mut vec[..]);
+
+        vec
+    }
+
+    pub fn web_sys_file(&self) -> web_sys::File {
+        self.0.clone()
+    }
+}
+
 pub struct Dialog {
     overlay: Element,
     card: Element,
@@ -19,8 +55,6 @@ pub struct Dialog {
     button: HtmlButtonElement,
 
     style: Element,
-
-    closure: Option<Closure<dyn FnMut()>>,
 }
 
 impl Dialog {
@@ -31,7 +65,7 @@ impl Dialog {
         let card = {
             let card = document.create_element("div").unwrap();
             card.set_id("rfd-card");
-            overlay.append_child(&card);
+            overlay.append_child(&card).unwrap();
 
             card
         };
@@ -43,7 +77,7 @@ impl Dialog {
             input.set_id("rfd-input");
             input.set_type("file");
 
-            card.append_child(&input);
+            card.append_child(&input).unwrap();
             input
         };
 
@@ -54,13 +88,13 @@ impl Dialog {
             btn.set_id("rfd-button");
             btn.set_inner_text("Ok");
 
-            card.append_child(&btn);
+            card.append_child(&btn).unwrap();
             btn
         };
 
         let style = document.create_element("style").unwrap();
         style.set_inner_html(include_str!("./wasm/style.css"));
-        overlay.append_child(&style);
+        overlay.append_child(&style).unwrap();
 
         Self {
             overlay,
@@ -69,53 +103,36 @@ impl Dialog {
             input,
 
             style,
-
-            closure: None,
         }
     }
 
-    pub fn open<F: Fn() + 'static>(&mut self, body: &Element, cb: F) {
+    pub async fn open(&mut self, body: &Element) -> Vec<FileHandle> {
         let overlay = self.overlay.clone();
-        let input = self.input.clone();
-        let closure = Closure::wrap(Box::new(move || {
-            // let files = Vec::new();
+        let button = self.button.clone();
 
-            if let Some(files) = input.files() {
-                for id in 0..(files.length()) {
-                    let file = files.get(id).unwrap();
-                    let file_reader = web_sys::FileReader::new().unwrap();
+        let promise = js_sys::Promise::new(&mut move |res, _rej| {
+            let closure = Closure::wrap(Box::new(move || {
+                res.call0(&JsValue::undefined()).unwrap();
+            }) as Box<dyn FnMut()>);
 
-                    let fr = file_reader.clone();
-                    let closure = Closure::wrap(Box::new(move || {
-                        let res = fr.result().unwrap();
+            button.set_onclick(Some(closure.as_ref().unchecked_ref()));
+            closure.forget();
+            body.append_child(&overlay).ok();
+        });
+        let future = wasm_bindgen_futures::JsFuture::from(promise);
+        future.await.unwrap();
 
-                        let buffer: js_sys::Uint8Array = js_sys::Uint8Array::new(&res);
-                        let mut vec = vec![0; buffer.length() as usize];
-                        buffer.copy_to(&mut vec[..]);
+        let mut file_handles = Vec::new();
 
-                        // let text = std::str::from_utf8(&vec).unwrap();
-                        // alert(&format!("{:?}", text));
-                        alert(&format!("{:?}", vec));
-                    }) as Box<dyn FnMut()>);
-
-                    file_reader.set_onload(Some(closure.as_ref().unchecked_ref()));
-
-                    closure.forget();
-
-                    file_reader.read_as_array_buffer(&file).unwrap();
-                }
+        if let Some(files) = self.input.files() {
+            for id in 0..(files.length()) {
+                let file = files.get(id).unwrap();
+                file_handles.push(FileHandle(file));
             }
+        }
 
-            overlay.remove();
-            cb();
-        }) as Box<dyn FnMut()>);
-
-        self.button
-            .set_onclick(Some(closure.as_ref().unchecked_ref()));
-
-        self.closure = Some(closure);
-
-        body.append_child(&self.overlay).ok();
+        self.overlay.remove();
+        file_handles
     }
 }
 

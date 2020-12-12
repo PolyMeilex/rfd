@@ -3,6 +3,13 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
+}
+
 fn main() {
     let event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
@@ -24,8 +31,6 @@ fn main() {
     let document = window.document().expect("Document not found");
     let body = document.body().expect("document should have a body");
 
-    let mut dialog = rfd::wasm::Dialog::new(&document);
-
     event_loop.run(move |event, _, control_flow| match event {
         event::Event::WindowEvent { event, .. } => match event {
             WindowEvent::KeyboardInput {
@@ -36,7 +41,17 @@ fn main() {
                     },
                 ..
             } => {
-                dialog.open(&body, || {});
+                let body = body.clone();
+                let mut dialog = rfd::wasm::Dialog::new(&document);
+                wasm_bindgen_futures::spawn_local(async move {
+                    let files = dialog.open(&body).await;
+
+                    for file in files {
+                        let file = file.read().await;
+
+                        alert(&format!("{:?}", file));
+                    }
+                });
             }
             _ => {}
         },
