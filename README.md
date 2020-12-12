@@ -19,16 +19,16 @@ All examples are located in `examples` directory.
 | --------------------------- |
 | :x: API is not designed yet |
 
-| Feature      | Linux              | Windows                               | MacOS [1]          |
-| ------------ | ------------------ | ------------------------------------- | ------------------ |
-| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
-| MultipleFile | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
-| PickFolder   | :heavy_check_mark: | :heavy_check_mark:                    | :heavy_check_mark: |
-| SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
-|              |                    |                                       |                    |
-| Filters      | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |
-| StartingPath |                    |                                       | :heavy_check_mark: |
-| Async        |                    |                                       |                    |
+| Feature      | Linux              | Windows                               | MacOS [1]          | Wasm32 |
+| ------------ | ------------------ | ------------------------------------- | ------------------ | ------ |
+| SingleFile   | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |        |
+| MultipleFile | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |        |
+| PickFolder   | :heavy_check_mark: | :heavy_check_mark:                    | :heavy_check_mark: |        |
+| SaveFile     | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |        |
+|              |                    |                                       |                    |        |
+| Filters      | :heavy_check_mark: | :white_check_mark: :heavy_check_mark: | :heavy_check_mark: |        |
+| StartingPath |                    |                                       | :heavy_check_mark: |        |
+| Async        |                    |                                       |                    |        |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
