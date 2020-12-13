@@ -139,6 +139,88 @@ mod utils {
 
 use utils::*;
 
+struct Panel {
+    panel: *mut Object,
+    policy_manager: AppPolicyManager,
+}
+impl Panel {
+    fn new(panel: *mut Object) -> Self {
+        let policy_manager = AppPolicyManager::new();
+        let _: () = msg_send![panel, setLevel: CGShieldingWindowLevel()];
+        Self { policy_manager, panel }
+    }
+
+    fn open_panel() -> Self {
+        Self::new(unsafe { msg_send![class!(NSOpenPanel), openPanel] })
+    }
+
+    fn save_panel() -> *mut Object {
+        Self::new(unsafe { msg_send![class!(NSSavePanel), savePanel] })
+    }
+
+    fn add_filters(&self,params: &DialogOptions) {
+        unsafe{
+            let mut exts: Vec<&str> = Vec::new();
+
+            for filter in params.filters.iter() {
+                exts.append(&mut filter.extensions.to_vec());
+            }
+
+            let f_raw: Vec<_> = exts.iter().map(|ext| make_nsstring(ext)).collect();
+
+            let array = NSArray::arrayWithObjects(nil, f_raw.as_slice());
+            let _: () = msg_send![self.panel, setAllowedFileTypes: array];
+        }
+    }
+
+    fn set_path(&self,path: &Path) {
+        unsafe{
+        if let Some(path) = path.to_str() {
+            let url = NSURL::alloc(nil)
+                .initFileURLWithPath_isDirectory_(make_nsstring(path), YES)
+                .autorelease();
+            let () = msg_send![self.panel, setDirectoryURL: url];
+        }
+        }
+    }
+
+    fn get_result(&self) -> PathBuf {
+        unsafe{
+        let url: id = msg_send![self.panel, URL];
+        let path: id = msg_send![url, path];
+        let utf8: *const i32 = msg_send![path, UTF8String];
+        let len: usize = msg_send![path, lengthOfBytesUsingEncoding:4 /*UTF8*/];
+
+        let slice = std::slice::from_raw_parts(utf8 as *const _, len);
+        let result = std::str::from_utf8_unchecked(slice);
+
+        result.into()
+        }
+    }
+
+    fn get_results(&self) -> Vec<PathBuf> {
+        unsafe{
+        let urls: id = msg_send![self.panel, URLs];
+
+        let count = urls.count();
+
+        let mut res = Vec::new();
+        for id in 0..count {
+            let url = urls.objectAtIndex(id);
+            let path: id = msg_send![url, path];
+            let utf8: *const i32 = msg_send![path, UTF8String];
+            let len: usize = msg_send![path, lengthOfBytesUsingEncoding:4 /*UTF8*/];
+
+            let slice = std::slice::from_raw_parts(utf8 as *const _, len);
+            let result = std::str::from_utf8_unchecked(slice);
+            res.push(result.into());
+        }
+
+        res
+        }
+    }
+}
+
 pub fn pick_file<'a>(mut params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
     let params = params.into().unwrap_or_default();
 
