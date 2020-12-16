@@ -91,26 +91,6 @@ pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<P
 pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
     let params = params.into().unwrap_or_default();
 
-    #[derive(Debug)]
-    struct FileList(*mut glib_sys::GSList);
-
-    impl Iterator for FileList {
-        type Item = glib_sys::GSList;
-        fn next(&mut self) -> Option<Self::Item> {
-            let curr_ptr = self.0;
-
-            if !curr_ptr.is_null() {
-                let curr = unsafe { *curr_ptr };
-
-                self.0 = curr.next;
-
-                Some(curr)
-            } else {
-                None
-            }
-        }
-    }
-
     if init_check() {
         let mut dialog = GtkDialog::new(
             "Open File\0",
