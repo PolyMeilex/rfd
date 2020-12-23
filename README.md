@@ -5,7 +5,7 @@ WIP native file dialogs for Windows, Linux (GTK), MacOS.
 # Example
 
 ```rust
-let res = Dialog::pick_files()
+let res = rfd::Dialog::pick_files()
     .filter("text", &["txt"])
     .filter("rust", &["rs", "toml"])
     .starting_directory(&"/home")
