@@ -49,7 +49,7 @@ impl<'a> Dialog<'a> {
         Self::new(DialogType::SaveFile)
     }
 
-    pub fn filter(mut self, name: &'a str, extensions: &'a [&'a str]) -> Self {
+    pub fn add_filter(mut self, name: &'a str, extensions: &'a [&'a str]) -> Self {
         self.filters.push(Filter { name, extensions });
         self
     }
@@ -65,17 +65,10 @@ impl<'a> Dialog<'a> {
             starting_directory: self.starting_directory,
         };
         match self.dialog_type {
-            DialogType::PickFile => crate::pick_file(opt)
-                .map(|f| vec![f])
-                .unwrap_or(vec![]),
-            DialogType::PickFiles => crate::pick_files(opt)
-                .unwrap_or(vec![]),
-            DialogType::PickFolder => crate::pick_folder(opt)
-                .map(|f| vec![f])
-                .unwrap_or(vec![]),
-            DialogType::SaveFile => crate::save_file(opt)
-                .map(|f| vec![f])
-                .unwrap_or(vec![]),
+            DialogType::PickFile => crate::pick_file(opt).map(|f| vec![f]).unwrap_or(vec![]),
+            DialogType::PickFiles => crate::pick_files(opt).unwrap_or(vec![]),
+            DialogType::PickFolder => crate::pick_folder(opt).map(|f| vec![f]).unwrap_or(vec![]),
+            DialogType::SaveFile => crate::save_file(opt).map(|f| vec![f]).unwrap_or(vec![]),
         }
     }
 }

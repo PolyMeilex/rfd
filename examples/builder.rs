@@ -2,8 +2,8 @@ use rfd::Dialog;
 
 fn main() {
     let res = Dialog::pick_files()
-        .filter("text", &["txt", "rs"])
-        .filter("rust", &["rs", "toml"])
+        .add_filter("text", &["txt", "rs"])
+        .add_filter("rust", &["rs", "toml"])
         .starting_directory(&"/")
         .open();
 

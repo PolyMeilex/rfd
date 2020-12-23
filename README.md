@@ -6,8 +6,8 @@ WIP native file dialogs for Windows, Linux (GTK), MacOS.
 
 ```rust
 let res = rfd::Dialog::pick_files()
-    .filter("text", &["txt"])
-    .filter("rust", &["rs", "toml"])
+    .add_filter("text", &["txt"])
+    .add_filter("rust", &["rs", "toml"])
     .starting_directory(&"/home")
     .open();
 
