@@ -1,4 +1,4 @@
-use rfd::{Dialog};
+use rfd::Dialog;
 
 fn main() {
     let res = Dialog::pick_files()
@@ -8,5 +8,4 @@ fn main() {
         .open();
 
     println!("The user choose: {:#?}", res);
-
 }

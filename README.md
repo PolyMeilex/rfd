@@ -27,7 +27,7 @@ All examples are located in `examples` directory.
 | SaveFile     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
 |              |                    |                    |                    |                |
 | Filters      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| StartingPath | :heavy_check_mark: |                    | :heavy_check_mark: |                |
+| StartingPath | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
 | Async        |                    |                    |                    |                |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
