@@ -161,7 +161,7 @@ mod utils {
     }
 
     impl<T> Deref for Dialog<T> {
-        type Target = T;
+        type Target = *mut IFileDialog;
         fn deref(&self) -> &T {
             unsafe { &*self.0 }
         }

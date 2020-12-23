@@ -5,12 +5,16 @@ use wasm_bindgen::JsCast;
 pub struct FileHandle(pub(crate) web_sys::File);
 
 impl FileHandle {
-    /// Path is not supported in browsers.
-    /// Use read() instead.
-    pub fn path(&self) -> &Path {
-        // compile_error!();
-        unimplemented!("Path is not supported in browsers");
+    pub fn wrap(file: web_sys::File) -> Self{
+        Self(file)
     }
+
+    // Path is not supported in browsers.
+    // Use read() instead.
+    // pub fn path(&self) -> &Path {
+    //     // compile_error!();
+    //     unimplemented!("Path is not supported in browsers");
+    // }
 
     pub async fn read(&self) -> Vec<u8> {
         let promise = js_sys::Promise::new(&mut move |res, _rej| {

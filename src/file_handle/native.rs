@@ -60,6 +60,10 @@ impl Future for Reader {
 pub struct FileHandle(pub(crate) PathBuf);
 
 impl FileHandle {
+    pub fn wrap(path_buf: PathBuf) -> Self{
+        Self(path_buf)
+    }
+
     pub fn path(&self) -> &Path {
         &self.0
     }

@@ -4,9 +4,9 @@ version = "0.1.0"
 authors = ["Poly <bartek.marynczak@op.pl>", "Yusuf Bera Ertan <y.bera003.06@protonmail.com>"]
 edition = "2018"
 
-[dependencies]
-libc = "0.2.80"
-futures="0.3.8"
+
+[features]
+native-file-handle = []
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2.7"

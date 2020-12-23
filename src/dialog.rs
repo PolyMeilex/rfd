@@ -59,32 +59,25 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    pub fn open(self) -> Response {
+    pub fn open(self) -> Vec<PathBuf> {
         let opt = DialogOptions {
             filters: &self.filters,
             starting_directory: self.starting_directory,
         };
         match self.dialog_type {
             DialogType::PickFile => crate::pick_file(opt)
-                .map(|f| Response::Single(f))
-                .unwrap_or(Response::None),
+                .map(|f| vec![f])
+                .unwrap_or(vec![]),
             DialogType::PickFiles => crate::pick_files(opt)
-                .map(|f| Response::Multiple(f))
-                .unwrap_or(Response::None),
+                .unwrap_or(vec![]),
             DialogType::PickFolder => crate::pick_folder(opt)
-                .map(|f| Response::Single(f))
-                .unwrap_or(Response::None),
+                .map(|f| vec![f])
+                .unwrap_or(vec![]),
             DialogType::SaveFile => crate::save_file(opt)
-                .map(|f| Response::Single(f))
-                .unwrap_or(Response::None),
+                .map(|f| vec![f])
+                .unwrap_or(vec![]),
         }
     }
-}
-
-pub enum Response {
-    Single(PathBuf),
-    Multiple(Vec<PathBuf>),
-    None,
 }
 
 /// Paramaters to pass to the file dialog.
