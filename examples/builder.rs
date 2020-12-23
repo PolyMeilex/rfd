@@ -7,5 +7,6 @@ fn main() {
         .starting_directory(&"/")
         .open();
 
+    let _file = res.first();
     println!("The user choose: {:#?}", res);
 }

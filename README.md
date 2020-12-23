@@ -1,23 +1,26 @@
 # rfd
 
-Very WIP and untested native file dialogs for Windows, Linux (GTK), MacOS.
+WIP native file dialogs for Windows, Linux (GTK), MacOS.
 
-# Examples
+# Example
 
-All examples are located in `examples` directory.
+```rust
+let res = Dialog::pick_files()
+    .filter("text", &["txt"])
+    .filter("rust", &["rs", "toml"])
+    .starting_directory(&"/home")
+    .open();
 
-- Run `cargo run --example pick_file` for the simple example.
-- Run `cargo run --example pick_file_filter` for an example utilizing a filter.
-- Run `cargo run --example pick_folder`.
-- Run `cargo run --example save`.
+let file = res.first();
+```
 
 # State
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PolyMeilex/rfd/Rust/master?style=flat-square)
 
-| API Stability               |
-| --------------------------- |
-| :x: API is not designed yet |
+| API Stability  |
+| -------------- |
+| :construction: |
 
 | Feature      | Linux              | Windows            | MacOS [1]          | Wasm32         |
 | ------------ | ------------------ | ------------------ | ------------------ | -------------- |
