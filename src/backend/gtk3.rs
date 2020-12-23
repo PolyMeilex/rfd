@@ -1,130 +1,117 @@
 use crate::DialogOptions;
 
 use gtk_sys::GtkFileChooser;
-use std::ffi::CStr;
-use std::path::PathBuf;
-use std::ptr;
+use std::{
+    ffi::{CStr, CString},
+    path::{Path, PathBuf},
+    ptr,
+};
 
-pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let params = params.into().unwrap_or_default();
+pub fn pick_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    if !gtk_init_check() {
+        return None;
+    };
 
-    if init_check() {
-        let mut dialog = GtkDialog::new(
-            "Open File\0",
-            GtkFileChooserAction::Open,
-            "Cancel\0",
-            "Open\0",
-        );
+    let opt = opt.into().unwrap_or_default();
 
-        dialog.add_filters(&params.filters);
+    let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
-        let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
-            dialog.get_result()
-        } else {
-            None
-        };
+    dialog.add_filters(&opt.filters);
+    dialog.set_path(&opt.starting_directory);
 
-        dialog.destroy();
-
-        out
+    let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+        dialog.get_result()
     } else {
         None
-    }
+    };
+
+    dialog.destroy();
+
+    out
 }
 
-pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let params = params.into().unwrap_or_default();
+pub fn save_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    if !gtk_init_check() {
+        return None;
+    };
 
-    if init_check() {
-        let mut dialog = GtkDialog::new(
-            "Save File\0",
-            GtkFileChooserAction::Save,
-            "Cancel\0",
-            "Save\0",
-        );
+    let opt = opt.into().unwrap_or_default();
 
-        unsafe {
-            gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr, 1);
-        }
+    let mut dialog = GtkDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
 
-        dialog.add_filters(&params.filters);
+    unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr, 1) };
 
-        let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
-            dialog.get_result()
-        } else {
-            None
-        };
+    dialog.add_filters(&opt.filters);
+    dialog.set_path(&opt.starting_directory);
 
-        dialog.destroy();
-
-        out
+    let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+        dialog.get_result()
     } else {
         None
-    }
+    };
+
+    dialog.destroy();
+
+    out
 }
 
-pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let _params = params.into().unwrap_or_default();
+pub fn pick_folder<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+    if !gtk_init_check() {
+        return None;
+    };
 
-    if init_check() {
-        let dialog = GtkDialog::new(
-            "Select Folder\0",
-            GtkFileChooserAction::SelectFolder,
-            "Cancel\0",
-            "Select\0",
-        );
+    let opt = opt.into().unwrap_or_default();
 
-        let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
-            dialog.get_result()
-        } else {
-            None
-        };
+    let dialog = GtkDialog::new(
+        "Select Folder",
+        GtkFileChooserAction::SelectFolder,
+        "Cancel",
+        "Select",
+    );
 
-        dialog.destroy();
+    dialog.set_path(&opt.starting_directory);
 
-        out
+    let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+        dialog.get_result()
     } else {
         None
-    }
+    };
+
+    dialog.destroy();
+
+    out
 }
 
-pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
-    let params = params.into().unwrap_or_default();
+pub fn pick_files<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
+    if !gtk_init_check() {
+        return None;
+    };
 
-    if init_check() {
-        let mut dialog = GtkDialog::new(
-            "Open File\0",
-            GtkFileChooserAction::Open,
-            "Cancel\0",
-            "Open\0",
-        );
+    let opt = opt.into().unwrap_or_default();
 
-        unsafe {
-            gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr, 1);
-        }
+    let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
-        dialog.add_filters(&params.filters);
+    unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr, 1) };
 
-        let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
-            Some(dialog.get_results())
-        } else {
-            None
-        };
+    dialog.add_filters(&opt.filters);
+    dialog.set_path(&opt.starting_directory);
 
-        dialog.destroy();
-
-        out
+    let out = if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+        Some(dialog.get_results())
     } else {
         None
-    }
+    };
+
+    dialog.destroy();
+
+    out
 }
 
 //
 // Internal
 //
 
-/// gtk_init_check()
-pub fn init_check() -> bool {
+fn gtk_init_check() -> bool {
     unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) == 1 }
 }
 
@@ -149,14 +136,18 @@ struct GtkDialog {
 
 impl GtkDialog {
     fn new(title: &str, action: GtkFileChooserAction, btn1: &str, btn2: &str) -> Self {
+        let title = CString::new(title).unwrap();
+        let btn1 = CString::new(btn1).unwrap();
+        let btn2 = CString::new(btn2).unwrap();
+
         let ptr = unsafe {
             let dialog = gtk_sys::gtk_file_chooser_dialog_new(
-                title.as_ptr() as *const _,
+                title.as_ptr(),
                 ptr::null_mut(),
                 action as i32,
-                btn1.as_ptr() as *const _,
+                btn1.as_ptr(),
                 gtk_sys::GTK_RESPONSE_CANCEL,
-                btn2.as_ptr() as *const _,
+                btn2.as_ptr(),
                 gtk_sys::GTK_RESPONSE_ACCEPT,
                 ptr::null_mut::<i8>(),
             );
@@ -168,19 +159,36 @@ impl GtkDialog {
 
     pub fn add_filters(&mut self, filters: &[crate::Filter]) {
         for f in filters.iter() {
-            unsafe {
-                let filter = gtk_sys::gtk_file_filter_new();
+            if let Ok(name) = CString::new(f.name) {
+                unsafe {
+                    let filter = gtk_sys::gtk_file_filter_new();
 
-                let name = format!("{}\0", f.name);
-                let paterns: Vec<_> = f.extensions.iter().map(|e| format!("*.{}\0", e)).collect();
+                    let paterns: Vec<_> = f
+                        .extensions
+                        .iter()
+                        .filter_map(|e| CString::new(format!("*.{}", e)).ok())
+                        .collect();
 
-                gtk_sys::gtk_file_filter_set_name(filter, name.as_ptr() as *const _);
+                    gtk_sys::gtk_file_filter_set_name(filter, name.as_ptr());
 
-                for p in paterns.iter() {
-                    gtk_sys::gtk_file_filter_add_pattern(filter, p.as_ptr() as *const _);
+                    for p in paterns.iter() {
+                        gtk_sys::gtk_file_filter_add_pattern(filter, p.as_ptr());
+                    }
+
+                    gtk_sys::gtk_file_chooser_add_filter(self.ptr, filter);
                 }
+            }
+        }
+    }
 
-                gtk_sys::gtk_file_chooser_add_filter(self.ptr, filter);
+    pub fn set_path(&self, path: &Option<&Path>) {
+        if let Some(path) = path {
+            if let Some(path) = path.to_str() {
+                if let Ok(path) = CString::new(path) {
+                    unsafe {
+                        gtk_sys::gtk_file_chooser_set_current_folder(self.ptr, path.as_ptr());
+                    }
+                }
             }
         }
     }
