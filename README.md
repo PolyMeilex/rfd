@@ -26,7 +26,7 @@ All examples are located in `examples` directory.
 | PickFolder   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
 | SaveFile     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
 |              |                    |                    |                    |                |
-| Filters      | :heavy_check_mark: | :heavy_check_mark: |                    |
+| Filters      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | StartingPath | :heavy_check_mark: |                    | :heavy_check_mark: |                |
 | Async        |                    |                    |                    |                |
 
