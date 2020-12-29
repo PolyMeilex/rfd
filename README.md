@@ -22,20 +22,20 @@ let file = res.first();
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/PolyMeilex/rfd/Rust/master?style=flat-square)
 
-| API Stability  |
-| -------------- |
-| :construction: |
+| API Stability |
+| ------------- |
+| 🚧            |
 
-| Feature      | Linux              | Windows            | MacOS [1]          | Wasm32         |
-| ------------ | ------------------ | ------------------ | ------------------ | -------------- |
-| SingleFile   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :construction: |
-| MultipleFile | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
-| PickFolder   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
-| SaveFile     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
-|              |                    |                    |                    |                |
-| Filters      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| StartingPath | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                |
-| Async        |                    |                    |                    |                |
+| Feature      | Linux | Windows | MacOS [1] | Wasm32 |
+| ------------ | ----- | ------- | --------- | ------ |
+| SingleFile   | ✔     | ✔       | ✔         | 🚧     |
+| MultipleFile | ✔     | ✔       | ✔         |        |
+| PickFolder   | ✔     | ✔       | ✔         |        |
+| SaveFile     | ✔     | ✔       | ✔         |        |
+|              |       |         |           |        |
+| Filters      | ✔     | ✔       | ✔         |
+| StartingPath | ✔     | ✔       | ✔         |        |
+| Async        |       |         |           |        |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
