@@ -1,5 +1,9 @@
 # rfd
 
+[![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
+[![Documentation](https://docs.rs/quiz/badge.svg)](https://docs.rs/rfd)
+[![dependency status](https://deps.rs/crate/rfd/0.0.2/status.svg)](https://deps.rs/crate/rfd/0.0.2)
+
 WIP native file dialogs for Windows, Linux (GTK), MacOS.
 
 # Example
