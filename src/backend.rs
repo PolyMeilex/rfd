@@ -38,7 +38,7 @@ pub mod wasm;
 #[cfg(test)]
 mod tests {
     #[test]
-    #[cfg(not(target_arch = "wasm33"))]
+    #[cfg(not(target_arch = "wasm32"))]
     /// Check if all fns are defined
     fn fn_def_check() {
         #[allow(unused_imports)]
