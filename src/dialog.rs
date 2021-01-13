@@ -26,7 +26,10 @@ impl<'a> FileDialog<'a> {
         self.starting_directory = Some(path.as_ref());
         self
     }
+}
 
+#[cfg(not(target_arch = "wasm32"))]
+impl<'a> FileDialog<'a> {
     pub fn pick_file(&self) -> Option<PathBuf> {
         crate::backend::pick_file(self)
     }

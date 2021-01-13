@@ -35,15 +35,13 @@ pub mod wasm;
 // #[cfg(target_arch = "wasm32")]
 // pub use wasm::{pick_file, pick_files, pick_folder, save_file};
 
-
 #[cfg(test)]
 mod tests {
-    
     #[test]
     #[cfg(not(target_arch = "wasm33"))]
     /// Check if all fns are defined
     fn fn_def_check() {
         #[allow(unused_imports)]
-        use super::{pick_file,pick_files,pick_folder,save_file};
+        use super::{pick_file, pick_files, pick_folder, save_file};
     }
 }
