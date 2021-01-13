@@ -160,7 +160,7 @@ impl Panel {
         let _: () = unsafe { msg_send![self.panel, setAllowsMultipleSelection: v] };
     }
 
-    fn add_filters(&self, params: &DialogOptions) {
+    fn add_filters<'a>(&self, params: &FileDialog<'a>) {
         let mut exts: Vec<&str> = Vec::new();
 
         for filter in params.filters.iter() {
