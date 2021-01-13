@@ -9,7 +9,7 @@ WIP native file dialogs for Windows, Linux (GTK), MacOS.
 # Example
 
 ```rust
-let files = Dialog::new()
+let files = FileDialog::new()
     .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
     .set_directory(&"/")
