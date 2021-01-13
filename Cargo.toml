@@ -55,3 +55,6 @@ name = "pick_multiple"
 name = "pick_folder"
 [[example]]
 name = "save"
+
+[package.metadata.docs.rs]
+all-features = true

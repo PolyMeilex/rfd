@@ -1,5 +1,5 @@
 fn main() {
-    let path = rfd::save_file(None);
+    let path = rfd::FileDialog::new().save_file();
 
     println!(
         "{}",
