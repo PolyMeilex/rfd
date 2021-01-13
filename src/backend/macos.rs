@@ -112,6 +112,172 @@ pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Ve
     res
 }
 
+struct Droper {}
+impl Drop for Droper {
+    fn drop(&mut self) {
+        println!("Drop");
+    }
+}
+
+use objc::runtime::{objc_autoreleasePoolPop, objc_autoreleasePoolPush};
+use std::pin::Pin;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+
+use std::task::{Context, Poll, Waker};
+
+struct AutoreleasePool {
+    ptr: *mut std::os::raw::c_void,
+}
+
+impl AutoreleasePool {
+    fn new() -> Self {
+        Self {
+            ptr: unsafe { objc_autoreleasePoolPush() },
+        }
+    }
+    fn d(&self) {
+        unsafe { objc_autoreleasePoolPop(self.ptr) }
+    }
+}
+
+impl Drop for AutoreleasePool {
+    fn drop(&mut self) {
+        unsafe { objc_autoreleasePoolPop(self.ptr) }
+    }
+}
+
+struct FutureState {
+    waker: Option<Waker>,
+    // panel: Panel,
+    done: bool,
+    // pool: AutoreleasePool,
+}
+
+impl Drop for FutureState {
+    fn drop(&mut self) {
+        println!("Drop");
+    }
+}
+
+pub struct RetFuture {
+    state: Arc<Mutex<FutureState>>,
+}
+
+unsafe impl Send for RetFuture {}
+
+impl RetFuture {
+    pub fn new() -> Self {
+        // let panel_ptr = panel.panel;
+
+        let state = Arc::new(Mutex::new(FutureState {
+            waker: None,
+            // panel,
+            done: false,
+            // pool,
+        }));
+
+        {
+            // let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
+            // let was_running: bool = unsafe { msg_send![app, isRunning] };
+
+            // let state = state.clone();
+
+            // let completion = block::ConcreteBlock::new(move |result: i32| {
+            //     println!("Done");
+
+            //     let mut state = state.lock().unwrap();
+
+            //     state.done = true;
+
+            //     if let Some(waker) = state.waker.take() {
+            //         waker.wake();
+            //     }
+
+            //     if !was_running {
+            //         unsafe {
+            //             let _: () = msg_send![app, stop: nil];
+            //         }
+            //     }
+            //     // let c: i32 = unsafe { msg_send![state.panel.panel, retainCount] };
+            //     // println!("{}", c);
+            //     // let _: () = unsafe { msg_send![state.panel.panel, release] };
+            //     // let c: i32 = unsafe { msg_send![state.panel.panel, retainCount] };
+            //     // println!("{}", c);
+            // });
+
+            // unsafe {
+            //     let _: () = msg_send![panel_ptr, beginWithCompletionHandler: &completion];
+
+            //     if !was_running {
+            //         let _: () = msg_send![app, run];
+            //     }
+            // }
+
+            // std::mem::forget(completion);
+        }
+        {
+            let state = state.clone();
+
+            callback_test(|| {
+                // let mut state = state.lock().unwrap();
+                // state.done = true;
+                //
+                println!("test");
+            });
+        }
+
+        Self { state }
+    }
+}
+
+impl std::future::Future for RetFuture {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut state = self.state.lock().unwrap();
+
+        if state.done {
+            Poll::Ready(())
+        } else {
+            state.waker = Some(cx.waker().clone());
+            Poll::Pending
+        }
+    }
+}
+
+pub fn async_test() -> RetFuture {
+    RetFuture::new()
+}
+
+pub fn callback_test<F: Fn()>(cb: F) {
+    objc::rc::autoreleasepool(|| {
+        let panel = Panel::open_panel();
+
+        let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
+        let was_running: bool = unsafe { msg_send![app, isRunning] };
+
+        let completion = block::ConcreteBlock::new(move |result: i32| {
+            if !was_running {
+                unsafe {
+                    let _: () = msg_send![app, stop: nil];
+                }
+            }
+            cb();
+        });
+
+        unsafe {
+            let _: () = msg_send![panel.panel, beginWithCompletionHandler: &completion];
+
+            if !was_running {
+                let _: () = msg_send![app, run];
+            }
+        }
+
+        std::mem::forget(completion);
+    });
+}
+
 //
 // Internal
 //

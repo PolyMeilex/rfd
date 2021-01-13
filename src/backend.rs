@@ -22,7 +22,7 @@ pub use gtk3::{pick_file, pick_files, pick_folder, save_file};
 //
 
 #[cfg(target_os = "macos")]
-mod macos;
+pub mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::{pick_file, pick_files, pick_folder, save_file};
 
