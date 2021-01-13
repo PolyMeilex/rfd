@@ -5,8 +5,12 @@ use wasm_bindgen::JsCast;
 pub struct FileHandle(pub(crate) web_sys::File);
 
 impl FileHandle {
-    pub fn wrap(file: web_sys::File) -> Self{
+    pub fn wrap(file: web_sys::File) -> Self {
         Self(file)
+    }
+
+    pub fn file_name(&self) -> String {
+        self.0.name()
     }
 
     // Path is not supported in browsers.

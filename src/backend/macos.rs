@@ -1,4 +1,4 @@
-use crate::DialogOptions;
+use crate::FileDialog;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -10,9 +10,7 @@ use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool, NSString, NSURL};
 use objc::runtime::{Object, YES};
 pub use objc::runtime::{BOOL, NO};
 
-pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let opt = params.into().unwrap_or_default();
-
+pub fn pick_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     let pool = unsafe { NSAutoreleasePool::new(nil) };
     let panel = Panel::open_panel();
 
@@ -38,9 +36,7 @@ pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Pat
     res
 }
 
-pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let opt = params.into().unwrap_or_default();
-
+pub fn save_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     let pool = unsafe { NSAutoreleasePool::new(nil) };
     let panel = Panel::save_panel();
 
@@ -59,9 +55,7 @@ pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Pat
     res
 }
 
-pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let opt = params.into().unwrap_or_default();
-
+pub fn pick_folder<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     let pool = unsafe { NSAutoreleasePool::new(nil) };
     let panel = Panel::open_panel();
 
@@ -83,9 +77,7 @@ pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<P
     res
 }
 
-pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
-    let opt = params.into().unwrap_or_default();
-
+pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
     let pool = unsafe { NSAutoreleasePool::new(nil) };
     let panel = Panel::open_panel();
 
@@ -168,7 +160,7 @@ impl Panel {
         let _: () = unsafe { msg_send![self.panel, setAllowsMultipleSelection: v] };
     }
 
-    fn add_filters(&self, params: &DialogOptions) {
+    fn add_filters<'a>(&self, params: &FileDialog<'a>) {
         let mut exts: Vec<&str> = Vec::new();
 
         for filter in params.filters.iter() {

@@ -1,7 +1,12 @@
 mod backend;
-pub use backend::*;
 
-pub mod file_handle;
+#[cfg(target_arch = "wasm32")]
+pub use backend::wasm;
 
-pub mod dialog;
-pub use dialog::{Dialog, DialogOptions, Filter};
+#[cfg(any(target_arch = "wasm32", feature = "native-file-handle"))]
+mod file_handle;
+#[cfg(any(target_arch = "wasm32", feature = "native-file-handle"))]
+pub use file_handle::FileHandle;
+
+mod dialog;
+pub use dialog::{FileDialog, Filter};

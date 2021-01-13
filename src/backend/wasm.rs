@@ -1,4 +1,4 @@
-use crate::DialogOptions;
+// use crate::FileDialog;
 use std::path::PathBuf;
 
 use wasm_bindgen::prelude::*;
@@ -7,9 +7,9 @@ use web_sys::{Document, Element};
 
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
-use crate::file_handle::FileHandle;
+use crate::FileHandle;
 
-pub struct Dialog {
+pub struct FileDialog {
     overlay: Element,
     card: Element,
     input: HtmlInputElement,
@@ -18,8 +18,11 @@ pub struct Dialog {
     style: Element,
 }
 
-impl Dialog {
-    pub fn new(document: &Document) -> Self {
+impl FileDialog {
+    pub fn new() -> Self {
+        let window = web_sys::window().expect("Window not found");
+        let document = window.document().expect("Document not found");
+
         let overlay = document.create_element("div").unwrap();
         overlay.set_id("rfd-overlay");
 
@@ -67,7 +70,11 @@ impl Dialog {
         }
     }
 
-    pub async fn open(&mut self, body: &Element) -> Vec<FileHandle> {
+    pub async fn pick_files(&mut self) -> Vec<FileHandle> {
+        let window = web_sys::window().expect("Window not found");
+        let document = window.document().expect("Document not found");
+        let body = document.body().expect("document should have a body");
+
         let overlay = self.overlay.clone();
         let button = self.button.clone();
 
@@ -97,7 +104,7 @@ impl Dialog {
     }
 }
 
-impl Drop for Dialog {
+impl Drop for FileDialog {
     fn drop(&mut self) {
         self.button.remove();
         self.input.remove();

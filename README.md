@@ -9,13 +9,11 @@ WIP native file dialogs for Windows, Linux (GTK), MacOS.
 # Example
 
 ```rust
-let res = rfd::Dialog::pick_files()
-    .add_filter("text", &["txt"])
+let files = FileDialog::new()
+    .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
-    .starting_directory(&"/home")
-    .open();
-
-let file = res.first();
+    .set_directory(&"/")
+    .pick_files();
 ```
 
 # State

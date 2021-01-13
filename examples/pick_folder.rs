@@ -1,5 +1,5 @@
 fn main() {
-    let path = rfd::pick_folder(None);
+    let path = rfd::FileDialog::new().pick_folder();
 
     println!(
         "{}",

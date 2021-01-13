@@ -1,5 +1,5 @@
 fn main() {
-    let path = rfd::pick_files(None);
+    let path = rfd::FileDialog::new().pick_files();
 
     println!(
         "{}",
