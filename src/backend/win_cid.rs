@@ -34,9 +34,7 @@ use winapi::{
     Interface,
 };
 
-pub fn pick_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let opt = opt.into().unwrap_or_default();
-
+pub fn pick_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     unsafe fn run(opt: DialogOptions) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_open_dialog()?;
@@ -53,9 +51,7 @@ pub fn pick_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBu
     unsafe { run(opt).ok() }
 }
 
-pub fn save_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let opt = opt.into().unwrap_or_default();
-
+pub fn save_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     unsafe fn run(opt: DialogOptions) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_save_dialog()?;
@@ -72,9 +68,7 @@ pub fn save_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBu
     unsafe { run(opt).ok() }
 }
 
-pub fn pick_folder<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-    let opt = opt.into().unwrap_or_default();
-
+pub fn pick_folder<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     unsafe fn run(opt: DialogOptions) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_open_dialog()?;
@@ -92,9 +86,7 @@ pub fn pick_folder<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<Path
     unsafe { run(opt).ok() }
 }
 
-pub fn pick_files<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
-    let opt = opt.into().unwrap_or_default();
-
+pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
     unsafe fn run(opt: DialogOptions) -> Result<Vec<PathBuf>, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_open_dialog()?;

@@ -1,7 +1,7 @@
-use rfd::Dialog;
+use rfd::FileDialog;
 
 fn main() {
-    let res = Dialog::new()
+    let res = FileDialog::new()
         .add_filter("text", &["txt", "rs"])
         .add_filter("rust", &["rs", "toml"])
         .set_directory(&"/")

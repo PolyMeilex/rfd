@@ -1,4 +1,4 @@
-use crate::DialogOptions;
+use crate::FileDialog;
 
 use gtk_sys::GtkFileChooser;
 use std::{
@@ -7,12 +7,10 @@ use std::{
     ptr,
 };
 
-pub fn pick_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+pub fn pick_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     if !gtk_init_check() {
         return None;
     };
-
-    let opt = opt.into().unwrap_or_default();
 
     let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
@@ -30,12 +28,10 @@ pub fn pick_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBu
     out
 }
 
-pub fn save_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+pub fn save_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     if !gtk_init_check() {
         return None;
     };
-
-    let opt = opt.into().unwrap_or_default();
 
     let mut dialog = GtkDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
 
@@ -55,12 +51,10 @@ pub fn save_file<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBu
     out
 }
 
-pub fn pick_folder<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
+pub fn pick_folder<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     if !gtk_init_check() {
         return None;
     };
-
-    let opt = opt.into().unwrap_or_default();
 
     let dialog = GtkDialog::new(
         "Select Folder",
@@ -82,12 +76,10 @@ pub fn pick_folder<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<Path
     out
 }
 
-pub fn pick_files<'a>(opt: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
+pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
     if !gtk_init_check() {
         return None;
     };
-
-    let opt = opt.into().unwrap_or_default();
 
     let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
