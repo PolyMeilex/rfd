@@ -1,12 +1,11 @@
 use rfd::Dialog;
 
 fn main() {
-    let res = Dialog::pick_files()
+    let res = Dialog::new()
         .add_filter("text", &["txt", "rs"])
         .add_filter("rust", &["rs", "toml"])
-        .starting_directory(&"/")
-        .open();
+        .set_directory(&"/")
+        .pick_files();
 
-    let _file = res.first();
     println!("The user choose: {:#?}", res);
 }

@@ -20,33 +20,13 @@ pub struct Filter<'a> {
 
 #[derive(Default)]
 pub struct Dialog<'a> {
-    dialog_type: DialogType,
     filters: Vec<Filter<'a>>,
     starting_directory: Option<&'a Path>,
 }
 
 impl<'a> Dialog<'a> {
-    pub fn new(dialog_type: DialogType) -> Self {
-        Self {
-            dialog_type,
-            ..Default::default()
-        }
-    }
-
-    pub fn pick_file() -> Self {
-        Self::new(DialogType::PickFile)
-    }
-
-    pub fn pick_files() -> Self {
-        Self::new(DialogType::PickFiles)
-    }
-
-    pub fn pick_folder() -> Self {
-        Self::new(DialogType::PickFolder)
-    }
-
-    pub fn save_file() -> Self {
-        Self::new(DialogType::SaveFile)
+    pub fn new() -> Self {
+        Default::default()
     }
 
     pub fn add_filter(mut self, name: &'a str, extensions: &'a [&'a str]) -> Self {
@@ -54,22 +34,41 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    pub fn starting_directory<P: AsRef<Path>>(mut self, path: &'a P) -> Self {
+    pub fn set_directory<P: AsRef<Path>>(mut self, path: &'a P) -> Self {
         self.starting_directory = Some(path.as_ref());
         self
     }
 
-    pub fn open(self) -> Vec<PathBuf> {
+    pub fn pick_file(&self) -> Option<PathBuf> {
         let opt = DialogOptions {
             filters: &self.filters,
             starting_directory: self.starting_directory,
         };
-        match self.dialog_type {
-            DialogType::PickFile => crate::pick_file(opt).map(|f| vec![f]).unwrap_or(vec![]),
-            DialogType::PickFiles => crate::pick_files(opt).unwrap_or(vec![]),
-            DialogType::PickFolder => crate::pick_folder(opt).map(|f| vec![f]).unwrap_or(vec![]),
-            DialogType::SaveFile => crate::save_file(opt).map(|f| vec![f]).unwrap_or(vec![]),
-        }
+        crate::pick_file(opt)
+    }
+
+    pub fn pick_files(&self) -> Option<Vec<PathBuf>> {
+        let opt = DialogOptions {
+            filters: &self.filters,
+            starting_directory: self.starting_directory,
+        };
+        crate::pick_files(opt)
+    }
+
+    pub fn pick_folder(&self) -> Option<PathBuf> {
+        let opt = DialogOptions {
+            filters: &self.filters,
+            starting_directory: self.starting_directory,
+        };
+        crate::pick_folder(opt)
+    }
+
+    pub fn save_file(&self) -> Option<PathBuf> {
+        let opt = DialogOptions {
+            filters: &self.filters,
+            starting_directory: self.starting_directory,
+        };
+        crate::save_file(opt)
     }
 }
 
