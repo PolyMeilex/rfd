@@ -35,7 +35,7 @@ use winapi::{
 };
 
 pub fn pick_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
-    unsafe fn run(opt: &FileDialog<'a>) -> Result<PathBuf, HRESULT> {
+    unsafe fn run<'a>(opt: &FileDialog<'a>) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_open_dialog()?;
 
@@ -52,7 +52,7 @@ pub fn pick_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
 }
 
 pub fn save_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
-    unsafe fn run(opt: &FileDialog<'a>) -> Result<PathBuf, HRESULT> {
+    unsafe fn run<'a>(opt: &FileDialog<'a>) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_save_dialog()?;
 
@@ -69,7 +69,7 @@ pub fn save_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
 }
 
 pub fn pick_folder<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
-    unsafe fn run(opt: &FileDialog<'a>) -> Result<PathBuf, HRESULT> {
+    unsafe fn run<'a>(opt: &FileDialog<'a>) -> Result<PathBuf, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_open_dialog()?;
 
@@ -87,7 +87,7 @@ pub fn pick_folder<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
 }
 
 pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
-    unsafe fn run(opt: &FileDialog<'a>) -> Result<Vec<PathBuf>, HRESULT> {
+    unsafe fn run<'a>(opt: &FileDialog<'a>) -> Result<Vec<PathBuf>, HRESULT> {
         init_com(|| {
             let dialog = Dialog::new_open_dialog()?;
 
