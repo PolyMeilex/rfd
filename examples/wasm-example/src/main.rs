@@ -50,7 +50,7 @@ fn main() {
                 #[cfg(target_arch = "wasm32")]
                 let mut dialog = rfd::wasm::FileDialog::new();
                 #[cfg(not(target_arch = "wasm32"))]
-                let mut dialog = rfd::FileDialog::new();
+                let mut dialog = rfd::AsyncFileDialog::new();
 
                 //
                 #[cfg(target_arch = "wasm32")]

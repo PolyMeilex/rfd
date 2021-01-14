@@ -10,7 +10,8 @@ mod panel;
 use panel::{OutputFrom, Panel};
 
 mod async_dialog;
-use async_dialog::{AsyncDialog, DialogFuture};
+use async_dialog::AsyncDialog;
+pub use async_dialog::DialogFuture;
 
 pub fn pick_file<'a>(opt: &FileDialog<'a>) -> Option<PathBuf> {
     objc::rc::autoreleasepool(move || {
@@ -53,7 +54,7 @@ pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<FileHand
     AsyncDialog::new(panel).into()
 }
 
-pub fn save_filee_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<FileHandle>> {
+pub fn save_file_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<FileHandle>> {
     let panel = Panel::build_save_file(opt);
     AsyncDialog::new(panel).into()
 }

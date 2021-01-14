@@ -4,9 +4,10 @@
 
 #[cfg(target_os = "windows")]
 mod win_cid;
-
 #[cfg(target_os = "windows")]
 pub use win_cid::{pick_file, pick_files, pick_folder, save_file};
+#[cfg(target_os = "windows")]
+pub use win_cid::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
 
 //
 // Linux
@@ -16,15 +17,19 @@ pub use win_cid::{pick_file, pick_files, pick_folder, save_file};
 mod gtk3;
 #[cfg(target_os = "linux")]
 pub use gtk3::{pick_file, pick_files, pick_folder, save_file};
+#[cfg(target_os = "linux")]
+pub use gtk3::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
 
 //
 // MacOs
 //
 
 #[cfg(target_os = "macos")]
-pub mod macos;
+mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::{pick_file, pick_files, pick_folder, save_file};
+#[cfg(target_os = "macos")]
+pub use macos::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
 
 //
 // Wasm
@@ -34,6 +39,8 @@ pub use macos::{pick_file, pick_files, pick_folder, save_file};
 pub mod wasm;
 // #[cfg(target_arch = "wasm32")]
 // pub use wasm::{pick_file, pick_files, pick_folder, save_file};
+#[cfg(target_os = "wasm32")]
+pub use wasm::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
 
 #[cfg(test)]
 mod tests {
@@ -43,5 +50,8 @@ mod tests {
     fn fn_def_check() {
         #[allow(unused_imports)]
         use super::{pick_file, pick_files, pick_folder, save_file};
+
+        #[allow(unused_imports)]
+        use super::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
     }
 }

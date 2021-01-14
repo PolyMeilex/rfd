@@ -115,26 +115,20 @@ impl Drop for FileDialog {
     }
 }
 
-// pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-//     let params = params.into().unwrap_or_default();
+use std::future::Future;
 
-//     None
-// }
+pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<FileHandle>> {
+    unimplemented!("");
+}
 
-// pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-//     let params = params.into().unwrap_or_default();
+pub fn save_file_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<FileHandle>> {
+    unimplemented!("");
+}
 
-//     None
-// }
+pub fn pick_folder_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<FileHandle>> {
+    unimplemented!("");
+}
 
-// pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-//     let params = params.into().unwrap_or_default();
-
-//     None
-// }
-
-// pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
-//     let params = params.into().unwrap_or_default();
-
-//     None
-// }
+pub fn pick_files_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<Vec<FileHandle>>> {
+    unimplemented!("");
+}
