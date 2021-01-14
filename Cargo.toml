@@ -14,9 +14,6 @@ documentation = "https://docs.rs/rfd"
 futures="*"
 winit="*"
 
-[features]
-native-file-handle = []
-
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2.7"
 block="*"

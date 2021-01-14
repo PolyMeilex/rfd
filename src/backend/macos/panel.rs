@@ -1,4 +1,5 @@
-use crate::FileDialog;
+use crate::{FileDialog, FileHandle};
+
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -8,7 +9,7 @@ use cocoa_foundation::base::id;
 use cocoa_foundation::base::nil;
 use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool, NSString, NSURL};
 use objc::runtime::{Object, YES};
-pub use objc::runtime::{BOOL, NO};
+use objc::runtime::{BOOL, NO};
 
 use super::policy_manager::PolicyManager;
 use objc::rc::StrongPtr;
@@ -207,6 +208,31 @@ impl OutputFrom<Panel> for Option<Vec<PathBuf>> {
     fn from(panel: &Panel, res_id: i32) -> Self {
         if res_id == 1 {
             Some(panel.get_results())
+        } else {
+            None
+        }
+    }
+}
+
+impl OutputFrom<Panel> for Option<FileHandle> {
+    fn from(panel: &Panel, res_id: i32) -> Self {
+        if res_id == 1 {
+            Some(FileHandle::wrap(panel.get_result()))
+        } else {
+            None
+        }
+    }
+}
+
+impl OutputFrom<Panel> for Option<Vec<FileHandle>> {
+    fn from(panel: &Panel, res_id: i32) -> Self {
+        if res_id == 1 {
+            let files = panel
+                .get_results()
+                .into_iter()
+                .map(|f| FileHandle::wrap(f))
+                .collect();
+            Some(files)
         } else {
             None
         }

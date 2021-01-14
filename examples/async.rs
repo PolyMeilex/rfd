@@ -20,7 +20,7 @@ fn main() {
                 ..
             } => {
                 // Spawn dialog on main thread
-                let task = rfd::macos::async_test();
+                let task = rfd::macos::pick_file_async(&Default::default());
                 // Await somewhere else
                 std::thread::spawn(move || {
                     futures::executor::block_on(async {

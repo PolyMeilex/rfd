@@ -1,4 +1,5 @@
-use crate::FileDialog;
+use crate::{FileDialog, FileHandle};
+
 use std::path::PathBuf;
 
 pub use objc::runtime::{BOOL, NO};
@@ -47,7 +48,22 @@ pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
     })
 }
 
-pub fn async_test() -> DialogFuture<Option<PathBuf>> {
-    let panel = Panel::open_panel();
+pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<FileHandle>> {
+    let panel = Panel::build_pick_file(opt);
+    AsyncDialog::new(panel).into()
+}
+
+pub fn save_filee_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<FileHandle>> {
+    let panel = Panel::build_save_file(opt);
+    AsyncDialog::new(panel).into()
+}
+
+pub fn pick_folder_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<FileHandle>> {
+    let panel = Panel::build_pick_folder(opt);
+    AsyncDialog::new(panel).into()
+}
+
+pub fn pick_files_async<'a>(opt: &FileDialog<'a>) -> DialogFuture<Option<Vec<FileHandle>>> {
+    let panel = Panel::build_pick_files(opt);
     AsyncDialog::new(panel).into()
 }
