@@ -1,6 +1,7 @@
 //! Windows Common Item Dialog
 //! Win32 Vista
 use crate::FileDialog;
+use crate::FileHandle;
 
 use std::{
     ffi::{OsStr, OsString},

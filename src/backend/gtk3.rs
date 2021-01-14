@@ -1,4 +1,5 @@
 use crate::FileDialog;
+use crate::FileHandle;
 
 use gtk_sys::GtkFileChooser;
 use std::{
