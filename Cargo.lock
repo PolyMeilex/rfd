@@ -908,6 +908,7 @@ dependencies = [
  "gobject-sys",
  "gtk-sys",
  "js-sys",
+ "lazy_static",
  "objc",
  "wasm-bindgen",
  "wasm-bindgen-futures",
