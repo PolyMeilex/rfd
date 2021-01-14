@@ -1,6 +1,7 @@
 //! Windows Common Item Dialog
 //! Win32 Vista
 use crate::FileDialog;
+use crate::FileHandle;
 
 use std::{
     ffi::{OsStr, OsString},
@@ -103,6 +104,28 @@ pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
     }
 
     unsafe { run(opt).ok() }
+}
+
+//
+//
+//
+
+use std::future::Future;
+
+pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
+    unimplemented!("")
+}
+
+pub fn save_file_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
+    unimplemented!("")
+}
+
+pub fn pick_folder_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
+    unimplemented!("")
+}
+
+pub fn pick_files_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<Vec<FileHandle>>> {
+    unimplemented!("")
 }
 
 //

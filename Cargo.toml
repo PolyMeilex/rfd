@@ -10,12 +10,15 @@ license = "MIT"
 repository = "https://github.com/PolyMeilex/rfd"
 documentation = "https://docs.rs/rfd"
 
-[features]
-native-file-handle = []
+[dev-dependencies]
+futures="*"
+winit="*"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2.7"
+block="*"
 cocoa-foundation= "0.1.0"
+
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.9", features = ["combaseapi","objbase","shobjidl","shellapi"] }

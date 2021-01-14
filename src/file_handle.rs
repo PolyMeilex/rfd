@@ -5,9 +5,9 @@
 //!
 //! It should allow a user to treat web browser files same way as native files
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "native-file-handle"))]
+#[cfg(not(target_arch = "wasm32"))]
 mod native;
-#[cfg(all(not(target_arch = "wasm32"), feature = "native-file-handle"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub use native::FileHandle;
 
 #[cfg(target_arch = "wasm32")]
@@ -16,7 +16,6 @@ mod web;
 pub use web::FileHandle;
 
 #[cfg(test)]
-#[cfg(any(target_arch = "wasm32", feature = "native-file-handle"))]
 mod tests {
     use super::FileHandle;
 
