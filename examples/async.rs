@@ -19,15 +19,18 @@ fn main() {
                     },
                 ..
             } => {
-                // let task = rfd::macos::callback_test(|| {
-                //     println!("async done");
-                // });
+                // Simple callback
+                rfd::macos::callback_test(|files| {
+                    println!("callback done");
+                });
 
+                // Spawn dialog on main thread
                 let task = rfd::macos::async_test();
-                //
+                // Await somewhere else
                 std::thread::spawn(move || {
                     futures::executor::block_on(async {
-                        task.await;
+                        let files = task.await;
+                        println!("Hell yeah it's async done!!");
                     });
                 });
             }

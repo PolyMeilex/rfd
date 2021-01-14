@@ -104,133 +104,103 @@ pub fn pick_files<'a>(opt: &FileDialog<'a>) -> Option<Vec<PathBuf>> {
     res
 }
 
-struct Droper {}
-impl Drop for Droper {
-    fn drop(&mut self) {
-        println!("Drop");
-    }
-}
-
-use objc::runtime::{objc_autoreleasePoolPop, objc_autoreleasePoolPush};
+use objc::rc::StrongPtr;
 use std::pin::Pin;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-struct AutoreleasePool {
-    ptr: *mut std::os::raw::c_void,
-}
-
-impl AutoreleasePool {
-    fn new() -> Self {
-        Self {
-            ptr: unsafe { objc_autoreleasePoolPush() },
-        }
-    }
-    fn d(&self) {
-        unsafe { objc_autoreleasePoolPop(self.ptr) }
+pub fn activate_cocoa_multithreading() {
+    unsafe {
+        let thread: id = msg_send![class!(NSThread), new];
+        let _: () = msg_send![thread, start];
     }
 }
 
-impl Drop for AutoreleasePool {
-    fn drop(&mut self) {
-        unsafe { objc_autoreleasePoolPop(self.ptr) }
-    }
-}
-
-struct FutureState {
+struct FutureState<R> {
     waker: Option<Waker>,
-    // panel: Panel,
+    panel: Panel,
     done: bool,
-    // pool: AutoreleasePool,
+    data: Option<R>,
 }
 
-impl Drop for FutureState {
-    fn drop(&mut self) {
-        println!("Drop");
-    }
+struct AsyncDialog<R> {
+    state: Arc<Mutex<FutureState<R>>>,
 }
 
-pub struct RetFuture {
-    state: Arc<Mutex<FutureState>>,
-}
-
-unsafe impl Send for RetFuture {}
-
-impl RetFuture {
-    pub fn new() -> Self {
-        // let panel_ptr = panel.panel;
-
+impl<R: OutputFrom<Panel>> AsyncDialog<R> {
+    fn new(panel: Panel) -> Self {
+        activate_cocoa_multithreading();
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
-            // panel,
+            panel,
             done: false,
-            // pool,
+            data: None,
         }));
 
-        {
-            // let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
-            // let was_running: bool = unsafe { msg_send![app, isRunning] };
+        let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
+        let was_running: bool = unsafe { msg_send![app, isRunning] };
 
-            // let state = state.clone();
-
-            // let completion = block::ConcreteBlock::new(move |result: i32| {
-            //     println!("Done");
-
-            //     let mut state = state.lock().unwrap();
-
-            //     state.done = true;
-
-            //     if let Some(waker) = state.waker.take() {
-            //         waker.wake();
-            //     }
-
-            //     if !was_running {
-            //         unsafe {
-            //             let _: () = msg_send![app, stop: nil];
-            //         }
-            //     }
-            //     // let c: i32 = unsafe { msg_send![state.panel.panel, retainCount] };
-            //     // println!("{}", c);
-            //     // let _: () = unsafe { msg_send![state.panel.panel, release] };
-            //     // let c: i32 = unsafe { msg_send![state.panel.panel, retainCount] };
-            //     // println!("{}", c);
-            // });
-
-            // unsafe {
-            //     let _: () = msg_send![panel_ptr, beginWithCompletionHandler: &completion];
-
-            //     if !was_running {
-            //         let _: () = msg_send![app, run];
-            //     }
-            // }
-
-            // std::mem::forget(completion);
-        }
-        {
+        let completion = {
             let state = state.clone();
 
-            callback_test(|| {
-                // let mut state = state.lock().unwrap();
-                // state.done = true;
-                //
-                println!("test");
-            });
+            block::ConcreteBlock::new(move |result: i32| {
+                println!("Done");
+
+                let mut state = state.lock().unwrap();
+
+                state.done = true;
+
+                let panel = &state.panel;
+                state.data = Some(OutputFrom::from(panel, result));
+
+                if let Some(waker) = state.waker.take() {
+                    waker.wake();
+                }
+
+                if !was_running {
+                    unsafe {
+                        let _: () = msg_send![app, stop: nil];
+                    }
+                }
+            })
+        };
+
+        unsafe {
+            let state = state.lock().unwrap();
+            let _: () = msg_send![*state.panel.panel, beginWithCompletionHandler: &completion];
+
+            if !was_running {
+                let _: () = msg_send![app, run];
+            }
+
+            std::mem::forget(completion);
         }
 
         Self { state }
     }
 }
 
-impl std::future::Future for RetFuture {
-    type Output = ();
+impl<R> Into<RetFuture<R>> for AsyncDialog<R> {
+    fn into(self) -> RetFuture<R> {
+        RetFuture { state: self.state }
+    }
+}
+
+pub struct RetFuture<R> {
+    state: Arc<Mutex<FutureState<R>>>,
+}
+
+unsafe impl<R> Send for RetFuture<R> {}
+
+impl<R> std::future::Future for RetFuture<R> {
+    type Output = R;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut state = self.state.lock().unwrap();
 
         if state.done {
-            Poll::Ready(())
+            Poll::Ready(state.data.take().unwrap())
         } else {
             state.waker = Some(cx.waker().clone());
             Poll::Pending
@@ -238,11 +208,12 @@ impl std::future::Future for RetFuture {
     }
 }
 
-pub fn async_test() -> RetFuture {
-    RetFuture::new()
+pub fn async_test() -> RetFuture<Option<PathBuf>> {
+    let panel = Panel::open_panel();
+    AsyncDialog::new(panel).into()
 }
 
-pub fn callback_test<F: Fn()>(cb: F) {
+pub fn callback_test<F: Fn(())>(cb: F) {
     objc::rc::autoreleasepool(|| {
         let panel = Panel::open_panel();
 
@@ -255,11 +226,11 @@ pub fn callback_test<F: Fn()>(cb: F) {
                     let _: () = msg_send![app, stop: nil];
                 }
             }
-            cb();
+            cb(());
         });
 
         unsafe {
-            let _: () = msg_send![panel.panel, beginWithCompletionHandler: &completion];
+            let _: () = msg_send![*panel.panel, beginWithCompletionHandler: &completion];
 
             if !was_running {
                 let _: () = msg_send![app, run];
@@ -282,10 +253,11 @@ fn make_nsstring(s: &str) -> id {
 }
 
 struct Panel {
-    panel: *mut Object,
+    panel: StrongPtr,
     _policy_manager: AppPolicyManager,
     key_window: *mut Object,
 }
+
 impl Panel {
     fn new(panel: *mut Object) -> Self {
         let _policy_manager = AppPolicyManager::new();
@@ -297,7 +269,7 @@ impl Panel {
         let _: () = unsafe { msg_send![panel, setLevel: CGShieldingWindowLevel()] };
         Self {
             _policy_manager,
-            panel,
+            panel: unsafe { StrongPtr::retain(panel) },
             key_window,
         }
     }
@@ -311,19 +283,19 @@ impl Panel {
     }
 
     fn run_modal(&self) -> i32 {
-        unsafe { msg_send![self.panel, runModal] }
+        unsafe { msg_send![*self.panel, runModal] }
     }
 
     fn set_can_choose_directories(&self, v: BOOL) {
-        let _: () = unsafe { msg_send![self.panel, setCanChooseDirectories: v] };
+        let _: () = unsafe { msg_send![*self.panel, setCanChooseDirectories: v] };
     }
 
     fn set_can_choose_files(&self, v: BOOL) {
-        let _: () = unsafe { msg_send![self.panel, setCanChooseFiles: v] };
+        let _: () = unsafe { msg_send![*self.panel, setCanChooseFiles: v] };
     }
 
     fn set_allows_multiple_selection(&self, v: BOOL) {
-        let _: () = unsafe { msg_send![self.panel, setAllowsMultipleSelection: v] };
+        let _: () = unsafe { msg_send![*self.panel, setAllowsMultipleSelection: v] };
     }
 
     fn add_filters<'a>(&self, params: &FileDialog<'a>) {
@@ -337,7 +309,7 @@ impl Panel {
             let f_raw: Vec<_> = exts.iter().map(|ext| make_nsstring(ext)).collect();
 
             let array = NSArray::arrayWithObjects(nil, f_raw.as_slice());
-            let _: () = msg_send![self.panel, setAllowedFileTypes: array];
+            let _: () = msg_send![*self.panel, setAllowedFileTypes: array];
         }
     }
 
@@ -347,14 +319,14 @@ impl Panel {
                 let url = NSURL::alloc(nil)
                     .initFileURLWithPath_isDirectory_(make_nsstring(path), YES)
                     .autorelease();
-                let () = msg_send![self.panel, setDirectoryURL: url];
+                let () = msg_send![*self.panel, setDirectoryURL: url];
             }
         }
     }
 
     fn get_result(&self) -> PathBuf {
         unsafe {
-            let url: id = msg_send![self.panel, URL];
+            let url: id = msg_send![*self.panel, URL];
             let path: id = msg_send![url, path];
             let utf8: *const i32 = msg_send![path, UTF8String];
             let len: usize = msg_send![path, lengthOfBytesUsingEncoding:4 /*UTF8*/];
@@ -368,7 +340,7 @@ impl Panel {
 
     fn get_results(&self) -> Vec<PathBuf> {
         unsafe {
-            let urls: id = msg_send![self.panel, URLs];
+            let urls: id = msg_send![*self.panel, URLs];
 
             let count = urls.count();
 
@@ -389,9 +361,39 @@ impl Panel {
     }
 }
 
+trait OutputFrom<F> {
+    fn from(from: &F, res_id: i32) -> Self;
+}
+
+impl OutputFrom<Panel> for Option<PathBuf> {
+    fn from(panel: &Panel, res_id: i32) -> Self {
+        if res_id == 1 {
+            Some(panel.get_result())
+        } else {
+            None
+        }
+    }
+}
+
+impl OutputFrom<Panel> for Option<Vec<PathBuf>> {
+    fn from(panel: &Panel, res_id: i32) -> Self {
+        if res_id == 1 {
+            Some(panel.get_results())
+        } else {
+            None
+        }
+    }
+}
+
 impl Drop for Panel {
     fn drop(&mut self) {
         let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
+
+        unsafe {
+            let i: i32 = msg_send![*self.panel, retainCount];
+            println!("{:?}", std::thread::current().id());
+            println!("Will drop, with retain count of: {}", i);
+        }
     }
 }
 

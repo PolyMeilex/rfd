@@ -1,5 +1,7 @@
 mod backend;
 
+#[cfg(target_os = "macos")]
+pub use backend::macos;
 #[cfg(target_arch = "wasm32")]
 pub use backend::wasm;
 
