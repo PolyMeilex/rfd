@@ -19,11 +19,6 @@ fn main() {
                     },
                 ..
             } => {
-                // Simple callback
-                rfd::macos::callback_test(|files| {
-                    println!("callback done");
-                });
-
                 // Spawn dialog on main thread
                 let task = rfd::macos::async_test();
                 // Await somewhere else
