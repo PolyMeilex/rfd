@@ -117,18 +117,18 @@ impl Drop for FileDialog {
 
 use std::future::Future;
 
-pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<FileHandle>> {
+pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
     unimplemented!("");
 }
 
-pub fn save_file_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<FileHandle>> {
+pub fn save_file_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
     unimplemented!("");
 }
 
-pub fn pick_folder_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<FileHandle>> {
+pub fn pick_folder_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
     unimplemented!("");
 }
 
-pub fn pick_files_async<'a>(opt: &FileDialog<'a>) -> Future<Output = Option<Vec<FileHandle>>> {
+pub fn pick_files_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<Vec<FileHandle>>> {
     unimplemented!("");
 }
