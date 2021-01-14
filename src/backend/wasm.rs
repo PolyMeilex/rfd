@@ -95,7 +95,7 @@ impl FileDialog {
         if let Some(files) = self.input.files() {
             for id in 0..(files.length()) {
                 let file = files.get(id).unwrap();
-                file_handles.push(FileHandle(file));
+                file_handles.push(FileHandle::wrap(file));
             }
         }
 

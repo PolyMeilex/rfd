@@ -2,7 +2,7 @@ use std::path::Path;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub struct FileHandle(pub(crate) web_sys::File);
+pub struct FileHandle(web_sys::File);
 
 impl FileHandle {
     pub fn wrap(file: web_sys::File) -> Self {
