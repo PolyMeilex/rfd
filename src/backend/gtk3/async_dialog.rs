@@ -1,4 +1,6 @@
+use core::cell::RefCell;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc::{channel, Receiver, Sender},
@@ -15,6 +17,7 @@ type Runner = dyn FnOnce() + Send + Sync + 'static;
 
 pub struct GtkThread {
     tx: Sender<Box<Runner>>,
+    locker: Mutex<()>,
 }
 
 unsafe impl Send for GtkThread {}
@@ -30,11 +33,19 @@ impl GtkThread {
             }
         });
 
-        Self { tx }
+        Self {
+            tx,
+            locker: Mutex::new(()),
+        }
     }
 
     fn push<F: FnOnce() + Send + Sync + 'static>(&self, cb: F) {
         self.tx.send(Box::new(cb)).unwrap();
+    }
+
+    fn lock<T, F: FnOnce() -> T>(&self, cb: F) -> T {
+        let _guard = self.locker.lock().unwrap();
+        cb()
     }
 }
 
@@ -45,6 +56,7 @@ lazy_static! {
 struct FutureState<R> {
     waker: Option<Waker>,
     data: Option<R>,
+    dialog: Option<GtkDialog>,
 }
 
 unsafe impl<R> Send for FutureState<R> {}
@@ -60,34 +72,55 @@ impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
+            dialog: None,
         }));
 
         {
             let state = state.clone();
 
-            let cb = move || {
-                let mut state = state.lock().unwrap();
+            std::thread::spawn(move || {
+                let done = Rc::new(RefCell::new(false));
 
-                let dialog = if super::gtk_init_check() {
-                    Some(init())
-                } else {
-                    None
+                let callback = {
+                    let state = state.clone();
+                    let done = done.clone();
+
+                    move |res| {
+                        let mut state = state.lock().unwrap();
+
+                        done.replace(true);
+
+                        state.data = Some(OutputFrom::get_failed());
+                        if let Some(waker) = state.waker.take() {
+                            waker.wake();
+                        }
+                    }
                 };
 
-                if let Some(dialog) = dialog {
-                    let res_id = dialog.run();
+                GTK_THREAD.lock(move || {
+                    let mut state = state.lock().unwrap();
 
-                    state.data = Some(OutputFrom::from(&dialog, res_id));
-                    std::mem::drop(dialog);
-                } else {
-                    state.data = Some(OutputFrom::get_failed());
-                }
+                    if super::gtk_init_check() {
+                        state.dialog = Some(init());
+                    }
 
-                if let Some(waker) = state.waker.take() {
-                    waker.wake();
+                    if let Some(dialog) = &state.dialog {
+                        unsafe {
+                            gtk_sys::gtk_widget_show_all(dialog.ptr as *mut _);
+
+                            connect_response(dialog.ptr, callback);
+                        }
+                    } else {
+                        state.data = Some(OutputFrom::get_failed());
+                    }
+                });
+
+                while !*done.borrow() {
+                    GTK_THREAD.lock(|| unsafe {
+                        super::gtk_dialog::wait_for_cleanup();
+                    });
                 }
-            };
-            GTK_THREAD.push(cb);
+            });
         }
 
         Self { state }
@@ -113,6 +146,10 @@ impl<R> std::future::Future for DialogFuture<R> {
         let mut state = self.state.lock().unwrap();
 
         if state.data.is_some() {
+            GTK_THREAD.lock(|| {
+                state.dialog.take();
+            });
+
             Poll::Ready(state.data.take().unwrap())
         } else {
             state.waker = Some(cx.waker().clone());
