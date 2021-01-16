@@ -7,4 +7,9 @@ mod file_handle;
 pub use file_handle::FileHandle;
 
 mod dialog;
-pub use dialog::{AsyncFileDialog, FileDialog, Filter};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use dialog::FileDialog;
+
+#[cfg(target_arch = "wasm32")]
+pub use dialog::AsyncFileDialog;

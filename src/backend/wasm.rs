@@ -1,13 +1,11 @@
-// use crate::FileDialog;
-use std::path::PathBuf;
-
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Document, Element};
+use web_sys::Element;
 
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
-use crate::{FileDialog, FileHandle};
+use crate::dialog::FileDialog;
+use crate::FileHandle;
 
 pub struct WasmDialog {
     overlay: Element,

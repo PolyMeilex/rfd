@@ -7,12 +7,11 @@ fn main() {
         let file = task.await;
 
         if let Some(file) = file {
-            // If you are on native platform you can just get that path
+            // If you are on native platform you can just get the path
             #[cfg(not(target_arch = "wasm32"))]
             println!("{:?}", file.path());
 
             // If you care about wasm support you just read() the file
-            #[cfg(target_arch = "wasm32")]
             file.read().await;
         }
     });

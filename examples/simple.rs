@@ -1,8 +1,6 @@
-use rfd::FileDialog;
-
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
-    let res = FileDialog::new()
+    let res = rfd::FileDialog::new()
         .add_filter("text", &["txt", "rs"])
         .add_filter("rust", &["rs", "toml"])
         .set_directory(&"/")

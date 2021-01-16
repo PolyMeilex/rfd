@@ -3,7 +3,7 @@ use crate::FileHandle;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub struct Filter {
+pub(crate) struct Filter {
     pub name: String,
     pub extensions: Vec<String>,
 }
