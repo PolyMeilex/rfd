@@ -50,6 +50,10 @@ impl WasmDialog {
                 accept.append(&mut filter.extensions.to_vec());
             }
 
+            accept.iter_mut().for_each(|ext| ext.insert_str(0, "."));
+
+            alert(&accept.join(","));
+
             input.set_accept(&accept.join(","));
 
             card.append_child(&input).unwrap();

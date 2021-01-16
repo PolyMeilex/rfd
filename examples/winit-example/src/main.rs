@@ -50,7 +50,7 @@ fn main() {
                     },
                 ..
             } => {
-                let mut dialog = rfd::AsyncFileDialog::new();
+                let mut dialog = rfd::AsyncFileDialog::new().add_filter("midi", &["mid", "midi"]);
 
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {
