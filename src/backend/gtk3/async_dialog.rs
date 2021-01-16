@@ -1,41 +1,13 @@
 use core::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    mpsc::{channel, Receiver, Sender},
-    Arc, Mutex,
-};
+use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
 use super::{GtkDialog, OutputFrom};
 
-use lazy_static::lazy_static;
-
-pub struct GtkThread {
-    locker: Mutex<()>,
-}
-
-unsafe impl Send for GtkThread {}
-unsafe impl Sync for GtkThread {}
-
-impl GtkThread {
-    fn new() -> Self {
-        Self {
-            locker: Mutex::new(()),
-        }
-    }
-
-    fn lock<T, F: FnOnce() -> T>(&self, cb: F) -> T {
-        let _guard = self.locker.lock().unwrap();
-        cb()
-    }
-}
-
-lazy_static! {
-    pub static ref GTK_THREAD: GtkThread = GtkThread::new();
-}
+use super::gtk_guard::{GTK_EVENT_HANDLER, GTK_MUTEX};
 
 struct FutureState<R> {
     waker: Option<Waker>,
@@ -64,45 +36,51 @@ impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
 
             std::thread::spawn(move || {
                 let done = Rc::new(RefCell::new(false));
+                let request = Rc::new(RefCell::new(None));
 
                 let callback = {
                     let state = state.clone();
                     let done = done.clone();
+                    let request = request.clone();
 
+                    // Callbacks are called by GTK_EVENT_HANDLER so the GTK_MUTEX is allready locked, no need to worry about that here
                     move |res| {
                         let mut state = state.lock().unwrap();
 
                         done.replace(true);
 
                         state.data = Some(OutputFrom::get_failed());
+
+                        state.dialog.take();
+
+                        // Drop the request
+                        request.borrow_mut().take();
+
                         if let Some(waker) = state.waker.take() {
                             waker.wake();
                         }
                     }
                 };
 
-                GTK_THREAD.lock(move || {
+                {
                     let mut state = state.lock().unwrap();
-
-                    if super::gtk_init_check() {
-                        state.dialog = Some(init());
-                    }
-
-                    if let Some(dialog) = &state.dialog {
-                        unsafe {
-                            gtk_sys::gtk_widget_show_all(dialog.ptr as *mut _);
-
-                            connect_response(dialog.ptr, callback);
+                    GTK_MUTEX.run_locked(|| {
+                        if super::gtk_init_check() {
+                            state.dialog = Some(init());
                         }
-                    } else {
-                        state.data = Some(OutputFrom::get_failed());
-                    }
-                });
 
-                while !*done.borrow() {
-                    GTK_THREAD.lock(|| unsafe {
-                        super::gtk_dialog::wait_for_cleanup();
+                        if let Some(dialog) = &state.dialog {
+                            unsafe {
+                                gtk_sys::gtk_widget_show_all(dialog.ptr as *mut _);
+
+                                connect_response(dialog.ptr, callback);
+                            }
+                        } else {
+                            state.data = Some(OutputFrom::get_failed());
+                        }
                     });
+
+                    request.replace(Some(GTK_EVENT_HANDLER.request_iteration_start()));
                 }
             });
         }
@@ -130,10 +108,6 @@ impl<R> std::future::Future for DialogFuture<R> {
         let mut state = self.state.lock().unwrap();
 
         if state.data.is_some() {
-            GTK_THREAD.lock(|| {
-                state.dialog.take();
-            });
-
             Poll::Ready(state.data.take().unwrap())
         } else {
             state.waker = Some(cx.waker().clone());
@@ -145,8 +119,7 @@ impl<R> std::future::Future for DialogFuture<R> {
 use gobject_sys::GCallback;
 use gtk_sys::{GtkFileChooser, GtkResponseType};
 use std::ffi::c_void;
-use std::ptr;
-use std::{ffi::CStr, os::raw::c_char};
+use std::os::raw::c_char;
 
 unsafe fn connect_raw<F>(
     receiver: *mut gobject_sys::GObject,
