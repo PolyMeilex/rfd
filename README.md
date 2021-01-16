@@ -26,8 +26,8 @@ let files = FileDialog::new()
 
 | Feature      | Linux | Windows | MacOS [1] | Wasm32 |
 | ------------ | ----- | ------- | --------- | ------ |
-| SingleFile   | ✔     | ✔       | ✔         | 🚧     |
-| MultipleFile | ✔     | ✔       | ✔         | 🚧     |
+| SingleFile   | ✔     | ✔       | ✔         | ✔      |
+| MultipleFile | ✔     | ✔       | ✔         | ✔      |
 | PickFolder   | ✔     | ✔       | ✔         | ✖      |
 | SaveFile     | ✔     | ✔       | ✔         | ✖      |
 |              |       |         |           |        |
