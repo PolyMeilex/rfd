@@ -42,7 +42,7 @@ let data = file.read().await;
 | PickFolder   | ✔     | ✔       | ✔         | ✖      |
 | SaveFile     | ✔     | ✔       | ✔         | ✖      |
 |              |       |         |           |        |
-| Filters      | ✔     | ✔       | ✔         | 🚧     |
+| Filters      | ✔     | ✔       | ✔         | ✔      |
 | StartingPath | ✔     | ✔       | ✔         | ✖      |
 | Async        | ✔     | ✔       | ✔         | ✔      |
 
