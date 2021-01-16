@@ -1,11 +1,7 @@
 use crate::FileDialog;
 use crate::FileHandle;
 
-use std::{
-    ffi::{CStr, CString},
-    path::{Path, PathBuf},
-    ptr,
-};
+use std::{path::PathBuf, ptr};
 
 mod async_dialog;
 use async_dialog::{AsyncDialog, DialogFuture};
@@ -16,7 +12,7 @@ use gtk_dialog::{GtkDialog, OutputFrom};
 mod gtk_guard;
 use gtk_guard::GTK_MUTEX;
 
-pub fn pick_file<'a>(opt: FileDialog) -> Option<PathBuf> {
+pub fn pick_file(opt: FileDialog) -> Option<PathBuf> {
     GTK_MUTEX.run_locked(|| {
         if !gtk_init_check() {
             return None;
@@ -29,7 +25,7 @@ pub fn pick_file<'a>(opt: FileDialog) -> Option<PathBuf> {
     })
 }
 
-pub fn save_file<'a>(opt: FileDialog) -> Option<PathBuf> {
+pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
     GTK_MUTEX.run_locked(|| {
         if !gtk_init_check() {
             return None;
@@ -42,7 +38,7 @@ pub fn save_file<'a>(opt: FileDialog) -> Option<PathBuf> {
     })
 }
 
-pub fn pick_folder<'a>(opt: FileDialog) -> Option<PathBuf> {
+pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
     GTK_MUTEX.run_locked(|| {
         if !gtk_init_check() {
             return None;
@@ -55,7 +51,7 @@ pub fn pick_folder<'a>(opt: FileDialog) -> Option<PathBuf> {
     })
 }
 
-pub fn pick_files<'a>(opt: FileDialog) -> Option<Vec<PathBuf>> {
+pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
     GTK_MUTEX.run_locked(|| {
         if !gtk_init_check() {
             return None;

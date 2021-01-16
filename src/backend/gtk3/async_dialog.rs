@@ -35,19 +35,15 @@ impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
             let state = state.clone();
 
             std::thread::spawn(move || {
-                let done = Rc::new(RefCell::new(false));
                 let request = Rc::new(RefCell::new(None));
 
                 let callback = {
                     let state = state.clone();
-                    let done = done.clone();
                     let request = request.clone();
 
                     // Callbacks are called by GTK_EVENT_HANDLER so the GTK_MUTEX is allready locked, no need to worry about that here
                     move |res_id| {
                         let mut state = state.lock().unwrap();
-
-                        done.replace(true);
 
                         if let Some(dialog) = state.dialog.take() {
                             state.data = Some(OutputFrom::from(&dialog, res_id));
@@ -152,7 +148,7 @@ unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkFil
     use std::mem::transmute;
 
     unsafe extern "C" fn response_trampoline<F: Fn(GtkResponseType) + 'static>(
-        this: *mut gtk_sys::GtkDialog,
+        _this: *mut gtk_sys::GtkDialog,
         res: GtkResponseType,
         f: glib_sys::gpointer,
     ) {

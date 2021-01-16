@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 /// Ensures that gtk is allways called from one thread at the time
@@ -22,10 +22,6 @@ impl GtkGlobalMutex {
     pub(super) fn run_locked<T, F: FnOnce() -> T>(&self, cb: F) -> T {
         let _guard = self.locker.lock().unwrap();
         cb()
-    }
-
-    fn lock<'a>(&'a self) -> MutexGuard<'a, ()> {
-        self.locker.lock().unwrap()
     }
 }
 

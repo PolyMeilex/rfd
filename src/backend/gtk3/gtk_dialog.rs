@@ -3,7 +3,7 @@ use gtk_sys::GtkFileChooser;
 
 use std::{
     ffi::{CStr, CString},
-    path::{Path, PathBuf},
+    path::PathBuf,
     ptr,
 };
 
@@ -136,7 +136,7 @@ impl GtkDialog {
 }
 
 impl GtkDialog {
-    pub fn build_pick_file<'a>(opt: &FileDialog) -> Self {
+    pub fn build_pick_file(opt: &FileDialog) -> Self {
         let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
         dialog.add_filters(&opt.filters);
@@ -144,7 +144,7 @@ impl GtkDialog {
         dialog
     }
 
-    pub fn build_save_file<'a>(opt: &FileDialog) -> Self {
+    pub fn build_save_file(opt: &FileDialog) -> Self {
         let mut dialog = GtkDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
 
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr, 1) };
@@ -154,7 +154,7 @@ impl GtkDialog {
         dialog
     }
 
-    pub fn build_pick_folder<'a>(opt: &FileDialog) -> Self {
+    pub fn build_pick_folder(opt: &FileDialog) -> Self {
         let dialog = GtkDialog::new(
             "Select Folder",
             GtkFileChooserAction::SelectFolder,
@@ -165,7 +165,7 @@ impl GtkDialog {
         dialog
     }
 
-    pub fn build_pick_files<'a>(opt: &FileDialog) -> Self {
+    pub fn build_pick_files(opt: &FileDialog) -> Self {
         let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr, 1) };
@@ -210,7 +210,7 @@ impl OutputFrom<GtkDialog> for Option<Vec<PathBuf>> {
 impl OutputFrom<GtkDialog> for Option<FileHandle> {
     fn from(dialog: &GtkDialog, res_id: i32) -> Self {
         if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
-            dialog.get_result().map(|f| FileHandle::wrap(f))
+            dialog.get_result().map(FileHandle::wrap)
         } else {
             None
         }
@@ -226,7 +226,7 @@ impl OutputFrom<GtkDialog> for Option<Vec<FileHandle>> {
             let files = dialog
                 .get_results()
                 .into_iter()
-                .map(|f| FileHandle::wrap(f))
+                .map(FileHandle::wrap)
                 .collect();
             Some(files)
         } else {

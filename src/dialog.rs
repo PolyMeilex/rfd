@@ -22,7 +22,7 @@ impl FileDialog {
     pub fn add_filter(mut self, name: &str, extensions: &[&str]) -> Self {
         self.filters.push(Filter {
             name: name.into(),
-            extensions: extensions.into_iter().map(|e| e.to_string()).collect(),
+            extensions: extensions.iter().map(|e| e.to_string()).collect(),
         });
         self
     }

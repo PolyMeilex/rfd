@@ -5,21 +5,17 @@ use std::{
     iter::once,
     ops::Deref,
     os::windows::{ffi::OsStrExt, prelude::OsStringExt},
-    path::{Path, PathBuf},
+    path::PathBuf,
     ptr,
 };
 
 use winapi::{
     shared::{
-        guiddef::GUID,
-        minwindef::LPVOID,
-        ntdef::LPWSTR,
-        winerror::{HRESULT, SUCCEEDED},
+        guiddef::GUID, minwindef::LPVOID, ntdef::LPWSTR, winerror::HRESULT,
         wtypesbase::CLSCTX_INPROC_SERVER,
     },
     um::{
-        combaseapi::{CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize},
-        objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE},
+        combaseapi::{CoCreateInstance, CoTaskMemFree},
         shobjidl::{
             IFileDialog, IFileOpenDialog, IFileSaveDialog, FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS,
         },
@@ -32,7 +28,7 @@ use winapi::{
     Interface,
 };
 
-use super::util::{init_com, ToResult};
+use super::util::ToResult;
 
 fn to_os_string(s: &LPWSTR) -> OsString {
     let slice = unsafe {
@@ -191,7 +187,7 @@ impl IDialog {
 }
 
 impl IDialog {
-    pub fn build_pick_file<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_pick_file(opt: &FileDialog) -> Result<Self, HRESULT> {
         let dialog = IDialog::new_open_dialog()?;
 
         dialog.add_filters(&opt.filters)?;
@@ -200,7 +196,7 @@ impl IDialog {
         Ok(dialog)
     }
 
-    pub fn build_save_file<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_save_file(opt: &FileDialog) -> Result<Self, HRESULT> {
         let dialog = IDialog::new_save_dialog()?;
 
         dialog.add_filters(&opt.filters)?;
@@ -209,7 +205,7 @@ impl IDialog {
         Ok(dialog)
     }
 
-    pub fn build_pick_folder<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_pick_folder(opt: &FileDialog) -> Result<Self, HRESULT> {
         let dialog = IDialog::new_open_dialog()?;
 
         dialog.set_path(&opt.starting_directory)?;
@@ -221,7 +217,7 @@ impl IDialog {
         Ok(dialog)
     }
 
-    pub fn build_pick_files<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_pick_files(opt: &FileDialog) -> Result<Self, HRESULT> {
         let dialog = IDialog::new_open_dialog()?;
 
         dialog.add_filters(&opt.filters)?;
@@ -243,9 +239,7 @@ pub trait OutputFrom<F> {
 
 impl OutputFrom<IDialog> for Option<FileHandle> {
     fn from(dialog: &IDialog) -> Self {
-        let s = dialog.get_result().ok().map(|f| FileHandle::wrap(f));
-
-        s
+        dialog.get_result().ok().map(FileHandle::wrap)
     }
     fn get_failed() -> Self {
         None
@@ -254,11 +248,10 @@ impl OutputFrom<IDialog> for Option<FileHandle> {
 
 impl OutputFrom<IDialog> for Option<Vec<FileHandle>> {
     fn from(dialog: &IDialog) -> Self {
-        let files = dialog
+        dialog
             .get_results()
             .ok()
-            .map(|r| r.into_iter().map(|f| FileHandle::wrap(f)).collect());
-        files
+            .map(|r| r.into_iter().map(FileHandle::wrap).collect())
     }
     fn get_failed() -> Self {
         None

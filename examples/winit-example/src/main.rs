@@ -12,7 +12,7 @@ extern "C" {
 
 fn main() {
     let event_loop = EventLoop::<String>::with_user_event();
-    let mut builder = winit::window::WindowBuilder::new();
+    let builder = winit::window::WindowBuilder::new();
 
     let window = builder.build(&event_loop).unwrap();
 
@@ -50,7 +50,7 @@ fn main() {
                     },
                 ..
             } => {
-                let mut dialog = rfd::AsyncFileDialog::new().add_filter("midi", &["mid", "midi"]);
+                let dialog = rfd::AsyncFileDialog::new().add_filter("midi", &["mid", "midi"]);
 
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {

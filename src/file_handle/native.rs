@@ -69,7 +69,7 @@ impl FileHandle {
             .file_name()
             .and_then(|f| f.to_str())
             .map(|f| f.to_string())
-            .unwrap_or("".to_string())
+            .unwrap_or_default()
     }
 
     pub fn path(&self) -> &Path {

@@ -125,7 +125,7 @@ impl WasmDialog {
     }
 
     fn get_result(&self) -> Option<FileHandle> {
-        let mut files = self.get_results();
+        let files = self.get_results();
         files.and_then(|mut f| f.pop())
     }
 
