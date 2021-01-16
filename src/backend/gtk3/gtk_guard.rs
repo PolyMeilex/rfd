@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::JoinHandle;
 
 /// Ensures that gtk is allways called from one thread at the time
-pub(super) struct GtkGlobalMutex {
+pub struct GtkGlobalMutex {
     locker: Mutex<()>,
 }
 
@@ -30,14 +30,14 @@ impl GtkGlobalMutex {
 }
 
 lazy_static! {
-    pub(super) static ref GTK_MUTEX: GtkGlobalMutex = GtkGlobalMutex::new();
+    pub static ref GTK_MUTEX: GtkGlobalMutex = GtkGlobalMutex::new();
 }
 
 /// # Event Hadnler
 /// Counts amout of iteration requests
 /// When amount of requests goes above 0 it spawns GtkThread and starts iteration
 /// When amount of requests reqches 0 it stops GtkThread, and goes idle
-pub(super) struct GtkEventHandler {
+pub struct GtkEventHandler {
     thread: Mutex<Option<GtkThread>>,
     request_count: Arc<AtomicUsize>,
 }
@@ -46,7 +46,7 @@ unsafe impl Send for GtkEventHandler {}
 unsafe impl Sync for GtkEventHandler {}
 
 lazy_static! {
-    pub(super) static ref GTK_EVENT_HANDLER: GtkEventHandler = GtkEventHandler::new();
+    pub static ref GTK_EVENT_HANDLER: GtkEventHandler = GtkEventHandler::new();
 }
 
 impl GtkEventHandler {
@@ -82,7 +82,7 @@ impl GtkEventHandler {
     }
 }
 
-pub(super) struct IterationRequest {
+pub struct IterationRequest {
     request_count: Arc<AtomicUsize>,
 }
 
