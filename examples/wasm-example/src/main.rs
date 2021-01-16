@@ -54,11 +54,13 @@ fn main() {
 
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {
-                    let files = dialog.pick_files().await.unwrap();
-                    for file in files {
-                        let name = file.file_name();
-                        event_loop_proxy.send_event(name).ok();
-                    }
+                    let files = dialog.pick_files().await;
+
+                    // let names: Vec<String> = files.into_iter().map(|f| f.file_name()).collect();
+
+                    let names = files;
+
+                    event_loop_proxy.send_event(format!("{:#?}", names)).ok();
                 });
             }
             _ => {}

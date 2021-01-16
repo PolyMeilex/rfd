@@ -85,3 +85,9 @@ impl FileHandle {
         &self.0
     }
 }
+
+impl std::fmt::Debug for FileHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.file_name())
+    }
+}
