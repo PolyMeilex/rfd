@@ -1,4 +1,5 @@
 use crate::FileDialog;
+use crate::FileHandle;
 use std::{
     ffi::{OsStr, OsString},
     iter::once,
@@ -44,9 +45,9 @@ fn to_os_string(s: &LPWSTR) -> OsString {
     OsStringExt::from_wide(slice)
 }
 
-pub struct Dialog(pub *mut IFileDialog);
+pub struct IDialog(pub *mut IFileDialog);
 
-impl Dialog {
+impl IDialog {
     pub fn new_file_dialog(class: &GUID, id: &GUID) -> Result<*mut IFileDialog, HRESULT> {
         let mut dialog: *mut IFileDialog = ptr::null_mut();
 
@@ -189,9 +190,9 @@ impl Dialog {
     }
 }
 
-impl Dialog {
+impl IDialog {
     pub fn build_pick_file<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = Dialog::new_open_dialog()?;
+        let dialog = IDialog::new_open_dialog()?;
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
@@ -200,7 +201,7 @@ impl Dialog {
     }
 
     pub fn build_save_file<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = Dialog::new_save_dialog()?;
+        let dialog = IDialog::new_save_dialog()?;
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
@@ -209,7 +210,7 @@ impl Dialog {
     }
 
     pub fn build_pick_folder<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = Dialog::new_open_dialog()?;
+        let dialog = IDialog::new_open_dialog()?;
 
         dialog.set_path(&opt.starting_directory)?;
 
@@ -221,7 +222,7 @@ impl Dialog {
     }
 
     pub fn build_pick_files<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = Dialog::new_open_dialog()?;
+        let dialog = IDialog::new_open_dialog()?;
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
@@ -234,14 +235,44 @@ impl Dialog {
     }
 }
 
-impl Deref for Dialog {
+pub trait OutputFrom<F> {
+    fn from(from: &F) -> Self;
+    /// Describes what should be returned when gtk_init failed
+    fn get_failed() -> Self;
+}
+
+impl OutputFrom<IDialog> for Option<FileHandle> {
+    fn from(dialog: &IDialog) -> Self {
+        let s = dialog.get_result().ok().map(|f| FileHandle::wrap(f));
+
+        s
+    }
+    fn get_failed() -> Self {
+        None
+    }
+}
+
+impl OutputFrom<IDialog> for Option<Vec<FileHandle>> {
+    fn from(dialog: &IDialog) -> Self {
+        let files = dialog
+            .get_results()
+            .ok()
+            .map(|r| r.into_iter().map(|f| FileHandle::wrap(f)).collect());
+        files
+    }
+    fn get_failed() -> Self {
+        None
+    }
+}
+
+impl Deref for IDialog {
     type Target = IFileDialog;
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.0 }
     }
 }
 
-impl Drop for Dialog {
+impl Drop for IDialog {
     fn drop(&mut self) {
         unsafe { (*(self.0 as *mut IFileDialog)).Release() };
     }

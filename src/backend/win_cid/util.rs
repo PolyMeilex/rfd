@@ -23,7 +23,7 @@ impl ToResult for HRESULT {
 }
 
 /// Makes sure that COM lib is initialized long enought
-pub fn init_com<T, F: Fn() -> T>(f: F) -> Result<T, HRESULT> {
+pub fn init_com<T, F: FnOnce() -> T>(f: F) -> Result<T, HRESULT> {
     unsafe {
         CoInitializeEx(
             ptr::null_mut(),
