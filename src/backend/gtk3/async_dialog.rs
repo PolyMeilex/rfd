@@ -13,10 +13,7 @@ use super::{GtkDialog, OutputFrom};
 
 use lazy_static::lazy_static;
 
-type Runner = dyn FnOnce() + Send + Sync + 'static;
-
 pub struct GtkThread {
-    tx: Sender<Box<Runner>>,
     locker: Mutex<()>,
 }
 
@@ -25,22 +22,9 @@ unsafe impl Sync for GtkThread {}
 
 impl GtkThread {
     fn new() -> Self {
-        let (tx, rx) = channel::<Box<Runner>>();
-
-        std::thread::spawn(move || {
-            for cb in rx {
-                cb();
-            }
-        });
-
         Self {
-            tx,
             locker: Mutex::new(()),
         }
-    }
-
-    fn push<F: FnOnce() + Send + Sync + 'static>(&self, cb: F) {
-        self.tx.send(Box::new(cb)).unwrap();
     }
 
     fn lock<T, F: FnOnce() -> T>(&self, cb: F) -> T {
