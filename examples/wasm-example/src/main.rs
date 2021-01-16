@@ -30,6 +30,7 @@ fn main() {
             .expect("couldn't append canvas to document body");
     }
     let event_loop_proxy = event_loop.create_proxy();
+    let executor = Executor::new();
 
     event_loop.run(move |event, _, control_flow| match event {
         event::Event::UserEvent(name) => {
@@ -39,50 +40,54 @@ fn main() {
             println!("{}", name);
         }
         event::Event::WindowEvent { event, .. } => match event {
+            WindowEvent::CloseRequested { .. } => *control_flow = ControlFlow::Exit,
             WindowEvent::KeyboardInput {
                 input:
                     event::KeyboardInput {
                         state: event::ElementState::Pressed,
+                        virtual_keycode: Some(winit::event::VirtualKeyCode::D),
                         ..
                     },
                 ..
             } => {
-                #[cfg(target_arch = "wasm32")]
-                let mut dialog = rfd::wasm::FileDialog::new();
-                #[cfg(not(target_arch = "wasm32"))]
                 let mut dialog = rfd::AsyncFileDialog::new();
 
-                //
-                #[cfg(target_arch = "wasm32")]
-                {
-                    let event_loop_proxy = event_loop_proxy.clone();
-                    wasm_bindgen_futures::spawn_local(async move {
-                        let files = dialog.pick_files().await;
-
-                        for file in files {
-                            let name = file.file_name();
-
-                            // let file = file.read().await;
-                            event_loop_proxy.send_event(name).ok();
-                        }
-                    });
-                }
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    let files = dialog.pick_files().unwrap();
-
-                    // let files = files.into_iter().map(|f|
-
+                let event_loop_proxy = event_loop_proxy.clone();
+                executor.execut(async move {
+                    let files = dialog.pick_files().await.unwrap();
                     for file in files {
-                        let file = rfd::FileHandle::wrap(file);
                         let name = file.file_name();
-
                         event_loop_proxy.send_event(name).ok();
                     }
-                }
+                });
             }
             _ => {}
         },
         _ => {}
     });
+}
+
+use std::future::Future;
+
+struct Executor {
+    #[cfg(not(target_arch = "wasm32"))]
+    pool: futures::executor::ThreadPool,
+}
+
+impl Executor {
+    fn new() -> Self {
+        Self {
+            #[cfg(not(target_arch = "wasm32"))]
+            pool: futures::executor::ThreadPool::new().unwrap(),
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn execut<F: Future<Output = ()> + Send + 'static>(&self, f: F) {
+        self.pool.spawn_ok(f);
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn execut<F: Future<Output = ()> + 'static>(&self, f: F) {
+        wasm_bindgen_futures::spawn_local(f);
+    }
 }

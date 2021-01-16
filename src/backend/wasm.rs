@@ -7,9 +7,9 @@ use web_sys::{Document, Element};
 
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
-use crate::FileHandle;
+use crate::{FileDialog, FileHandle};
 
-pub struct FileDialog {
+pub struct WasmDialog {
     overlay: Element,
     card: Element,
     input: HtmlInputElement,
@@ -18,7 +18,7 @@ pub struct FileDialog {
     style: Element,
 }
 
-impl FileDialog {
+impl WasmDialog {
     pub fn new() -> Self {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
@@ -70,7 +70,7 @@ impl FileDialog {
         }
     }
 
-    pub async fn pick_files(&mut self) -> Vec<FileHandle> {
+    pub async fn pick_files(self) -> Option<Vec<FileHandle>> {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
         let body = document.body().expect("document should have a body");
@@ -100,11 +100,21 @@ impl FileDialog {
         }
 
         self.overlay.remove();
-        file_handles
+
+        Some(file_handles)
+    }
+    pub async fn pick_file(self) -> Option<FileHandle> {
+        let files = self.pick_files().await;
+
+        if let Some(mut files) = files {
+            files.pop()
+        } else {
+            None
+        }
     }
 }
 
-impl Drop for FileDialog {
+impl Drop for WasmDialog {
     fn drop(&mut self) {
         self.button.remove();
         self.input.remove();
@@ -117,18 +127,22 @@ impl Drop for FileDialog {
 
 use std::future::Future;
 
-pub fn pick_file_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
-    unimplemented!("")
+pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+    let dialog = WasmDialog::new();
+    dialog.pick_file()
 }
 
-pub fn save_file_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
-    unimplemented!("")
+pub fn save_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+    let dialog = WasmDialog::new();
+    dialog.pick_file()
 }
 
-pub fn pick_folder_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<FileHandle>> {
-    unimplemented!("")
+pub fn pick_folder_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+    let dialog = WasmDialog::new();
+    dialog.pick_file()
 }
 
-pub fn pick_files_async<'a>(opt: &FileDialog<'a>) -> impl Future<Output = Option<Vec<FileHandle>>> {
-    unimplemented!("")
+pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
+    let dialog = WasmDialog::new();
+    dialog.pick_files()
 }
