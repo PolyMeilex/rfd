@@ -68,14 +68,14 @@ impl Panel {
     }
 
     pub fn add_filters(&self, params: &FileDialog) {
-        let mut exts: Vec<&str> = Vec::new();
+        let mut exts: Vec<String> = Vec::new();
 
         for filter in params.filters.iter() {
             exts.append(&mut filter.extensions.to_vec());
         }
 
         unsafe {
-            let f_raw: Vec<_> = exts.iter().map(|ext| make_nsstring(ext)).collect();
+            let f_raw: Vec<_> = exts.iter().map(|ext| make_nsstring(&ext)).collect();
 
             let array = NSArray::arrayWithObjects(nil, f_raw.as_slice());
             let _: () = msg_send![*self.panel, setAllowedFileTypes: array];
