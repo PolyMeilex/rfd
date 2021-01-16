@@ -1,3 +1,4 @@
+use crate::FileDialog;
 use std::{
     ffi::{OsStr, OsString},
     iter::once,
@@ -180,6 +181,56 @@ impl Dialog {
 
             Ok(PathBuf::from(filename))
         }
+    }
+
+    pub fn show(&self) -> Result<(), HRESULT> {
+        unsafe { self.Show(ptr::null_mut()).check()? };
+        Ok(())
+    }
+}
+
+impl Dialog {
+    pub fn build_pick_file<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+        let dialog = Dialog::new_open_dialog()?;
+
+        dialog.add_filters(&opt.filters)?;
+        dialog.set_path(&opt.starting_directory)?;
+
+        Ok(dialog)
+    }
+
+    pub fn build_save_file<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+        let dialog = Dialog::new_save_dialog()?;
+
+        dialog.add_filters(&opt.filters)?;
+        dialog.set_path(&opt.starting_directory)?;
+
+        Ok(dialog)
+    }
+
+    pub fn build_pick_folder<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+        let dialog = Dialog::new_open_dialog()?;
+
+        dialog.set_path(&opt.starting_directory)?;
+
+        unsafe {
+            dialog.SetOptions(FOS_PICKFOLDERS).check()?;
+        }
+
+        Ok(dialog)
+    }
+
+    pub fn build_pick_files<'a>(opt: &FileDialog) -> Result<Self, HRESULT> {
+        let dialog = Dialog::new_open_dialog()?;
+
+        dialog.add_filters(&opt.filters)?;
+        dialog.set_path(&opt.starting_directory)?;
+
+        unsafe {
+            dialog.SetOptions(FOS_ALLOWMULTISELECT).check()?;
+        }
+
+        Ok(dialog)
     }
 }
 
