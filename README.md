@@ -9,11 +9,22 @@ WIP native file dialogs for Windows, Linux (GTK), MacOS.
 # Example
 
 ```rust
+// Sync Dialog
 let files = FileDialog::new()
     .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
     .set_directory(&"/")
     .pick_files();
+
+// Async Dialog
+let file = AsyncFileDialog::new()
+    .add_filter("text", &["txt", "rs"])
+    .add_filter("rust", &["rs", "toml"])
+    .set_directory(&"/")
+    .pick_file()
+    .await;
+
+let data = file.read().await;
 ```
 
 # State
