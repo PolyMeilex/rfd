@@ -48,7 +48,7 @@ fn to_os_string(s: &LPWSTR) -> OsString {
 pub struct IDialog(pub *mut IFileDialog);
 
 impl IDialog {
-    pub fn new_file_dialog(class: &GUID, id: &GUID) -> Result<*mut IFileDialog, HRESULT> {
+    fn new_file_dialog(class: &GUID, id: &GUID) -> Result<*mut IFileDialog, HRESULT> {
         let mut dialog: *mut IFileDialog = ptr::null_mut();
 
         unsafe {
@@ -65,17 +65,17 @@ impl IDialog {
         Ok(dialog)
     }
 
-    pub fn new_open_dialog() -> Result<Self, HRESULT> {
+    fn new_open_dialog() -> Result<Self, HRESULT> {
         let ptr = Self::new_file_dialog(&CLSID_FileOpenDialog, &IFileOpenDialog::uuidof())?;
         Ok(Self(ptr))
     }
 
-    pub fn new_save_dialog() -> Result<Self, HRESULT> {
+    fn new_save_dialog() -> Result<Self, HRESULT> {
         let ptr = Self::new_file_dialog(&CLSID_FileSaveDialog, &IFileSaveDialog::uuidof())?;
         Ok(Self(ptr))
     }
 
-    pub fn add_filters(&self, filters: &[crate::Filter]) -> Result<(), HRESULT> {
+    fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<(), HRESULT> {
         let f_list = {
             let mut f_list = Vec::new();
 
@@ -115,7 +115,7 @@ impl IDialog {
         Ok(())
     }
 
-    pub fn set_path(&self, path: &Option<PathBuf>) -> Result<(), HRESULT> {
+    fn set_path(&self, path: &Option<PathBuf>) -> Result<(), HRESULT> {
         if let Some(path) = path {
             if let Some(path) = path.to_str() {
                 let wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();

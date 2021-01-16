@@ -11,5 +11,4 @@ mod dialog;
 #[cfg(not(target_arch = "wasm32"))]
 pub use dialog::FileDialog;
 
-#[cfg(target_arch = "wasm32")]
 pub use dialog::AsyncFileDialog;
