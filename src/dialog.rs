@@ -84,10 +84,12 @@ impl AsyncFileDialog {
         crate::backend::pick_files_async(self.file_dialog)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn pick_folder(self) -> impl Future<Output = Option<FileHandle>> {
         crate::backend::pick_folder_async(self.file_dialog)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn save_file(self) -> impl Future<Output = Option<FileHandle>> {
         crate::backend::save_file_async(self.file_dialog)
     }

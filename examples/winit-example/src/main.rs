@@ -57,7 +57,6 @@ fn main() {
                     let files = dialog.pick_files().await;
 
                     // let names: Vec<String> = files.into_iter().map(|f| f.file_name()).collect();
-
                     let names = files;
 
                     event_loop_proxy.send_event(format!("{:#?}", names)).ok();

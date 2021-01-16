@@ -40,18 +40,24 @@ pub mod wasm;
 // #[cfg(target_arch = "wasm32")]
 // pub use wasm::{pick_file, pick_files, pick_folder, save_file};
 #[cfg(target_arch = "wasm32")]
-pub use wasm::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
+pub use wasm::{pick_file_async, pick_files_async /*pick_folder_async*/ /*save_file_async*/};
 
 #[cfg(test)]
 mod tests {
     #[test]
     /// Check if all fns are defined
+    #[allow(unused_imports)]
     fn fn_def_check() {
-        #[allow(unused_imports)]
+        // Sync
+
         #[cfg(not(target_arch = "wasm32"))]
         use super::{pick_file, pick_files, pick_folder, save_file};
 
-        #[allow(unused_imports)]
-        use super::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
+        // Async
+
+        use super::{pick_file_async, pick_files_async};
+
+        #[cfg(not(target_arch = "wasm32"))]
+        use super::{pick_folder_async, save_file_async};
     }
 }

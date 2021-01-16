@@ -1,42 +1,31 @@
-use winit::{
-    event::{self, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-};
-
 fn main() {
-    let event_loop = EventLoop::new();
-    let mut builder = winit::window::WindowBuilder::new();
+    // Spawn dialog on main thread
+    let task = rfd::AsyncFileDialog::new().pick_file();
 
-    let window = builder.build(&event_loop).unwrap();
+    // Await somewhere else
+    execute(async {
+        let file = task.await;
 
-    event_loop.run(move |event, _, control_flow| match event {
-        event::Event::WindowEvent { event, .. } => match event {
-            WindowEvent::KeyboardInput {
-                input:
-                    event::KeyboardInput {
-                        state: event::ElementState::Pressed,
-                        ..
-                    },
-                ..
-            } => {
-                // for _ in 0..10 {
-                // Spawn dialog on main thread
-                let task = rfd::AsyncFileDialog::new().pick_file();
+        if let Some(file) = file {
+            // If you are on native platform you can just get that path
+            #[cfg(not(target_arch = "wasm32"))]
+            println!("{:?}", file.path());
 
-                // Await somewhere else
-                std::thread::spawn(move || {
-                    futures::executor::block_on(async {
-                        let file = task.await;
-                        // println!("Hell yeah it's async done!!");
-                        if let Some(file) = file {
-                            println!("{:?}", file.path());
-                        }
-                    });
-                });
-                // }
-            }
-            _ => {}
-        },
-        _ => {}
+            // If you care about wasm support you just read() the file
+            #[cfg(target_arch = "wasm32")]
+            file.read().await;
+        }
     });
+}
+
+use std::future::Future;
+
+#[cfg(not(target_arch = "wasm32"))]
+fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
+    // this is stupid... use any executor of your choice instead
+    std::thread::spawn(move || futures::executor::block_on(f));
+}
+#[cfg(target_arch = "wasm32")]
+fn execute<F: Future<Output = ()> + 'static>(f: F) {
+    wasm_bindgen_futures::spawn_local(f);
 }

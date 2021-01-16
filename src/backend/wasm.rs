@@ -46,6 +46,14 @@ impl WasmDialog {
             input.set_id("rfd-input");
             input.set_type("file");
 
+            let mut accept: Vec<String> = Vec::new();
+
+            for filter in opt.filters.iter() {
+                accept.append(&mut filter.extensions.to_vec());
+            }
+
+            input.set_accept(&accept.join(","));
+
             card.append_child(&input).unwrap();
             input
         };
@@ -154,15 +162,15 @@ pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandl
     dialog.pick_file()
 }
 
-pub fn save_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
-    let dialog = WasmDialog::new(&opt);
-    dialog.pick_file()
-}
+// pub fn save_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+//     let dialog = WasmDialog::new(&opt);
+//     dialog.pick_file()
+// }
 
-pub fn pick_folder_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
-    let dialog = WasmDialog::new(&opt);
-    dialog.pick_file()
-}
+// pub fn pick_folder_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+//     let dialog = WasmDialog::new(&opt);
+//     dialog.pick_file()
+// }
 
 pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
     let dialog = WasmDialog::new(&opt);
