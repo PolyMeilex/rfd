@@ -67,7 +67,7 @@ impl Panel {
         let _: () = unsafe { msg_send![*self.panel, setAllowsMultipleSelection: v] };
     }
 
-    pub fn add_filters<'a>(&self, params: &FileDialog<'a>) {
+    pub fn add_filters(&self, params: &FileDialog) {
         let mut exts: Vec<&str> = Vec::new();
 
         for filter in params.filters.iter() {
@@ -131,7 +131,7 @@ impl Panel {
 }
 
 impl Panel {
-    pub fn build_pick_file<'a>(opt: &FileDialog<'a>) -> Self {
+    pub fn build_pick_file(opt: &FileDialog) -> Self {
         let panel = Panel::open_panel();
 
         if !opt.filters.is_empty() {
@@ -148,7 +148,7 @@ impl Panel {
         panel
     }
 
-    pub fn build_save_file<'a>(opt: &FileDialog<'a>) -> Self {
+    pub fn build_save_file(opt: &FileDialog) -> Self {
         let panel = Panel::save_panel();
 
         if let Some(path) = &opt.starting_directory {
@@ -158,7 +158,7 @@ impl Panel {
         panel
     }
 
-    pub fn build_pick_folder<'a>(opt: &FileDialog<'a>) -> Self {
+    pub fn build_pick_folder(opt: &FileDialog) -> Self {
         let panel = Panel::open_panel();
 
         if let Some(path) = &opt.starting_directory {
@@ -171,7 +171,7 @@ impl Panel {
         panel
     }
 
-    pub fn build_pick_files<'a>(opt: &FileDialog<'a>) -> Self {
+    pub fn build_pick_files(opt: &FileDialog) -> Self {
         let panel = Panel::open_panel();
 
         if !opt.filters.is_empty() {
