@@ -27,13 +27,13 @@ let files = FileDialog::new()
 | Feature      | Linux | Windows | MacOS [1] | Wasm32 |
 | ------------ | ----- | ------- | --------- | ------ |
 | SingleFile   | ✔     | ✔       | ✔         | 🚧     |
-| MultipleFile | ✔     | ✔       | ✔         |        |
-| PickFolder   | ✔     | ✔       | ✔         |        |
-| SaveFile     | ✔     | ✔       | ✔         |        |
+| MultipleFile | ✔     | ✔       | ✔         | 🚧     |
+| PickFolder   | ✔     | ✔       | ✔         | ✖      |
+| SaveFile     | ✔     | ✔       | ✔         | ✖      |
 |              |       |         |           |        |
-| Filters      | ✔     | ✔       | ✔         |
-| StartingPath | ✔     | ✔       | ✔         |        |
-| Async        |       |         |           |        |
+| Filters      | ✔     | ✔       | ✔         | 🚧     |
+| StartingPath | ✔     | ✔       | ✔         | ✖      |
+| Async        | 🚧    | 🚧      | 🚧        | ✔      |
 
 [1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
