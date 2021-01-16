@@ -44,14 +44,15 @@ impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
                     let request = request.clone();
 
                     // Callbacks are called by GTK_EVENT_HANDLER so the GTK_MUTEX is allready locked, no need to worry about that here
-                    move |res| {
+                    move |res_id| {
                         let mut state = state.lock().unwrap();
 
                         done.replace(true);
 
-                        state.data = Some(OutputFrom::get_failed());
-
-                        state.dialog.take();
+                        if let Some(dialog) = state.dialog.take() {
+                            state.data = Some(OutputFrom::from(&dialog, res_id));
+                            state.dialog.take();
+                        }
 
                         // Drop the request
                         request.borrow_mut().take();
@@ -62,26 +63,24 @@ impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
                     }
                 };
 
-                {
+                GTK_MUTEX.run_locked(|| {
                     let mut state = state.lock().unwrap();
-                    GTK_MUTEX.run_locked(|| {
-                        if super::gtk_init_check() {
-                            state.dialog = Some(init());
+                    if super::gtk_init_check() {
+                        state.dialog = Some(init());
+                    }
+
+                    if let Some(dialog) = &state.dialog {
+                        unsafe {
+                            gtk_sys::gtk_widget_show_all(dialog.ptr as *mut _);
+
+                            connect_response(dialog.ptr, callback);
                         }
+                    } else {
+                        state.data = Some(OutputFrom::get_failed());
+                    }
+                });
 
-                        if let Some(dialog) = &state.dialog {
-                            unsafe {
-                                gtk_sys::gtk_widget_show_all(dialog.ptr as *mut _);
-
-                                connect_response(dialog.ptr, callback);
-                            }
-                        } else {
-                            state.data = Some(OutputFrom::get_failed());
-                        }
-                    });
-
-                    request.replace(Some(GTK_EVENT_HANDLER.request_iteration_start()));
-                }
+                request.replace(Some(GTK_EVENT_HANDLER.request_iteration_start()));
             });
         }
 

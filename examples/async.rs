@@ -22,12 +22,14 @@ fn main() {
                 // for _ in 0..10 {
                 // Spawn dialog on main thread
                 let task = rfd::AsyncFileDialog::new().pick_file();
-                rfd::FileDialog::new().pick_file();
                 // Await somewhere else
                 std::thread::spawn(move || {
                     futures::executor::block_on(async {
-                        let files = task.await;
+                        let file = task.await;
                         println!("Hell yeah it's async done!!");
+                        if let Some(file) = file {
+                            println!("{:?}", file.path());
+                        }
                     });
                 });
                 // }
