@@ -11,7 +11,7 @@ mod async_dialog;
 use async_dialog::{AsyncDialog, DialogFuture};
 
 mod gtk_dialog;
-pub(crate) use gtk_dialog::{GtkDialog, OutputFrom};
+use gtk_dialog::{GtkDialog, OutputFrom};
 
 mod gtk_guard;
 use gtk_guard::GTK_MUTEX;

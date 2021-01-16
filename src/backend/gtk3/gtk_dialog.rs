@@ -15,12 +15,12 @@ pub enum GtkFileChooserAction {
     // CreateFolder = 3,
 }
 
-pub struct GtkDialog {
-    pub(crate) ptr: *mut GtkFileChooser,
+pub(super) struct GtkDialog {
+    pub ptr: *mut GtkFileChooser,
 }
 
 impl GtkDialog {
-    pub fn new(title: &str, action: GtkFileChooserAction, btn1: &str, btn2: &str) -> Self {
+    pub(super) fn new(title: &str, action: GtkFileChooserAction, btn1: &str, btn2: &str) -> Self {
         let title = CString::new(title).unwrap();
         let btn1 = CString::new(btn1).unwrap();
         let btn2 = CString::new(btn2).unwrap();
@@ -42,7 +42,7 @@ impl GtkDialog {
         Self { ptr }
     }
 
-    pub fn add_filters(&mut self, filters: &[crate::Filter]) {
+    pub(super) fn add_filters(&mut self, filters: &[crate::dialog::Filter]) {
         for f in filters.iter() {
             if let Ok(name) = CString::new(f.name.as_str()) {
                 unsafe {
@@ -66,7 +66,7 @@ impl GtkDialog {
         }
     }
 
-    pub fn set_path(&self, path: &Option<PathBuf>) {
+    pub(super) fn set_path(&self, path: &Option<PathBuf>) {
         if let Some(path) = path {
             if let Some(path) = path.to_str() {
                 if let Ok(path) = CString::new(path) {
@@ -78,7 +78,7 @@ impl GtkDialog {
         }
     }
 
-    pub fn get_result(&self) -> Option<PathBuf> {
+    pub(super) fn get_result(&self) -> Option<PathBuf> {
         let cstr = unsafe {
             let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as *mut _);
             CStr::from_ptr(chosen_filename).to_str()
@@ -91,7 +91,7 @@ impl GtkDialog {
         }
     }
 
-    pub fn get_results(&self) -> Vec<PathBuf> {
+    pub(super) fn get_results(&self) -> Vec<PathBuf> {
         #[derive(Debug)]
         struct FileList(*mut glib_sys::GSList);
 
@@ -130,7 +130,7 @@ impl GtkDialog {
         paths
     }
 
-    pub fn run(&self) -> i32 {
+    pub(super) fn run(&self) -> i32 {
         unsafe { gtk_sys::gtk_dialog_run(self.ptr as *mut _) }
     }
 }
@@ -175,7 +175,7 @@ impl GtkDialog {
     }
 }
 
-pub trait OutputFrom<F> {
+pub(super) trait OutputFrom<F> {
     fn from(from: &F, res_id: i32) -> Self;
     /// Describes what should be returned when gtk_init failed
     fn get_failed() -> Self;
@@ -249,7 +249,7 @@ impl Drop for GtkDialog {
 }
 
 /// gtk_main_iteration()
-pub unsafe fn wait_for_cleanup() {
+pub(crate) unsafe fn wait_for_cleanup() {
     while gtk_sys::gtk_events_pending() == 1 {
         gtk_sys::gtk_main_iteration();
     }

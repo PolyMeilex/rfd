@@ -19,12 +19,12 @@ unsafe impl<R> Send for FutureState<R> {}
 unsafe impl Send for GtkDialog {}
 unsafe impl Sync for GtkDialog {}
 
-pub struct AsyncDialog<R> {
+pub(super) struct AsyncDialog<R> {
     state: Arc<Mutex<FutureState<R>>>,
 }
 
 impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
-    pub(crate) fn new<F: FnOnce() -> GtkDialog + Send + Sync + 'static>(init: F) -> Self {
+    pub(super) fn new<F: FnOnce() -> GtkDialog + Send + Sync + 'static>(init: F) -> Self {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
@@ -148,10 +148,7 @@ unsafe fn connect_raw<F>(
     // from_glib(handle)
 }
 
-pub unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(
-    dialog: *mut GtkFileChooser,
-    f: F,
-) {
+unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkFileChooser, f: F) {
     use std::mem::transmute;
 
     unsafe extern "C" fn response_trampoline<F: Fn(GtkResponseType) + 'static>(
