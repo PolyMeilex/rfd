@@ -15,6 +15,8 @@ fn main() {
             file.read().await;
         }
     });
+
+    loop {}
 }
 
 use std::future::Future;
