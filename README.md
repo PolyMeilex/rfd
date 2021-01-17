@@ -4,7 +4,13 @@
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
 [![dependency status](https://deps.rs/crate/rfd/0.1.0/status.svg)](https://deps.rs/crate/rfd/0.1.0)
 
-WIP native file dialogs for Windows, Linux (GTK), MacOS.
+Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
+
+# Why RFD?
+
+- It uses 100% native API on all platforms, it does not spawn any processes in the background.
+- It supports async/await syntax
+- And if one day you decide to port your program to browser, WASM support is there for you!
 
 # Example
 
