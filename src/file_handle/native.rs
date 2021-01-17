@@ -57,6 +57,7 @@ impl Future for Reader {
     }
 }
 
+/// FileHandle is a way of abstracting over a file returned by a dialog
 pub struct FileHandle(PathBuf);
 
 impl FileHandle {
