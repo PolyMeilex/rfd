@@ -230,7 +230,7 @@ impl OutputFrom<Panel> for Option<Vec<FileHandle>> {
             let files = panel
                 .get_results()
                 .into_iter()
-                .map(|f| FileHandle::wrap(f))
+                .map(FileHandle::wrap)
                 .collect();
             Some(files)
         } else {
@@ -242,11 +242,5 @@ impl OutputFrom<Panel> for Option<Vec<FileHandle>> {
 impl Drop for Panel {
     fn drop(&mut self) {
         let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
-
-        unsafe {
-            let i: i32 = msg_send![*self.panel, retainCount];
-            println!("{:?}", std::thread::current().id());
-            println!("Will drop, with retain count of: {}", i);
-        }
     }
 }

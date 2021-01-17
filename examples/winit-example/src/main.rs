@@ -50,11 +50,13 @@ fn main() {
                     },
                 ..
             } => {
-                let dialog = rfd::AsyncFileDialog::new().add_filter("midi", &["mid", "midi"]);
+                let dialog = rfd::AsyncFileDialog::new()
+                    .add_filter("midi", &["mid", "midi"])
+                    .pick_files();
 
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {
-                    let files = dialog.pick_files().await;
+                    let files = dialog.await;
 
                     // let names: Vec<String> = files.into_iter().map(|f| f.file_name()).collect();
                     let names = files;

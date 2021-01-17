@@ -44,8 +44,6 @@ impl<R: OutputFrom<Panel>> AsyncDialog<R> {
             let state = state.clone();
 
             block::ConcreteBlock::new(move |result: i32| {
-                println!("Done");
-
                 let mut state = state.lock().unwrap();
 
                 let panel = &state.panel;
