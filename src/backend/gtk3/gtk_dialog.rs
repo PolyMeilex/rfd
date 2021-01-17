@@ -15,11 +15,11 @@ pub enum GtkFileChooserAction {
     // CreateFolder = 3,
 }
 
-pub struct GtkDialog {
+pub struct GtkFileDialog {
     pub ptr: *mut GtkFileChooser,
 }
 
-impl GtkDialog {
+impl GtkFileDialog {
     fn new(title: &str, action: GtkFileChooserAction, btn1: &str, btn2: &str) -> Self {
         let title = CString::new(title).unwrap();
         let btn1 = CString::new(btn1).unwrap();
@@ -135,9 +135,10 @@ impl GtkDialog {
     }
 }
 
-impl GtkDialog {
+impl GtkFileDialog {
     pub fn build_pick_file(opt: &FileDialog) -> Self {
-        let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
+        let mut dialog =
+            GtkFileDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(&opt.starting_directory);
@@ -145,7 +146,8 @@ impl GtkDialog {
     }
 
     pub fn build_save_file(opt: &FileDialog) -> Self {
-        let mut dialog = GtkDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
+        let mut dialog =
+            GtkFileDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
 
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr, 1) };
 
@@ -155,7 +157,7 @@ impl GtkDialog {
     }
 
     pub fn build_pick_folder(opt: &FileDialog) -> Self {
-        let dialog = GtkDialog::new(
+        let dialog = GtkFileDialog::new(
             "Select Folder",
             GtkFileChooserAction::SelectFolder,
             "Cancel",
@@ -166,7 +168,8 @@ impl GtkDialog {
     }
 
     pub fn build_pick_files(opt: &FileDialog) -> Self {
-        let mut dialog = GtkDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
+        let mut dialog =
+            GtkFileDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr, 1) };
         dialog.add_filters(&opt.filters);
@@ -181,8 +184,8 @@ pub trait OutputFrom<F> {
     fn get_failed() -> Self;
 }
 
-impl OutputFrom<GtkDialog> for Option<PathBuf> {
-    fn from(dialog: &GtkDialog, res_id: i32) -> Self {
+impl OutputFrom<GtkFileDialog> for Option<PathBuf> {
+    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
         if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
             dialog.get_result()
         } else {
@@ -194,8 +197,8 @@ impl OutputFrom<GtkDialog> for Option<PathBuf> {
     }
 }
 
-impl OutputFrom<GtkDialog> for Option<Vec<PathBuf>> {
-    fn from(dialog: &GtkDialog, res_id: i32) -> Self {
+impl OutputFrom<GtkFileDialog> for Option<Vec<PathBuf>> {
+    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
         if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
             Some(dialog.get_results())
         } else {
@@ -207,8 +210,8 @@ impl OutputFrom<GtkDialog> for Option<Vec<PathBuf>> {
     }
 }
 
-impl OutputFrom<GtkDialog> for Option<FileHandle> {
-    fn from(dialog: &GtkDialog, res_id: i32) -> Self {
+impl OutputFrom<GtkFileDialog> for Option<FileHandle> {
+    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
         if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
             dialog.get_result().map(FileHandle::wrap)
         } else {
@@ -220,8 +223,8 @@ impl OutputFrom<GtkDialog> for Option<FileHandle> {
     }
 }
 
-impl OutputFrom<GtkDialog> for Option<Vec<FileHandle>> {
-    fn from(dialog: &GtkDialog, res_id: i32) -> Self {
+impl OutputFrom<GtkFileDialog> for Option<Vec<FileHandle>> {
+    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
         if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
             let files = dialog
                 .get_results()
@@ -238,7 +241,7 @@ impl OutputFrom<GtkDialog> for Option<Vec<FileHandle>> {
     }
 }
 
-impl Drop for GtkDialog {
+impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {
             wait_for_cleanup();

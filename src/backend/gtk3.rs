@@ -7,7 +7,7 @@ mod async_dialog;
 use async_dialog::{AsyncDialog, DialogFuture};
 
 mod gtk_dialog;
-use gtk_dialog::{GtkDialog, OutputFrom};
+use gtk_dialog::{GtkFileDialog, OutputFrom};
 
 mod gtk_guard;
 use gtk_guard::GTK_MUTEX;
@@ -18,7 +18,7 @@ pub fn pick_file(opt: FileDialog) -> Option<PathBuf> {
             return None;
         };
 
-        let dialog = GtkDialog::build_pick_file(&opt);
+        let dialog = GtkFileDialog::build_pick_file(&opt);
 
         let res_id = dialog.run();
         OutputFrom::from(&dialog, res_id)
@@ -31,7 +31,7 @@ pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
             return None;
         };
 
-        let dialog = GtkDialog::build_save_file(&opt);
+        let dialog = GtkFileDialog::build_save_file(&opt);
 
         let res_id = dialog.run();
         OutputFrom::from(&dialog, res_id)
@@ -44,7 +44,7 @@ pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
             return None;
         };
 
-        let dialog = GtkDialog::build_pick_folder(&opt);
+        let dialog = GtkFileDialog::build_pick_folder(&opt);
 
         let res_id = dialog.run();
         OutputFrom::from(&dialog, res_id)
@@ -57,7 +57,7 @@ pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
             return None;
         };
 
-        let dialog = GtkDialog::build_pick_files(&opt);
+        let dialog = GtkFileDialog::build_pick_files(&opt);
 
         let res_id = dialog.run();
         OutputFrom::from(&dialog, res_id)
@@ -69,19 +69,19 @@ pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
 //
 
 pub fn pick_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    AsyncDialog::new(move || GtkDialog::build_pick_file(&opt)).into()
+    AsyncDialog::new(move || GtkFileDialog::build_pick_file(&opt)).into()
 }
 
 pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    AsyncDialog::new(move || GtkDialog::build_save_file(&opt)).into()
+    AsyncDialog::new(move || GtkFileDialog::build_save_file(&opt)).into()
 }
 
 pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    AsyncDialog::new(move || GtkDialog::build_pick_folder(&opt)).into()
+    AsyncDialog::new(move || GtkFileDialog::build_pick_folder(&opt)).into()
 }
 
 pub fn pick_files_async(opt: FileDialog) -> DialogFuture<Option<Vec<FileHandle>>> {
-    AsyncDialog::new(move || GtkDialog::build_pick_files(&opt)).into()
+    AsyncDialog::new(move || GtkFileDialog::build_pick_files(&opt)).into()
 }
 
 //

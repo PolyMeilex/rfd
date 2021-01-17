@@ -5,26 +5,26 @@ use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::{GtkDialog, OutputFrom};
+use super::{GtkFileDialog, OutputFrom};
 
 use super::gtk_guard::{GTK_EVENT_HANDLER, GTK_MUTEX};
 
 struct FutureState<R> {
     waker: Option<Waker>,
     data: Option<R>,
-    dialog: Option<GtkDialog>,
+    dialog: Option<GtkFileDialog>,
 }
 
 unsafe impl<R> Send for FutureState<R> {}
-unsafe impl Send for GtkDialog {}
-unsafe impl Sync for GtkDialog {}
+unsafe impl Send for GtkFileDialog {}
+unsafe impl Sync for GtkFileDialog {}
 
 pub(super) struct AsyncDialog<R> {
     state: Arc<Mutex<FutureState<R>>>,
 }
 
-impl<R: OutputFrom<GtkDialog> + Send + 'static> AsyncDialog<R> {
-    pub(super) fn new<F: FnOnce() -> GtkDialog + Send + Sync + 'static>(init: F) -> Self {
+impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
+    pub(super) fn new<F: FnOnce() -> GtkFileDialog + Send + Sync + 'static>(init: F) -> Self {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
