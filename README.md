@@ -46,7 +46,7 @@ let data = file.read().await;
 | StartingPath | ✔     | ✔       | ✔         | ✖      |
 | Async        | ✔     | ✔       | ✔         | ✔      |
 
-[1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
+[1] Sync dialog freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
 # rfd-extras
 
