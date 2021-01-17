@@ -47,6 +47,7 @@ impl FileHandle {
         vec
     }
 
+    #[cfg(feature = "file-handle-inner")]
     pub fn inner(&self) -> &web_sys::File {
         &self.0
     }

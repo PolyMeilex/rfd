@@ -23,6 +23,7 @@ mod tests {
     fn fn_def_check() {
         let _ = FileHandle::wrap;
         let _ = FileHandle::read;
+        #[cfg(feature = "file-handle-inner")]
         let _ = FileHandle::inner;
         #[cfg(not(target_arch = "wasm32"))]
         let _ = FileHandle::path;

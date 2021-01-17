@@ -100,6 +100,9 @@ impl FileHandle {
     /// On native platforms returns path.
     ///
     /// On `WASM32` it returns JS `File` object.
+    ///
+    /// #### Behind a `file-handle-inner` feature flag
+    #[cfg(feature = "file-handle-inner")]
     pub fn inner(&self) -> &Path {
         &self.0
     }
