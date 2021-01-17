@@ -1,12 +1,15 @@
-use std::path::Path;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub struct FileHandle(pub(crate) web_sys::File);
+pub struct FileHandle(web_sys::File);
 
 impl FileHandle {
-    pub fn wrap(file: web_sys::File) -> Self{
+    pub fn wrap(file: web_sys::File) -> Self {
         Self(file)
+    }
+
+    pub fn file_name(&self) -> String {
+        self.0.name()
     }
 
     // Path is not supported in browsers.
@@ -44,7 +47,14 @@ impl FileHandle {
         vec
     }
 
+    #[cfg(feature = "file-handle-inner")]
     pub fn inner(&self) -> &web_sys::File {
         &self.0
+    }
+}
+
+impl std::fmt::Debug for FileHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.file_name())
     }
 }

@@ -2,20 +2,29 @@
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
-[![dependency status](https://deps.rs/crate/rfd/0.0.3/status.svg)](https://deps.rs/crate/rfd/0.0.3)
+[![dependency status](https://deps.rs/crate/rfd/0.1.0/status.svg)](https://deps.rs/crate/rfd/0.1.0)
 
 WIP native file dialogs for Windows, Linux (GTK), MacOS.
 
 # Example
 
 ```rust
-let res = rfd::Dialog::pick_files()
-    .add_filter("text", &["txt"])
+// Sync Dialog
+let files = FileDialog::new()
+    .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
-    .starting_directory(&"/home")
-    .open();
+    .set_directory(&"/")
+    .pick_files();
 
-let file = res.first();
+// Async Dialog
+let file = AsyncFileDialog::new()
+    .add_filter("text", &["txt", "rs"])
+    .add_filter("rust", &["rs", "toml"])
+    .set_directory(&"/")
+    .pick_file()
+    .await;
+
+let data = file.read().await;
 ```
 
 # State
@@ -28,16 +37,16 @@ let file = res.first();
 
 | Feature      | Linux | Windows | MacOS [1] | Wasm32 |
 | ------------ | ----- | ------- | --------- | ------ |
-| SingleFile   | ✔     | ✔       | ✔         | 🚧     |
-| MultipleFile | ✔     | ✔       | ✔         |        |
-| PickFolder   | ✔     | ✔       | ✔         |        |
-| SaveFile     | ✔     | ✔       | ✔         |        |
+| SingleFile   | ✔     | ✔       | ✔         | ✔      |
+| MultipleFile | ✔     | ✔       | ✔         | ✔      |
+| PickFolder   | ✔     | ✔       | ✔         | ✖      |
+| SaveFile     | ✔     | ✔       | ✔         | ✖      |
 |              |       |         |           |        |
-| Filters      | ✔     | ✔       | ✔         |
-| StartingPath | ✔     | ✔       | ✔         |        |
-| Async        |       |         |           |        |
+| Filters      | ✔     | ✔       | ✔         | ✔      |
+| StartingPath | ✔     | ✔       | ✔         | ✖      |
+| Async        | ✔     | ✔       | ✔         | ✔      |
 
-[1] Freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
+[1] Sync dialog freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
 
 # rfd-extras
 

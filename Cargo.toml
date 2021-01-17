@@ -1,6 +1,6 @@
 [package]
 name = "rfd"
-version = "0.0.3"
+version = "0.1.0"
 edition = "2018"
 
 authors = ["Poly <marynczak.bartlomiej@gmail.com>"]
@@ -11,11 +11,16 @@ repository = "https://github.com/PolyMeilex/rfd"
 documentation = "https://docs.rs/rfd"
 
 [features]
-native-file-handle = []
+file-handle-inner = []
+
+[dev-dependencies]
+futures="0.3.12"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2.7"
+block="0.1.6"
 cocoa-foundation= "0.1.0"
+
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.9", features = ["combaseapi","objbase","shobjidl","shellapi"] }
@@ -24,6 +29,7 @@ winapi = { version = "0.3.9", features = ["combaseapi","objbase","shobjidl","she
 gtk-sys = "0.10.0"
 glib-sys = "0.10.1"
 gobject-sys = "0.10.0"
+lazy_static = "1.4.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen= "0.2.69"
@@ -42,12 +48,9 @@ wasm-bindgen-futures = "0.4.19"
 
 
 [[example]]
-name = "builder"
+name = "simple"
 [[example]]
-name = "pick_file"
-[[example]]
-name = "pick_multiple"
-[[example]]
-name = "pick_folder"
-[[example]]
-name = "save"
+name = "async"
+
+[package.metadata.docs.rs]
+all-features = true

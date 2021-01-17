@@ -1,15 +1,13 @@
-use crate::DialogOptions;
-use std::path::PathBuf;
-
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Document, Element};
+use web_sys::Element;
 
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
-use crate::file_handle::FileHandle;
+use crate::dialog::FileDialog;
+use crate::FileHandle;
 
-pub struct Dialog {
+pub struct WasmDialog {
     overlay: Element,
     card: Element,
     input: HtmlInputElement,
@@ -18,8 +16,16 @@ pub struct Dialog {
     style: Element,
 }
 
-impl Dialog {
-    pub fn new(document: &Document) -> Self {
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
+}
+
+impl WasmDialog {
+    pub fn new(opt: &FileDialog) -> Self {
+        let window = web_sys::window().expect("Window not found");
+        let document = window.document().expect("Document not found");
+
         let overlay = document.create_element("div").unwrap();
         overlay.set_id("rfd-overlay");
 
@@ -37,6 +43,18 @@ impl Dialog {
 
             input.set_id("rfd-input");
             input.set_type("file");
+
+            let mut accept: Vec<String> = Vec::new();
+
+            for filter in opt.filters.iter() {
+                accept.append(&mut filter.extensions.to_vec());
+            }
+
+            accept.iter_mut().for_each(|ext| ext.insert_str(0, "."));
+
+            alert(&accept.join(","));
+
+            input.set_accept(&accept.join(","));
 
             card.append_child(&input).unwrap();
             input
@@ -67,7 +85,11 @@ impl Dialog {
         }
     }
 
-    pub async fn open(&mut self, body: &Element) -> Vec<FileHandle> {
+    async fn show(&self) {
+        let window = web_sys::window().expect("Window not found");
+        let document = window.document().expect("Document not found");
+        let body = document.body().expect("document should have a body");
+
         let overlay = self.overlay.clone();
         let button = self.button.clone();
 
@@ -82,22 +104,49 @@ impl Dialog {
         });
         let future = wasm_bindgen_futures::JsFuture::from(promise);
         future.await.unwrap();
+    }
 
-        let mut file_handles = Vec::new();
-
+    fn get_results(&self) -> Option<Vec<FileHandle>> {
         if let Some(files) = self.input.files() {
-            for id in 0..(files.length()) {
-                let file = files.get(id).unwrap();
-                file_handles.push(FileHandle(file));
+            let len = files.length();
+            if len > 0 {
+                let mut file_handles = Vec::new();
+                for id in 0..len {
+                    let file = files.get(id).unwrap();
+                    file_handles.push(FileHandle::wrap(file));
+                }
+                Some(file_handles)
+            } else {
+                None
             }
+        } else {
+            None
         }
+    }
 
-        self.overlay.remove();
-        file_handles
+    fn get_result(&self) -> Option<FileHandle> {
+        let files = self.get_results();
+        files.and_then(|mut f| f.pop())
+    }
+
+    async fn pick_files(self) -> Option<Vec<FileHandle>> {
+        self.input.set_multiple(true);
+
+        self.show().await;
+
+        self.get_results()
+    }
+
+    async fn pick_file(self) -> Option<FileHandle> {
+        self.input.set_multiple(false);
+
+        self.show().await;
+
+        self.get_result()
     }
 }
 
-impl Drop for Dialog {
+impl Drop for WasmDialog {
     fn drop(&mut self) {
         self.button.remove();
         self.input.remove();
@@ -108,26 +157,24 @@ impl Drop for Dialog {
     }
 }
 
-// pub fn pick_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-//     let params = params.into().unwrap_or_default();
+use std::future::Future;
 
-//     None
+pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+    let dialog = WasmDialog::new(&opt);
+    dialog.pick_file()
+}
+
+// pub fn save_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+//     let dialog = WasmDialog::new(&opt);
+//     dialog.pick_file()
 // }
 
-// pub fn save_file<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-//     let params = params.into().unwrap_or_default();
-
-//     None
+// pub fn pick_folder_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+//     let dialog = WasmDialog::new(&opt);
+//     dialog.pick_file()
 // }
 
-// pub fn pick_folder<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<PathBuf> {
-//     let params = params.into().unwrap_or_default();
-
-//     None
-// }
-
-// pub fn pick_files<'a>(params: impl Into<Option<DialogOptions<'a>>>) -> Option<Vec<PathBuf>> {
-//     let params = params.into().unwrap_or_default();
-
-//     None
-// }
+pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
+    let dialog = WasmDialog::new(&opt);
+    dialog.pick_files()
+}

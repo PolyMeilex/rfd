@@ -1,7 +1,11 @@
 mod backend;
-pub use backend::*;
 
-pub mod file_handle;
+mod file_handle;
+pub use file_handle::FileHandle;
 
-pub mod dialog;
-pub use dialog::{Dialog, DialogOptions, Filter};
+mod dialog;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use dialog::FileDialog;
+
+pub use dialog::AsyncFileDialog;
