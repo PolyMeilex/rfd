@@ -3,11 +3,13 @@ use crate::FileHandle;
 
 use std::{path::PathBuf, ptr};
 
-mod async_dialog;
-use async_dialog::{AsyncDialog, DialogFuture};
+mod dialog_future;
+use dialog_future::{AsyncDialog, DialogFuture};
 
-mod gtk_dialog;
-use gtk_dialog::{GtkFileDialog, OutputFrom};
+mod file_dialog;
+use file_dialog::{GtkFileDialog, OutputFrom};
+
+mod message_dialog;
 
 mod gtk_guard;
 use gtk_guard::GTK_MUTEX;

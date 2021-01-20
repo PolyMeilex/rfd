@@ -19,12 +19,12 @@ unsafe impl<R> Send for FutureState<R> {}
 unsafe impl Send for GtkFileDialog {}
 unsafe impl Sync for GtkFileDialog {}
 
-pub(super) struct AsyncDialog<R> {
+pub struct AsyncDialog<R> {
     state: Arc<Mutex<FutureState<R>>>,
 }
 
 impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
-    pub(super) fn new<F: FnOnce() -> GtkFileDialog + Send + Sync + 'static>(init: F) -> Self {
+    pub fn new<F: FnOnce() -> GtkFileDialog + Send + Sync + 'static>(init: F) -> Self {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
