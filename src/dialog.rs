@@ -147,3 +147,52 @@ impl AsyncFileDialog {
         crate::backend::save_file_async(self.file_dialog)
     }
 }
+
+use crate::MessageDialogExt;
+
+/// ## Synchronous Message Dialog
+#[derive(Default)]
+pub struct MessageDialog {
+    pub(crate) text: String,
+    pub(crate) level: MessageLevel,
+    pub(crate) buttons: MessageButtons,
+}
+
+impl MessageDialog {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn set_text(mut self, text: &str) -> Self {
+        self.text = text.into();
+        self
+    }
+
+    pub fn show(self) {
+        MessageDialogExt::show(self)
+    }
+}
+
+pub enum MessageLevel {
+    Info,
+    Warning,
+    Error,
+}
+
+impl Default for MessageLevel {
+    fn default() -> Self {
+        Self::Info
+    }
+}
+
+pub enum MessageButtons {
+    Ok,
+    OkCancle,
+    YesNo,
+}
+
+impl Default for MessageButtons {
+    fn default() -> Self {
+        Self::Ok
+    }
+}

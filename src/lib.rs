@@ -9,3 +9,9 @@ mod dialog;
 pub use dialog::FileDialog;
 
 pub use dialog::AsyncFileDialog;
+
+pub use dialog::MessageDialog;
+
+trait MessageDialogExt {
+    fn show(self);
+}

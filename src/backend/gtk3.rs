@@ -93,3 +93,10 @@ pub fn pick_files_async(opt: FileDialog) -> DialogFuture<Option<Vec<FileHandle>>
 fn gtk_init_check() -> bool {
     unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) == 1 }
 }
+
+/// gtk_main_iteration()
+unsafe fn wait_for_cleanup() {
+    while gtk_sys::gtk_events_pending() == 1 {
+        gtk_sys::gtk_main_iteration();
+    }
+}
