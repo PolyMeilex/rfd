@@ -16,11 +16,6 @@ pub struct WasmDialog {
     style: Element,
 }
 
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
-
 impl WasmDialog {
     pub fn new(opt: &FileDialog) -> Self {
         let window = web_sys::window().expect("Window not found");
@@ -51,8 +46,6 @@ impl WasmDialog {
             }
 
             accept.iter_mut().for_each(|ext| ext.insert_str(0, "."));
-
-            alert(&accept.join(","));
 
             input.set_accept(&accept.join(","));
 
