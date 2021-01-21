@@ -32,9 +32,9 @@ pub use gtk3::{pick_folder_async, save_file_async};
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_os = "macos")]
-pub use macos::{pick_file, pick_files, pick_folder, save_file};
+pub use macos::{pick_folder, save_file};
 #[cfg(target_os = "macos")]
-pub use macos::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
+pub use macos::{pick_folder_async, save_file_async};
 
 //
 // Wasm
