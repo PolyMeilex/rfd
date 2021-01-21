@@ -23,9 +23,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run tests
         run: cargo test --verbose
-  build_wasm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run tests
-        run: cargo build --verbose --target wasm32-unknown-unknown
+  # build_wasm:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Run tests
+  #       run: cargo build --verbose --target wasm32-unknown-unknown
