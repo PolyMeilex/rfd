@@ -53,16 +53,18 @@ impl FileDialog {
     }
 }
 
+use crate::backend::FilePickerDialogImpl;
+
 #[cfg(not(target_arch = "wasm32"))]
 impl FileDialog {
     /// Pick one file
     pub fn pick_file(self) -> Option<PathBuf> {
-        crate::backend::pick_file(self)
+        FilePickerDialogImpl::pick_file(self)
     }
 
     /// Pick multiple files
     pub fn pick_files(self) -> Option<Vec<PathBuf>> {
-        crate::backend::pick_files(self)
+        FilePickerDialogImpl::pick_files(self)
     }
 
     /// Pick one folder
@@ -118,17 +120,21 @@ impl AsyncFileDialog {
     }
 }
 
+use crate::backend::AsyncFilePickerDialogImpl;
 use std::future::Future;
 
 impl AsyncFileDialog {
     /// Pick one file
     pub fn pick_file(self) -> impl Future<Output = Option<FileHandle>> {
-        crate::backend::pick_file_async(self.file_dialog)
+        AsyncFilePickerDialogImpl::pick_file_async(self.file_dialog)
+
+        // crate::backend::pick_file_async(self.file_dialog)
     }
 
     /// Pick multiple files
     pub fn pick_files(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
-        crate::backend::pick_files_async(self.file_dialog)
+        // crate::backend::pick_files_async(self.file_dialog)
+        AsyncFilePickerDialogImpl::pick_files_async(self.file_dialog)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -148,7 +154,7 @@ impl AsyncFileDialog {
     }
 }
 
-use crate::MessageDialogExt;
+use crate::MessageDialogImpl;
 
 /// ## Synchronous Message Dialog
 #[derive(Default)]
@@ -169,7 +175,7 @@ impl MessageDialog {
     }
 
     pub fn show(self) {
-        MessageDialogExt::show(self)
+        MessageDialogImpl::show(self)
     }
 }
 

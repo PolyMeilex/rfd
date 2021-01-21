@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::ptr;
 
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
-use crate::MessageDialogExt;
+use crate::MessageDialogImpl;
 
 pub struct GtkMessageDialog {
     ptr: *mut gtk_sys::GtkDialog,
@@ -53,7 +53,7 @@ impl GtkMessageDialog {
     }
 }
 
-impl MessageDialogExt for MessageDialog {
+impl MessageDialogImpl for MessageDialog {
     fn show(self) {
         let dialog = GtkMessageDialog::new(self);
         let res = dialog.run();

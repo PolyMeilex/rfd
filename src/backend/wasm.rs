@@ -6,6 +6,7 @@ use web_sys::{HtmlButtonElement, HtmlInputElement};
 
 use crate::dialog::FileDialog;
 use crate::FileHandle;
+use crate::{MessageDialog, MessageDialogImpl};
 
 pub struct WasmDialog {
     overlay: Element,
@@ -14,11 +15,6 @@ pub struct WasmDialog {
     button: HtmlButtonElement,
 
     style: Element,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
 }
 
 impl WasmDialog {
@@ -51,8 +47,6 @@ impl WasmDialog {
             }
 
             accept.iter_mut().for_each(|ext| ext.insert_str(0, "."));
-
-            alert(&accept.join(","));
 
             input.set_accept(&accept.join(","));
 
@@ -177,4 +171,28 @@ pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandl
 pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
     let dialog = WasmDialog::new(&opt);
     dialog.pick_files()
+}
+
+use super::{AsyncFilePickerDialogImpl, DialogFutureType};
+
+impl AsyncFilePickerDialogImpl for FileDialog {
+    fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let dialog = WasmDialog::new(&self);
+        Box::pin(dialog.pick_file())
+    }
+    fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let dialog = WasmDialog::new(&self);
+        Box::pin(dialog.pick_files())
+    }
+}
+
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
+}
+
+impl MessageDialogImpl for MessageDialog {
+    fn show(self) {
+        alert(&self.text);
+    }
 }

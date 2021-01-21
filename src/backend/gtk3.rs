@@ -1,7 +1,8 @@
 use crate::FileDialog;
 use crate::FileHandle;
 
-use std::{path::PathBuf, ptr};
+use std::pin::Pin;
+use std::{future::Future, path::PathBuf, ptr};
 
 mod dialog_future;
 use dialog_future::{AsyncDialog, DialogFuture};
@@ -14,18 +15,18 @@ mod message_dialog;
 mod gtk_guard;
 use gtk_guard::GTK_MUTEX;
 
-pub fn pick_file(opt: FileDialog) -> Option<PathBuf> {
-    GTK_MUTEX.run_locked(|| {
-        if !gtk_init_check() {
-            return None;
-        };
+// pub fn pick_file(opt: FileDialog) -> Option<PathBuf> {
+//     GTK_MUTEX.run_locked(|| {
+//         if !gtk_init_check() {
+//             return None;
+//         };
 
-        let dialog = GtkFileDialog::build_pick_file(&opt);
+//         let dialog = GtkFileDialog::build_pick_file(&opt);
 
-        let res_id = dialog.run();
-        OutputFrom::from(&dialog, res_id)
-    })
-}
+//         let res_id = dialog.run();
+//         OutputFrom::from(&dialog, res_id)
+//     })
+// }
 
 pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
     GTK_MUTEX.run_locked(|| {
@@ -53,26 +54,70 @@ pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
     })
 }
 
-pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
-    GTK_MUTEX.run_locked(|| {
-        if !gtk_init_check() {
-            return None;
-        };
+// pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
+//     GTK_MUTEX.run_locked(|| {
+//         if !gtk_init_check() {
+//             return None;
+//         };
 
-        let dialog = GtkFileDialog::build_pick_files(&opt);
+//         let dialog = GtkFileDialog::build_pick_files(&opt);
 
-        let res_id = dialog.run();
-        OutputFrom::from(&dialog, res_id)
-    })
+//         let res_id = dialog.run();
+//         OutputFrom::from(&dialog, res_id)
+//     })
+// }
+
+use super::{AsyncFilePickerDialogImpl, DialogFutureType, FilePickerDialogImpl};
+
+impl FilePickerDialogImpl for FileDialog {
+    fn pick_file(self) -> Option<PathBuf> {
+        GTK_MUTEX.run_locked(|| {
+            if !gtk_init_check() {
+                return None;
+            };
+
+            let dialog = GtkFileDialog::build_pick_file(&self);
+
+            let res_id = dialog.run();
+            OutputFrom::from(&dialog, res_id)
+        })
+    }
+
+    fn pick_files(self) -> Option<Vec<PathBuf>> {
+        GTK_MUTEX.run_locked(|| {
+            if !gtk_init_check() {
+                return None;
+            };
+
+            let dialog = GtkFileDialog::build_pick_files(&self);
+
+            let res_id = dialog.run();
+            OutputFrom::from(&dialog, res_id)
+        })
+    }
+}
+
+impl AsyncFilePickerDialogImpl for FileDialog {
+    fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let ret: DialogFuture<_> =
+            AsyncDialog::new(move || GtkFileDialog::build_pick_file(&self)).into();
+        Box::pin(ret)
+    }
+
+    fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let ret: DialogFuture<_> =
+            AsyncDialog::new(move || GtkFileDialog::build_pick_files(&self)).into();
+        Box::pin(ret)
+    }
 }
 
 //
 //
 //
 
-pub fn pick_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    AsyncDialog::new(move || GtkFileDialog::build_pick_file(&opt)).into()
-}
+// pub fn pick_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
+//     AsyncDialog::new(move || GtkFileDialog::build_pick_file(&opt)).into()
+// }
 
 pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
     AsyncDialog::new(move || GtkFileDialog::build_save_file(&opt)).into()
@@ -82,9 +127,9 @@ pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
     AsyncDialog::new(move || GtkFileDialog::build_pick_folder(&opt)).into()
 }
 
-pub fn pick_files_async(opt: FileDialog) -> DialogFuture<Option<Vec<FileHandle>>> {
-    AsyncDialog::new(move || GtkFileDialog::build_pick_files(&opt)).into()
-}
+// pub fn pick_files_async(opt: FileDialog) -> DialogFuture<Option<Vec<FileHandle>>> {
+//     AsyncDialog::new(move || GtkFileDialog::build_pick_files(&opt)).into()
+// }
 
 //
 //
