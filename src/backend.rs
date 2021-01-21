@@ -9,10 +9,6 @@ use std::pin::Pin;
 
 #[cfg(target_os = "windows")]
 mod win_cid;
-#[cfg(target_os = "windows")]
-pub use win_cid::save_file;
-#[cfg(target_os = "windows")]
-pub use win_cid::save_file_async;
 
 //
 // Linux
@@ -20,10 +16,6 @@ pub use win_cid::save_file_async;
 
 #[cfg(target_os = "linux")]
 mod gtk3;
-#[cfg(target_os = "linux")]
-pub use gtk3::save_file;
-#[cfg(target_os = "linux")]
-pub use gtk3::save_file_async;
 
 //
 // MacOs
@@ -31,10 +23,6 @@ pub use gtk3::save_file_async;
 
 #[cfg(target_os = "macos")]
 mod macos;
-#[cfg(target_os = "macos")]
-pub use macos::save_file;
-#[cfg(target_os = "macos")]
-pub use macos::save_file_async;
 
 //
 // Wasm

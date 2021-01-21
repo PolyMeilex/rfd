@@ -22,14 +22,14 @@ pub use async_dialog::DialogFuture;
 //     })
 // }
 
-pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
-    objc::rc::autoreleasepool(move || {
-        let panel = Panel::build_save_file(&opt);
+// pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
+//     objc::rc::autoreleasepool(move || {
+//         let panel = Panel::build_save_file(&opt);
 
-        let res = panel.run_modal();
-        OutputFrom::from(&panel, res)
-    })
-}
+//         let res = panel.run_modal();
+//         OutputFrom::from(&panel, res)
+//     })
+// }
 
 // pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
 //     objc::rc::autoreleasepool(move || {
@@ -54,10 +54,10 @@ pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
 //     AsyncDialog::new(panel).into()
 // }
 
-pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    let panel = Panel::build_save_file(&opt);
-    AsyncDialog::new(panel).into()
-}
+// pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
+//     let panel = Panel::build_save_file(&opt);
+//     AsyncDialog::new(panel).into()
+// }
 
 // pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
 //     let panel = Panel::build_pick_folder(&opt);
@@ -70,8 +70,8 @@ pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
 // }
 
 use super::{
-    AsyncFilePickerDialogImpl, AsyncFolderPickerDialogImpl, DialogFutureType, FilePickerDialogImpl,
-    FolderPickerDialogImpl,
+    AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl,
+    DialogFutureType, FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl,
 };
 
 impl FilePickerDialogImpl for FileDialog {
@@ -123,6 +123,29 @@ impl FolderPickerDialogImpl for FileDialog {
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         let panel = Panel::build_pick_folder(&self);
+        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
+        Box::pin(ret)
+    }
+}
+
+//
+//
+//
+
+impl FileSaveDialogImpl for FileDialog {
+    fn save_file(self) -> Option<PathBuf> {
+        objc::rc::autoreleasepool(move || {
+            let panel = Panel::build_save_file(&self);
+            let res = panel.run_modal();
+            OutputFrom::from(&panel, res)
+        })
+    }
+}
+
+impl AsyncFileSaveDialogImpl for FileDialog {
+    fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let panel = Panel::build_save_file(&self);
+
         let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
         Box::pin(ret)
     }

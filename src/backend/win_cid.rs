@@ -28,17 +28,17 @@ pub use async_dialog::{AsyncDialog, DialogFuture};
 //     run(opt).ok()
 // }
 
-pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
-    fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
-        init_com(|| {
-            let dialog = IDialog::build_save_file(&opt)?;
-            dialog.show()?;
-            dialog.get_result()
-        })?
-    }
+// pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
+//     fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
+//         init_com(|| {
+//             let dialog = IDialog::build_save_file(&opt)?;
+//             dialog.show()?;
+//             dialog.get_result()
+//         })?
+//     }
 
-    run(opt).ok()
-}
+//     run(opt).ok()
+// }
 
 // pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
 //     fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
@@ -65,9 +65,13 @@ pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
 // }
 
 use super::{
-    AsyncFilePickerDialogImpl, AsyncFolderPickerDialogImpl, DialogFutureType, FilePickerDialogImpl,
-    FolderPickerDialogImpl,
+    AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl,
+    DialogFutureType, FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl,
 };
+
+//
+//
+//
 
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
@@ -107,6 +111,10 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     }
 }
 
+//
+//
+//
+
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
@@ -133,13 +141,39 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 //
 //
 
+impl FileSaveDialogImpl for FileDialog {
+    fn save_file(self) -> Option<PathBuf> {
+        fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
+            init_com(|| {
+                let dialog = IDialog::build_save_file(&opt)?;
+                dialog.show()?;
+                dialog.get_result()
+            })?
+        }
+
+        run(self).ok()
+    }
+}
+
+impl AsyncFileSaveDialogImpl for FileDialog {
+    fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let ret: DialogFuture<_> =
+            AsyncDialog::new(move || IDialog::build_save_file(&self).ok()).into();
+        Box::pin(ret)
+    }
+}
+
+//
+//
+//
+
 // pub fn pick_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
 //     AsyncDialog::new(move || IDialog::build_pick_file(&opt).ok()).into()
 // }
 
-pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    AsyncDialog::new(move || IDialog::build_save_file(&opt).ok()).into()
-}
+// pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
+//     AsyncDialog::new(move || IDialog::build_save_file(&opt).ok()).into()
+// }
 
 // pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
 //     AsyncDialog::new(move || IDialog::build_pick_folder(&opt).ok()).into()

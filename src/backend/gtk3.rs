@@ -28,18 +28,18 @@ use gtk_guard::GTK_MUTEX;
 //     })
 // }
 
-pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
-    GTK_MUTEX.run_locked(|| {
-        if !gtk_init_check() {
-            return None;
-        };
+// pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
+//     GTK_MUTEX.run_locked(|| {
+//         if !gtk_init_check() {
+//             return None;
+//         };
 
-        let dialog = GtkFileDialog::build_save_file(&opt);
+//         let dialog = GtkFileDialog::build_save_file(&opt);
 
-        let res_id = dialog.run();
-        OutputFrom::from(&dialog, res_id)
-    })
-}
+//         let res_id = dialog.run();
+//         OutputFrom::from(&dialog, res_id)
+//     })
+// }
 
 // pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
 //     GTK_MUTEX.run_locked(|| {
@@ -68,8 +68,8 @@ pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
 // }
 
 use super::{
-    AsyncFilePickerDialogImpl, AsyncFolderPickerDialogImpl, DialogFutureType, FilePickerDialogImpl,
-    FolderPickerDialogImpl,
+    AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl,
+    DialogFutureType, FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl,
 };
 
 impl FilePickerDialogImpl for FileDialog {
@@ -136,6 +136,34 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
         Box::pin(ret)
     }
 }
+
+//
+//
+//
+
+impl FileSaveDialogImpl for FileDialog {
+    fn save_file(self) -> Option<PathBuf> {
+        GTK_MUTEX.run_locked(|| {
+            if !gtk_init_check() {
+                return None;
+            };
+
+            let dialog = GtkFileDialog::build_save_file(&self);
+
+            let res_id = dialog.run();
+            OutputFrom::from(&dialog, res_id)
+        })
+    }
+}
+
+impl AsyncFileSaveDialogImpl for FileDialog {
+    fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let ret: DialogFuture<_> =
+            AsyncDialog::new(move || GtkFileDialog::build_save_file(&self)).into();
+        Box::pin(ret)
+    }
+}
+
 //
 //
 //
@@ -144,9 +172,9 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 //     AsyncDialog::new(move || GtkFileDialog::build_pick_file(&opt)).into()
 // }
 
-pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    AsyncDialog::new(move || GtkFileDialog::build_save_file(&opt)).into()
-}
+// pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
+//     AsyncDialog::new(move || GtkFileDialog::build_save_file(&opt)).into()
+// }
 
 // pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
 //     AsyncDialog::new(move || GtkFileDialog::build_pick_folder(&opt)).into()
