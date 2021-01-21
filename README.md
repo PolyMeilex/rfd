@@ -58,8 +58,8 @@ let data = file.read().await;
 
 AKA features that will be either in a separate `rfd-extras` crate, or behind a feature flag
 
-| Feature       | Linux | Windows | MacOS |
-| ------------- | ----- | ------- | ----- |
-| MessageDialog |       |         |       |
-| PromptDialog  |       |         |       |
-| ColorPicker   |       |         |       |
+| Feature       | Linux | Windows | MacOS | Wasm32 |
+| ------------- | ----- | ------- | ----- | ------ |
+| MessageDialog | ✔     |         |       | ✔      |
+| PromptDialog  |       |         |       |        |
+| ColorPicker   |       |         |       |        |
