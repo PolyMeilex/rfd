@@ -6,7 +6,6 @@ use web_sys::{HtmlButtonElement, HtmlInputElement};
 
 use crate::dialog::FileDialog;
 use crate::FileHandle;
-use crate::{MessageDialog, MessageDialogImpl};
 
 pub struct WasmDialog {
     overlay: Element,
@@ -190,6 +189,9 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 extern "C" {
     fn alert(s: &str);
 }
+
+use crate::backend::MessageDialogImpl;
+use crate::MessageDialog;
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) {

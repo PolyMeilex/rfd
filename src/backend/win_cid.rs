@@ -124,7 +124,8 @@ pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
 //     AsyncDialog::new(move || IDialog::build_pick_files(&opt).ok()).into()
 // }
 
-use crate::{MessageDialog, MessageDialogImpl};
+use crate::backend::MessageDialogImpl;
+use crate::MessageDialog;
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) {

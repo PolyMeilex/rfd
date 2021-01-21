@@ -154,7 +154,7 @@ impl AsyncFileDialog {
     }
 }
 
-use crate::MessageDialogImpl;
+use crate::backend::MessageDialogImpl;
 
 /// ## Synchronous Message Dialog
 #[derive(Default)]

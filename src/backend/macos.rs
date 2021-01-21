@@ -74,7 +74,7 @@ use super::{AsyncFilePickerDialogImpl, DialogFutureType, FilePickerDialogImpl};
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_pick_file(&opt);
+            let panel = Panel::build_pick_file(&self);
 
             let res = panel.run_modal();
             OutputFrom::from(&panel, res)
@@ -83,7 +83,7 @@ impl FilePickerDialogImpl for FileDialog {
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_pick_files(&opt);
+            let panel = Panel::build_pick_files(&self);
 
             let res = panel.run_modal();
             OutputFrom::from(&panel, res)
@@ -107,7 +107,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     }
 }
 
-use crate::{MessageDialog, MessageDialogImpl};
+use crate::backend::MessageDialogImpl;
+use crate::MessageDialog;
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) {

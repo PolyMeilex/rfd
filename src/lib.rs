@@ -12,6 +12,3 @@ pub use dialog::AsyncFileDialog;
 
 pub use dialog::MessageDialog;
 
-trait MessageDialogImpl {
-    fn show(self);
-}

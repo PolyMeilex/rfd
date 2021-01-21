@@ -62,6 +62,10 @@ pub trait AsyncFilePickerDialogImpl {
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;
 }
 
+pub trait MessageDialogImpl {
+    fn show(self);
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -2,7 +2,6 @@ use std::ffi::CString;
 use std::ptr;
 
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
-use crate::MessageDialogImpl;
 
 pub struct GtkMessageDialog {
     ptr: *mut gtk_sys::GtkDialog,
@@ -52,6 +51,8 @@ impl GtkMessageDialog {
         res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
     }
 }
+
+use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) {
