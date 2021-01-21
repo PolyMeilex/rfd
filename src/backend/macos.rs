@@ -31,14 +31,14 @@ pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
     })
 }
 
-pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
-    objc::rc::autoreleasepool(move || {
-        let panel = Panel::build_pick_folder(&opt);
+// pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
+//     objc::rc::autoreleasepool(move || {
+//         let panel = Panel::build_pick_folder(&opt);
 
-        let res = panel.run_modal();
-        OutputFrom::from(&panel, res)
-    })
-}
+//         let res = panel.run_modal();
+//         OutputFrom::from(&panel, res)
+//     })
+// }
 
 // pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
 //     objc::rc::autoreleasepool(move || {
@@ -59,17 +59,20 @@ pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
     AsyncDialog::new(panel).into()
 }
 
-pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    let panel = Panel::build_pick_folder(&opt);
-    AsyncDialog::new(panel).into()
-}
+// pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
+//     let panel = Panel::build_pick_folder(&opt);
+//     AsyncDialog::new(panel).into()
+// }
 
 // pub fn pick_files_async(opt: FileDialog) -> DialogFuture<Option<Vec<FileHandle>>> {
 //     let panel = Panel::build_pick_files(&opt);
 //     AsyncDialog::new(panel).into()
 // }
 
-use super::{AsyncFilePickerDialogImpl, DialogFutureType, FilePickerDialogImpl};
+use super::{
+    AsyncFilePickerDialogImpl, AsyncFolderPickerDialogImpl, DialogFutureType, FilePickerDialogImpl,
+    FolderPickerDialogImpl,
+};
 
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
@@ -102,6 +105,24 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         let panel = Panel::build_pick_files(&self);
 
+        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
+        Box::pin(ret)
+    }
+}
+
+impl FolderPickerDialogImpl for FileDialog {
+    fn pick_folder(self) -> Option<PathBuf> {
+        objc::rc::autoreleasepool(move || {
+            let panel = Panel::build_pick_folder(&opt);
+            let res = panel.run_modal();
+            OutputFrom::from(&panel, res)
+        })
+    }
+}
+
+impl AsyncFolderPickerDialogImpl for FileDialog {
+    fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let panel = Panel::build_pick_folder(&opt);
         let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
         Box::pin(ret)
     }

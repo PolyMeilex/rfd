@@ -53,7 +53,7 @@ impl FileDialog {
     }
 }
 
-use crate::backend::FilePickerDialogImpl;
+use crate::backend::{FilePickerDialogImpl, FolderPickerDialogImpl};
 
 #[cfg(not(target_arch = "wasm32"))]
 impl FileDialog {
@@ -69,7 +69,7 @@ impl FileDialog {
 
     /// Pick one folder
     pub fn pick_folder(self) -> Option<PathBuf> {
-        crate::backend::pick_folder(self)
+        FolderPickerDialogImpl::pick_folder(self)
     }
 
     /// Opens save file dialog
@@ -120,20 +120,17 @@ impl AsyncFileDialog {
     }
 }
 
-use crate::backend::AsyncFilePickerDialogImpl;
+use crate::backend::{AsyncFilePickerDialogImpl, AsyncFolderPickerDialogImpl};
 use std::future::Future;
 
 impl AsyncFileDialog {
     /// Pick one file
     pub fn pick_file(self) -> impl Future<Output = Option<FileHandle>> {
         AsyncFilePickerDialogImpl::pick_file_async(self.file_dialog)
-
-        // crate::backend::pick_file_async(self.file_dialog)
     }
 
     /// Pick multiple files
     pub fn pick_files(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
-        // crate::backend::pick_files_async(self.file_dialog)
         AsyncFilePickerDialogImpl::pick_files_async(self.file_dialog)
     }
 
@@ -142,7 +139,7 @@ impl AsyncFileDialog {
     ///
     /// Does not exist in `WASM32`
     pub fn pick_folder(self) -> impl Future<Output = Option<FileHandle>> {
-        crate::backend::pick_folder_async(self.file_dialog)
+        AsyncFolderPickerDialogImpl::pick_folder_async(self.file_dialog)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
