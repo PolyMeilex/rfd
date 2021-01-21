@@ -42,10 +42,6 @@ pub use macos::{pick_folder_async, save_file_async};
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
-// #[cfg(target_arch = "wasm32")]
-// pub use wasm::{pick_file, pick_files, pick_folder, save_file};
-#[cfg(target_arch = "wasm32")]
-pub use wasm::{pick_file_async, pick_files_async /*pick_folder_async*/ /*save_file_async*/};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send>>;

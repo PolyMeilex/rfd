@@ -152,10 +152,10 @@ impl Drop for WasmDialog {
 
 use std::future::Future;
 
-pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
-    let dialog = WasmDialog::new(&opt);
-    dialog.pick_file()
-}
+// pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
+//     let dialog = WasmDialog::new(&opt);
+//     dialog.pick_file()
+// }
 
 // pub fn save_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
 //     let dialog = WasmDialog::new(&opt);
@@ -167,10 +167,10 @@ pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandl
 //     dialog.pick_file()
 // }
 
-pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
-    let dialog = WasmDialog::new(&opt);
-    dialog.pick_files()
-}
+// pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
+//     let dialog = WasmDialog::new(&opt);
+//     dialog.pick_files()
+// }
 
 use super::{AsyncFilePickerDialogImpl, DialogFutureType};
 
