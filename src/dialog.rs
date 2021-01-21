@@ -53,26 +53,28 @@ impl FileDialog {
     }
 }
 
+use crate::backend::{FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl};
+
 #[cfg(not(target_arch = "wasm32"))]
 impl FileDialog {
     /// Pick one file
     pub fn pick_file(self) -> Option<PathBuf> {
-        crate::backend::pick_file(self)
+        FilePickerDialogImpl::pick_file(self)
     }
 
     /// Pick multiple files
     pub fn pick_files(self) -> Option<Vec<PathBuf>> {
-        crate::backend::pick_files(self)
+        FilePickerDialogImpl::pick_files(self)
     }
 
     /// Pick one folder
     pub fn pick_folder(self) -> Option<PathBuf> {
-        crate::backend::pick_folder(self)
+        FolderPickerDialogImpl::pick_folder(self)
     }
 
     /// Opens save file dialog
     pub fn save_file(self) -> Option<PathBuf> {
-        crate::backend::save_file(self)
+        FileSaveDialogImpl::save_file(self)
     }
 }
 
@@ -118,17 +120,20 @@ impl AsyncFileDialog {
     }
 }
 
+use crate::backend::{
+    AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl,
+};
 use std::future::Future;
 
 impl AsyncFileDialog {
     /// Pick one file
     pub fn pick_file(self) -> impl Future<Output = Option<FileHandle>> {
-        crate::backend::pick_file_async(self.file_dialog)
+        AsyncFilePickerDialogImpl::pick_file_async(self.file_dialog)
     }
 
     /// Pick multiple files
     pub fn pick_files(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
-        crate::backend::pick_files_async(self.file_dialog)
+        AsyncFilePickerDialogImpl::pick_files_async(self.file_dialog)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -136,7 +141,7 @@ impl AsyncFileDialog {
     ///
     /// Does not exist in `WASM32`
     pub fn pick_folder(self) -> impl Future<Output = Option<FileHandle>> {
-        crate::backend::pick_folder_async(self.file_dialog)
+        AsyncFolderPickerDialogImpl::pick_folder_async(self.file_dialog)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -144,6 +149,55 @@ impl AsyncFileDialog {
     ///
     /// Does not exist in `WASM32`
     pub fn save_file(self) -> impl Future<Output = Option<FileHandle>> {
-        crate::backend::save_file_async(self.file_dialog)
+        AsyncFileSaveDialogImpl::save_file_async(self.file_dialog)
+    }
+}
+
+use crate::backend::MessageDialogImpl;
+
+/// ## Synchronous Message Dialog
+#[derive(Default)]
+pub struct MessageDialog {
+    pub(crate) text: String,
+    pub(crate) level: MessageLevel,
+    pub(crate) buttons: MessageButtons,
+}
+
+impl MessageDialog {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn set_text(mut self, text: &str) -> Self {
+        self.text = text.into();
+        self
+    }
+
+    pub fn show(self) {
+        MessageDialogImpl::show(self)
+    }
+}
+
+pub enum MessageLevel {
+    Info,
+    Warning,
+    Error,
+}
+
+impl Default for MessageLevel {
+    fn default() -> Self {
+        Self::Info
+    }
+}
+
+pub enum MessageButtons {
+    Ok,
+    OkCancle,
+    YesNo,
+}
+
+impl Default for MessageButtons {
+    fn default() -> Self {
+        Self::Ok
     }
 }

@@ -152,22 +152,29 @@ impl Drop for WasmDialog {
 
 use std::future::Future;
 
-pub fn pick_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
-    let dialog = WasmDialog::new(&opt);
-    dialog.pick_file()
+use super::{AsyncFilePickerDialogImpl, DialogFutureType};
+
+impl AsyncFilePickerDialogImpl for FileDialog {
+    fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let dialog = WasmDialog::new(&self);
+        Box::pin(dialog.pick_file())
+    }
+    fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let dialog = WasmDialog::new(&self);
+        Box::pin(dialog.pick_files())
+    }
 }
 
-// pub fn save_file_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
-//     let dialog = WasmDialog::new(&opt);
-//     dialog.pick_file()
-// }
+#[wasm_bindgen]
+extern "C" {
+    fn alert(s: &str);
+}
 
-// pub fn pick_folder_async(opt: FileDialog) -> impl Future<Output = Option<FileHandle>> {
-//     let dialog = WasmDialog::new(&opt);
-//     dialog.pick_file()
-// }
+use crate::backend::MessageDialogImpl;
+use crate::MessageDialog;
 
-pub fn pick_files_async(opt: FileDialog) -> impl Future<Output = Option<Vec<FileHandle>>> {
-    let dialog = WasmDialog::new(&opt);
-    dialog.pick_files()
+impl MessageDialogImpl for MessageDialog {
+    fn show(self) {
+        alert(&self.text);
+    }
 }

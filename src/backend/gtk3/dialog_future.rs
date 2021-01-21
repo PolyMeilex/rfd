@@ -7,7 +7,7 @@ use std::task::{Context, Poll, Waker};
 
 use super::{GtkFileDialog, OutputFrom};
 
-use super::gtk_guard::{GTK_EVENT_HANDLER, GTK_MUTEX};
+use super::utils::{GTK_EVENT_HANDLER, GTK_MUTEX};
 
 struct FutureState<R> {
     waker: Option<Waker>,
@@ -19,12 +19,12 @@ unsafe impl<R> Send for FutureState<R> {}
 unsafe impl Send for GtkFileDialog {}
 unsafe impl Sync for GtkFileDialog {}
 
-pub(super) struct AsyncDialog<R> {
+pub struct AsyncDialog<R> {
     state: Arc<Mutex<FutureState<R>>>,
 }
 
 impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
-    pub(super) fn new<F: FnOnce() -> GtkFileDialog + Send + Sync + 'static>(init: F) -> Self {
+    pub fn new<F: FnOnce() -> GtkFileDialog + Send + Sync + 'static>(init: F) -> Self {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
@@ -141,7 +141,6 @@ unsafe fn connect_raw<F>(
         0,
     );
     assert!(handle > 0);
-    // from_glib(handle)
 }
 
 unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkFileChooser, f: F) {
@@ -155,10 +154,6 @@ unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkFil
         let f: &F = &*(f as *const F);
 
         f(res);
-        // f(
-        //     &Dialog::from_glib_borrow(this).unsafe_cast_ref(),
-        //     from_glib(response_id),
-        // )
     }
     let f: Box<F> = Box::new(f);
     connect_raw(

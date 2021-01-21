@@ -13,58 +13,101 @@ mod async_dialog;
 use async_dialog::AsyncDialog;
 pub use async_dialog::DialogFuture;
 
-pub fn pick_file(opt: FileDialog) -> Option<PathBuf> {
-    objc::rc::autoreleasepool(move || {
-        let panel = Panel::build_pick_file(&opt);
+use super::{
+    AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl,
+    DialogFutureType, FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl,
+};
 
-        let res = panel.run_modal();
-        OutputFrom::from(&panel, res)
-    })
+//
+// File Picker
+//
+
+impl FilePickerDialogImpl for FileDialog {
+    fn pick_file(self) -> Option<PathBuf> {
+        objc::rc::autoreleasepool(move || {
+            let panel = Panel::build_pick_file(&self);
+
+            let res = panel.run_modal();
+            OutputFrom::from(&panel, res)
+        })
+    }
+
+    fn pick_files(self) -> Option<Vec<PathBuf>> {
+        objc::rc::autoreleasepool(move || {
+            let panel = Panel::build_pick_files(&self);
+
+            let res = panel.run_modal();
+            OutputFrom::from(&panel, res)
+        })
+    }
 }
 
-pub fn save_file(opt: FileDialog) -> Option<PathBuf> {
-    objc::rc::autoreleasepool(move || {
-        let panel = Panel::build_save_file(&opt);
+impl AsyncFilePickerDialogImpl for FileDialog {
+    fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let panel = Panel::build_pick_file(&self);
 
-        let res = panel.run_modal();
-        OutputFrom::from(&panel, res)
-    })
+        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
+        Box::pin(ret)
+    }
+
+    fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let panel = Panel::build_pick_files(&self);
+
+        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
+        Box::pin(ret)
+    }
 }
 
-pub fn pick_folder(opt: FileDialog) -> Option<PathBuf> {
-    objc::rc::autoreleasepool(move || {
-        let panel = Panel::build_pick_folder(&opt);
+//
+// Folder Picker
+//
 
-        let res = panel.run_modal();
-        OutputFrom::from(&panel, res)
-    })
+impl FolderPickerDialogImpl for FileDialog {
+    fn pick_folder(self) -> Option<PathBuf> {
+        objc::rc::autoreleasepool(move || {
+            let panel = Panel::build_pick_folder(&self);
+            let res = panel.run_modal();
+            OutputFrom::from(&panel, res)
+        })
+    }
 }
 
-pub fn pick_files(opt: FileDialog) -> Option<Vec<PathBuf>> {
-    objc::rc::autoreleasepool(move || {
-        let panel = Panel::build_pick_files(&opt);
-
-        let res = panel.run_modal();
-        OutputFrom::from(&panel, res)
-    })
+impl AsyncFolderPickerDialogImpl for FileDialog {
+    fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let panel = Panel::build_pick_folder(&self);
+        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
+        Box::pin(ret)
+    }
 }
 
-pub fn pick_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    let panel = Panel::build_pick_file(&opt);
-    AsyncDialog::new(panel).into()
+//
+// File Save
+//
+
+impl FileSaveDialogImpl for FileDialog {
+    fn save_file(self) -> Option<PathBuf> {
+        objc::rc::autoreleasepool(move || {
+            let panel = Panel::build_save_file(&self);
+            let res = panel.run_modal();
+            OutputFrom::from(&panel, res)
+        })
+    }
 }
 
-pub fn save_file_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    let panel = Panel::build_save_file(&opt);
-    AsyncDialog::new(panel).into()
+impl AsyncFileSaveDialogImpl for FileDialog {
+    fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        let panel = Panel::build_save_file(&self);
+
+        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
+        Box::pin(ret)
+    }
 }
 
-pub fn pick_folder_async(opt: FileDialog) -> DialogFuture<Option<FileHandle>> {
-    let panel = Panel::build_pick_folder(&opt);
-    AsyncDialog::new(panel).into()
-}
+use crate::backend::MessageDialogImpl;
+use crate::MessageDialog;
 
-pub fn pick_files_async(opt: FileDialog) -> DialogFuture<Option<Vec<FileHandle>>> {
-    let panel = Panel::build_pick_files(&opt);
-    AsyncDialog::new(panel).into()
+impl MessageDialogImpl for MessageDialog {
+    fn show(self) {
+        unimplemented!("");
+    }
 }

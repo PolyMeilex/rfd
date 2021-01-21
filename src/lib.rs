@@ -9,3 +9,6 @@ mod dialog;
 pub use dialog::FileDialog;
 
 pub use dialog::AsyncFileDialog;
+
+pub use dialog::MessageDialog;
+

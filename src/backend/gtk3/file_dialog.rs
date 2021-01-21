@@ -244,16 +244,9 @@ impl OutputFrom<GtkFileDialog> for Option<Vec<FileHandle>> {
 impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {
-            wait_for_cleanup();
+            super::wait_for_cleanup();
             gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
-            wait_for_cleanup();
+            super::wait_for_cleanup();
         }
-    }
-}
-
-/// gtk_main_iteration()
-pub(crate) unsafe fn wait_for_cleanup() {
-    while gtk_sys::gtk_events_pending() == 1 {
-        gtk_sys::gtk_main_iteration();
     }
 }

@@ -1,63 +1,63 @@
-//
-// Windows
-//
-
-#[cfg(target_os = "windows")]
-mod win_cid;
-#[cfg(target_os = "windows")]
-pub use win_cid::{pick_file, pick_files, pick_folder, save_file};
-#[cfg(target_os = "windows")]
-pub use win_cid::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
-
-//
-// Linux
-//
+use crate::FileHandle;
+use std::future::Future;
+use std::path::PathBuf;
+use std::pin::Pin;
 
 #[cfg(target_os = "linux")]
 mod gtk3;
-#[cfg(target_os = "linux")]
-pub use gtk3::{pick_file, pick_files, pick_folder, save_file};
-#[cfg(target_os = "linux")]
-pub use gtk3::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
-
-//
-// MacOs
-//
-
 #[cfg(target_os = "macos")]
 mod macos;
-#[cfg(target_os = "macos")]
-pub use macos::{pick_file, pick_files, pick_folder, save_file};
-#[cfg(target_os = "macos")]
-pub use macos::{pick_file_async, pick_files_async, pick_folder_async, save_file_async};
+#[cfg(target_arch = "wasm32")]
+mod wasm;
+#[cfg(target_os = "windows")]
+mod win_cid;
 
 //
-// Wasm
+// Sync
 //
 
+/// Dialog used to pick file/files
+pub trait FilePickerDialogImpl {
+    fn pick_file(self) -> Option<PathBuf>;
+    fn pick_files(self) -> Option<Vec<PathBuf>>;
+}
+
+/// Dialog used to save file
+pub trait FileSaveDialogImpl {
+    fn save_file(self) -> Option<PathBuf>;
+}
+
+/// Dialog used to pick folder
+pub trait FolderPickerDialogImpl {
+    fn pick_folder(self) -> Option<PathBuf>;
+}
+
+pub trait MessageDialogImpl {
+    fn show(self);
+}
+
+//
+// Async
+//
+
+// Return type of async dialogs:
+#[cfg(not(target_arch = "wasm32"))]
+pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 #[cfg(target_arch = "wasm32")]
-pub mod wasm;
-// #[cfg(target_arch = "wasm32")]
-// pub use wasm::{pick_file, pick_files, pick_folder, save_file};
-#[cfg(target_arch = "wasm32")]
-pub use wasm::{pick_file_async, pick_files_async /*pick_folder_async*/ /*save_file_async*/};
+pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T>>>;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    /// Check if all fns are defined
-    #[allow(unused_imports)]
-    fn fn_def_check() {
-        // Sync
+/// Dialog used to pick file/files
+pub trait AsyncFilePickerDialogImpl {
+    fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>>;
+    fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;
+}
 
-        #[cfg(not(target_arch = "wasm32"))]
-        use super::{pick_file, pick_files, pick_folder, save_file};
+/// Dialog used to pick folder
+pub trait AsyncFolderPickerDialogImpl {
+    fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>>;
+}
 
-        // Async
-
-        use super::{pick_file_async, pick_files_async};
-
-        #[cfg(not(target_arch = "wasm32"))]
-        use super::{pick_folder_async, save_file_async};
-    }
+/// Dialog used to pick folder
+pub trait AsyncFileSaveDialogImpl {
+    fn save_file_async(self) -> DialogFutureType<Option<FileHandle>>;
 }
