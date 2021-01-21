@@ -113,7 +113,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_pick_folder(&opt);
+            let panel = Panel::build_pick_folder(&self);
             let res = panel.run_modal();
             OutputFrom::from(&panel, res)
         })
@@ -122,7 +122,7 @@ impl FolderPickerDialogImpl for FileDialog {
 
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let panel = Panel::build_pick_folder(&opt);
+        let panel = Panel::build_pick_folder(&self);
         let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
         Box::pin(ret)
     }
