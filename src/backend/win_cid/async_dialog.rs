@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::util::init_com;
+use super::utils::init_com;
 use super::win_dialog::{IDialog, OutputFrom};
 
 struct FutureState<R> {

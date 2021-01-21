@@ -7,8 +7,8 @@ use std::path::PathBuf;
 
 use winapi::shared::winerror::HRESULT;
 
-mod util;
-use util::init_com;
+mod utils;
+use utils::init_com;
 
 mod win_dialog;
 use win_dialog::IDialog;

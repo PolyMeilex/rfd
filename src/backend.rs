@@ -3,38 +3,14 @@ use std::future::Future;
 use std::path::PathBuf;
 use std::pin::Pin;
 
-//
-// Windows
-//
-
-#[cfg(target_os = "windows")]
-mod win_cid;
-
-//
-// Linux
-//
-
 #[cfg(target_os = "linux")]
 mod gtk3;
-
-//
-// MacOs
-//
-
 #[cfg(target_os = "macos")]
 mod macos;
-
-//
-// Wasm
-//
-
 #[cfg(target_arch = "wasm32")]
-pub mod wasm;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send>>;
-#[cfg(target_arch = "wasm32")]
-pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T>>>;
+mod wasm;
+#[cfg(target_os = "windows")]
+mod win_cid;
 
 //
 // Sync
@@ -63,6 +39,12 @@ pub trait MessageDialogImpl {
 //
 // Async
 //
+
+// Return type of async dialogs:
+#[cfg(not(target_arch = "wasm32"))]
+pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+#[cfg(target_arch = "wasm32")]
+pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T>>>;
 
 /// Dialog used to pick file/files
 pub trait AsyncFilePickerDialogImpl {

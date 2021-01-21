@@ -11,8 +11,8 @@ use file_dialog::{GtkFileDialog, OutputFrom};
 
 mod message_dialog;
 
-mod gtk_guard;
-use gtk_guard::GTK_MUTEX;
+mod utils;
+use utils::GTK_MUTEX;
 
 use super::DialogFutureType;
 

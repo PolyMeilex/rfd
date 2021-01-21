@@ -102,31 +102,3 @@ impl<R> std::future::Future for DialogFuture<R> {
         }
     }
 }
-
-// pub fn callback_test<F: Fn(())>(cb: F) {
-//     objc::rc::autoreleasepool(|| {
-//         let panel = Panel::open_panel();
-
-//         let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
-//         let was_running: bool = unsafe { msg_send![app, isRunning] };
-
-//         let completion = block::ConcreteBlock::new(move |result: i32| {
-//             if !was_running {
-//                 unsafe {
-//                     let _: () = msg_send![app, stop: nil];
-//                 }
-//             }
-//             cb(());
-//         });
-
-//         unsafe {
-//             let _: () = msg_send![*panel.panel, beginWithCompletionHandler: &completion];
-
-//             if !was_running {
-//                 let _: () = msg_send![app, run];
-//             }
-//         }
-
-//         std::mem::forget(completion);
-//     });
-// }
