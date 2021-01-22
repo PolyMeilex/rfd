@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::utils::init_com;
-use super::win_dialog::{IDialog, OutputFrom};
+use super::super::utils::init_com;
+use super::dialog_ffi::{IDialog, OutputFrom};
 
 struct FutureState<R> {
     waker: Option<Waker>,

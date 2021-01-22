@@ -23,7 +23,7 @@ cocoa-foundation= "0.1.0"
 
 
 [target.'cfg(target_os = "windows")'.dependencies]
-winapi = { version = "0.3.9", features = ["combaseapi","objbase","shobjidl","shellapi"] }
+winapi = { version = "0.3.9", features = ["winuser","combaseapi","objbase","shobjidl","shellapi"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-sys = "0.10.0"

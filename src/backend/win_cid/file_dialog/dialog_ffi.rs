@@ -28,7 +28,7 @@ use winapi::{
     Interface,
 };
 
-use super::utils::ToResult;
+use super::super::utils::ToResult;
 
 fn to_os_string(s: &LPWSTR) -> OsString {
     let slice = unsafe {
