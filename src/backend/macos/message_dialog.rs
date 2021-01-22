@@ -12,9 +12,12 @@ enum NSAlertStyle {
     Critical = 2,
 }
 
-#[link(name = "AppKit", kind = "framework")]
-extern "C" {
-    static NSAlertFirstButtonReturn: i64;
+#[repr(i64)]
+#[derive(Debug, PartialEq)]
+enum NSAlertReturn {
+    FirstButton = 1000,
+    // SecondButton = 1001,
+    // ThirdButton = 1002,
 }
 
 pub struct NSAlert {
@@ -58,6 +61,8 @@ impl NSAlert {
         unsafe {
             let text = NSString::alloc(nil).init_str(&opt.text);
             let _: () = msg_send![alert, setMessageText: text];
+            let text = NSString::alloc(nil).init_str(&opt.description);
+            let _: () = msg_send![alert, setInformativeText: text];
         }
 
         let key_window = unsafe {
@@ -73,8 +78,7 @@ impl NSAlert {
 
     pub fn run(self) -> bool {
         let ret: i64 = unsafe { msg_send![self.ptr, runModal] };
-
-        unsafe { ret == NSAlertFirstButtonReturn }
+        ret == NSAlertReturn::FirstButton as i64
     }
 }
 

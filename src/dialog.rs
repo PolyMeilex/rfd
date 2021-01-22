@@ -159,6 +159,7 @@ use crate::backend::MessageDialogImpl;
 #[derive(Default)]
 pub struct MessageDialog {
     pub(crate) text: String,
+    pub(crate) description: String,
     pub(crate) level: MessageLevel,
     pub(crate) buttons: MessageButtons,
 }
@@ -170,6 +171,16 @@ impl MessageDialog {
 
     pub fn set_text(mut self, text: &str) -> Self {
         self.text = text.into();
+        self
+    }
+
+    pub fn set_description(mut self, text: &str) -> Self {
+        self.description = text.into();
+        self
+    }
+
+    pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
+        self.buttons = btn;
         self
     }
 
