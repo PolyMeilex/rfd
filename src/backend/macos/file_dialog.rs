@@ -102,12 +102,3 @@ impl AsyncFileSaveDialogImpl for FileDialog {
         Box::pin(ret)
     }
 }
-
-use crate::MessageDialog;
-
-use crate::backend::MessageDialogImpl;
-impl MessageDialogImpl for MessageDialog {
-    fn show(self) {
-        unimplemented!("");
-    }
-}

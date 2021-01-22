@@ -191,6 +191,12 @@ impl Panel {
     }
 }
 
+impl Drop for Panel {
+    fn drop(&mut self) {
+        let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
+    }
+}
+
 pub trait OutputFrom<F> {
     fn from(from: &F, res_id: i32) -> Self;
 }
@@ -237,11 +243,5 @@ impl OutputFrom<Panel> for Option<Vec<FileHandle>> {
         } else {
             None
         }
-    }
-}
-
-impl Drop for Panel {
-    fn drop(&mut self) {
-        let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
     }
 }
