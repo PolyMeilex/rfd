@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::{OutputFrom, Panel};
+use super::dialog_ffi::{OutputFrom, Panel};
 
 pub fn activate_cocoa_multithreading() {
     unsafe {

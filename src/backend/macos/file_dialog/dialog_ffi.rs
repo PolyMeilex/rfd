@@ -11,12 +11,13 @@ use cocoa_foundation::foundation::{NSArray, NSAutoreleasePool, NSString, NSURL};
 use objc::runtime::{Object, YES};
 use objc::runtime::{BOOL, NO};
 
-use super::policy_manager::PolicyManager;
+use super::super::policy_manager::PolicyManager;
 use objc::rc::StrongPtr;
 
 extern "C" {
     pub fn CGShieldingWindowLevel() -> i32;
 }
+
 fn make_nsstring(s: &str) -> id {
     unsafe { NSString::alloc(nil).init_str(s).autorelease() }
 }
