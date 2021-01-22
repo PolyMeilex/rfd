@@ -7,7 +7,7 @@ use std::task::{Context, Poll, Waker};
 
 use super::{GtkFileDialog, OutputFrom};
 
-use super::utils::{GTK_EVENT_HANDLER, GTK_MUTEX};
+use super::super::utils::{GTK_EVENT_HANDLER, GTK_MUTEX};
 
 struct FutureState<R> {
     waker: Option<Waker>,

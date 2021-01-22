@@ -9,7 +9,7 @@ pub struct GtkMessageDialog {
 
 impl GtkMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
-        super::gtk_init_check();
+        super::utils::gtk_init_check();
 
         let s: &str = &opt.text;
         let text = CString::new(s).unwrap();
@@ -45,7 +45,7 @@ impl GtkMessageDialog {
 
         unsafe {
             gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
-            super::wait_for_cleanup();
+            super::utils::wait_for_cleanup();
         }
 
         res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES

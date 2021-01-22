@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 
+use std::ptr;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -126,5 +127,16 @@ impl GtkThread {
 impl Drop for GtkThread {
     fn drop(&mut self) {
         self.running.store(false, Ordering::Release);
+    }
+}
+
+pub fn gtk_init_check() -> bool {
+    unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) == 1 }
+}
+
+/// gtk_main_iteration()
+pub unsafe fn wait_for_cleanup() {
+    while gtk_sys::gtk_events_pending() == 1 {
+        gtk_sys::gtk_main_iteration();
     }
 }
