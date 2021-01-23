@@ -185,69 +185,6 @@ impl AsGtkDialog for GtkFileDialog {
     }
 }
 
-pub trait OutputFrom<F> {
-    fn from(from: &F, res_id: i32) -> Self;
-    /// Describes what should be returned when gtk_init failed
-    fn get_failed() -> Self;
-}
-
-impl OutputFrom<GtkFileDialog> for Option<PathBuf> {
-    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
-        if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
-            dialog.get_result()
-        } else {
-            None
-        }
-    }
-    fn get_failed() -> Self {
-        None
-    }
-}
-
-impl OutputFrom<GtkFileDialog> for Option<Vec<PathBuf>> {
-    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
-        if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
-            Some(dialog.get_results())
-        } else {
-            None
-        }
-    }
-    fn get_failed() -> Self {
-        None
-    }
-}
-
-impl OutputFrom<GtkFileDialog> for Option<FileHandle> {
-    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
-        if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
-            dialog.get_result().map(FileHandle::wrap)
-        } else {
-            None
-        }
-    }
-    fn get_failed() -> Self {
-        None
-    }
-}
-
-impl OutputFrom<GtkFileDialog> for Option<Vec<FileHandle>> {
-    fn from(dialog: &GtkFileDialog, res_id: i32) -> Self {
-        if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
-            let files = dialog
-                .get_results()
-                .into_iter()
-                .map(FileHandle::wrap)
-                .collect();
-            Some(files)
-        } else {
-            None
-        }
-    }
-    fn get_failed() -> Self {
-        None
-    }
-}
-
 impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {

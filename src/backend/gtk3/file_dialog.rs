@@ -1,6 +1,6 @@
 pub mod dialog_ffi;
 
-use dialog_ffi::{GtkFileDialog, OutputFrom};
+use dialog_ffi::GtkFileDialog;
 
 use std::path::PathBuf;
 
@@ -24,8 +24,11 @@ impl FilePickerDialogImpl for FileDialog {
 
             let dialog = GtkFileDialog::build_pick_file(&self);
 
-            let res_id = dialog.run();
-            OutputFrom::from(&dialog, res_id)
+            if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+                dialog.get_result()
+            } else {
+                None
+            }
         })
     }
 
@@ -37,8 +40,11 @@ impl FilePickerDialogImpl for FileDialog {
 
             let dialog = GtkFileDialog::build_pick_files(&self);
 
-            let res_id = dialog.run();
-            OutputFrom::from(&dialog, res_id)
+            if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+                Some(dialog.get_results())
+            } else {
+                None
+            }
         })
     }
 }
@@ -94,8 +100,11 @@ impl FolderPickerDialogImpl for FileDialog {
 
             let dialog = GtkFileDialog::build_pick_folder(&self);
 
-            let res_id = dialog.run();
-            OutputFrom::from(&dialog, res_id)
+            if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+                dialog.get_result()
+            } else {
+                None
+            }
         })
     }
 }
@@ -131,8 +140,11 @@ impl FileSaveDialogImpl for FileDialog {
 
             let dialog = GtkFileDialog::build_save_file(&self);
 
-            let res_id = dialog.run();
-            OutputFrom::from(&dialog, res_id)
+            if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+                dialog.get_result()
+            } else {
+                None
+            }
         })
     }
 }
