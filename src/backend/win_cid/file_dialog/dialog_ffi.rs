@@ -231,33 +231,6 @@ impl IDialog {
     }
 }
 
-pub trait OutputFrom<F> {
-    fn from(from: &F) -> Self;
-    /// Describes what should be returned when gtk_init failed
-    fn get_failed() -> Self;
-}
-
-impl OutputFrom<IDialog> for Option<FileHandle> {
-    fn from(dialog: &IDialog) -> Self {
-        dialog.get_result().ok().map(FileHandle::wrap)
-    }
-    fn get_failed() -> Self {
-        None
-    }
-}
-
-impl OutputFrom<IDialog> for Option<Vec<FileHandle>> {
-    fn from(dialog: &IDialog) -> Self {
-        dialog
-            .get_results()
-            .ok()
-            .map(|r| r.into_iter().map(FileHandle::wrap).collect())
-    }
-    fn get_failed() -> Self {
-        None
-    }
-}
-
 impl Deref for IDialog {
     type Target = IFileDialog;
     fn deref(&self) -> &Self::Target {
