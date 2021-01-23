@@ -168,13 +168,30 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 #[wasm_bindgen]
 extern "C" {
     fn alert(s: &str);
+    fn confirm(s: &str) -> bool;
 }
 
 use crate::backend::MessageDialogImpl;
-use crate::MessageDialog;
+use crate::dialog::{MessageButtons, MessageDialog};
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) {
-        alert(&self.text);
+    fn show(self) -> bool {
+        let text = format!("{}\n{}", self.title, self.description);
+        match self.buttons {
+            MessageButtons::Ok => {
+                alert(&text);
+                true
+            }
+            MessageButtons::OkCancle | MessageButtons::YesNo => confirm(&text),
+        }
+    }
+}
+
+use crate::backend::AsyncMessageDialogImpl;
+
+impl AsyncMessageDialogImpl for MessageDialog {
+    fn show_async(self) -> DialogFutureType<bool> {
+        let val = MessageDialogImpl::show(self);
+        Box::pin(std::future::ready(val))
     }
 }

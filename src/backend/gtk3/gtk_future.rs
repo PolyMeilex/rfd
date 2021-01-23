@@ -1,7 +1,5 @@
-use crate::backend::gtk3::file_dialog::dialog_ffi::GtkFileDialog;
-use crate::backend::gtk3::utils::GTK_EVENT_HANDLER;
-use crate::backend::gtk3::utils::GTK_MUTEX;
-use crate::FileHandle;
+use super::utils::GTK_EVENT_HANDLER;
+use super::utils::GTK_MUTEX;
 
 use std::cell::RefCell;
 use std::pin::Pin;

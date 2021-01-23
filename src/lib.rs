@@ -10,5 +10,4 @@ pub use dialog::FileDialog;
 
 pub use dialog::AsyncFileDialog;
 
-pub use dialog::{MessageDialog,MessageButtons,MessageLevel};
-
+pub use dialog::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
