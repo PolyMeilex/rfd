@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::dialog_ffi::{OutputFrom, Panel};
+use super::AsModal;
 
 pub fn activate_cocoa_multithreading() {
     unsafe {
@@ -18,23 +18,30 @@ pub fn activate_cocoa_multithreading() {
     }
 }
 
-struct FutureState<R> {
+struct FutureState<R, D> {
     waker: Option<Waker>,
-    panel: Panel,
     data: Option<R>,
+    modal: D,
 }
 
-pub struct AsyncDialog<R> {
-    state: Arc<Mutex<FutureState<R>>>,
+unsafe impl<R, D> Send for FutureState<R, D> {}
+
+pub(super) struct ModalFuture<R, D> {
+    state: Arc<Mutex<FutureState<R, D>>>,
 }
 
-impl<R: OutputFrom<Panel>> AsyncDialog<R> {
-    pub(crate) fn new(panel: Panel) -> Self {
+unsafe impl<R, D> Send for ModalFuture<R, D> {}
+
+impl<R: 'static, D: AsModal> ModalFuture<R, D> {
+    pub fn new<F>(modal: D, cb: F) -> Self
+    where
+        F: Fn(&mut D, i64) -> R + Send + 'static,
+    {
         activate_cocoa_multithreading();
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
-            panel,
             data: None,
+            modal,
         }));
 
         let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
@@ -43,11 +50,10 @@ impl<R: OutputFrom<Panel>> AsyncDialog<R> {
         let completion = {
             let state = state.clone();
 
-            block::ConcreteBlock::new(move |result: i32| {
+            block::ConcreteBlock::new(move |result: i64| {
                 let mut state = state.lock().unwrap();
 
-                let panel = &state.panel;
-                state.data = Some(OutputFrom::from(panel, result));
+                state.data = Some(cb(&mut state.modal, result));
 
                 if let Some(waker) = state.waker.take() {
                     waker.wake();
@@ -63,7 +69,7 @@ impl<R: OutputFrom<Panel>> AsyncDialog<R> {
 
         unsafe {
             let state = state.lock().unwrap();
-            let _: () = msg_send![*state.panel.panel, beginWithCompletionHandler: &completion];
+            let _: () = msg_send![*state.modal.modal_ptr(), beginWithCompletionHandler: &completion];
 
             if !was_running {
                 let _: () = msg_send![app, run];
@@ -76,19 +82,7 @@ impl<R: OutputFrom<Panel>> AsyncDialog<R> {
     }
 }
 
-impl<R> Into<DialogFuture<R>> for AsyncDialog<R> {
-    fn into(self) -> DialogFuture<R> {
-        DialogFuture { state: self.state }
-    }
-}
-
-pub struct DialogFuture<R> {
-    state: Arc<Mutex<FutureState<R>>>,
-}
-
-unsafe impl<R> Send for DialogFuture<R> {}
-
-impl<R> std::future::Future for DialogFuture<R> {
+impl<R, D> std::future::Future for ModalFuture<R, D> {
     type Output = R;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {

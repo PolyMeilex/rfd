@@ -1,16 +1,14 @@
-mod dialog_async;
-mod dialog_ffi;
-
-use dialog_async::{AsyncDialog, DialogFuture};
-use dialog_ffi::{OutputFrom, Panel};
+mod panel_ffi;
+use panel_ffi::Panel;
 
 use crate::backend::DialogFutureType;
-
 use crate::{FileDialog, FileHandle};
 
 use std::path::PathBuf;
 
 pub use objc::runtime::{BOOL, NO};
+
+use super::modal_future::ModalFuture;
 
 //
 // File Picker
@@ -22,8 +20,11 @@ impl FilePickerDialogImpl for FileDialog {
         objc::rc::autoreleasepool(move || {
             let panel = Panel::build_pick_file(&self);
 
-            let res = panel.run_modal();
-            OutputFrom::from(&panel, res)
+            if panel.run_modal() == 1 {
+                Some(panel.get_result())
+            } else {
+                None
+            }
         })
     }
 
@@ -31,8 +32,11 @@ impl FilePickerDialogImpl for FileDialog {
         objc::rc::autoreleasepool(move || {
             let panel = Panel::build_pick_files(&self);
 
-            let res = panel.run_modal();
-            OutputFrom::from(&panel, res)
+            if panel.run_modal() == 1 {
+                Some(panel.get_results())
+            } else {
+                None
+            }
         })
     }
 }
@@ -42,15 +46,35 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         let panel = Panel::build_pick_file(&self);
 
-        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
-        Box::pin(ret)
+        let future = ModalFuture::new(panel, |panel, res_id| {
+            if res_id == 1 {
+                Some(panel.get_result().into())
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         let panel = Panel::build_pick_files(&self);
 
-        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
-        Box::pin(ret)
+        let future = ModalFuture::new(panel, |panel, res_id| {
+            if res_id == 1 {
+                Some(
+                    panel
+                        .get_results()
+                        .into_iter()
+                        .map(FileHandle::wrap)
+                        .collect(),
+                )
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 }
 
@@ -63,8 +87,11 @@ impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
             let panel = Panel::build_pick_folder(&self);
-            let res = panel.run_modal();
-            OutputFrom::from(&panel, res)
+            if panel.run_modal() == 1 {
+                Some(panel.get_result())
+            } else {
+                None
+            }
         })
     }
 }
@@ -73,8 +100,16 @@ use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         let panel = Panel::build_pick_folder(&self);
-        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
-        Box::pin(ret)
+
+        let future = ModalFuture::new(panel, |panel, res_id| {
+            if res_id == 1 {
+                Some(panel.get_result().into())
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 }
 
@@ -87,8 +122,11 @@ impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
             let panel = Panel::build_save_file(&self);
-            let res = panel.run_modal();
-            OutputFrom::from(&panel, res)
+            if panel.run_modal() == 1 {
+                Some(panel.get_result())
+            } else {
+                None
+            }
         })
     }
 }
@@ -98,7 +136,14 @@ impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         let panel = Panel::build_save_file(&self);
 
-        let ret: DialogFuture<_> = AsyncDialog::new(panel).into();
-        Box::pin(ret)
+        let future = ModalFuture::new(panel, |panel, res_id| {
+            if res_id == 1 {
+                Some(panel.get_result().into())
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 }

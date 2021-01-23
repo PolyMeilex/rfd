@@ -14,6 +14,8 @@ use objc::runtime::{BOOL, NO};
 use super::super::policy_manager::PolicyManager;
 use objc::rc::StrongPtr;
 
+use super::super::AsModal;
+
 extern "C" {
     pub fn CGShieldingWindowLevel() -> i32;
 }
@@ -26,6 +28,12 @@ pub struct Panel {
     pub(crate) panel: StrongPtr,
     _policy_manager: PolicyManager,
     key_window: *mut Object,
+}
+
+impl AsModal for Panel {
+    fn modal_ptr(&self) -> id {
+        *self.panel
+    }
 }
 
 impl Panel {
@@ -194,54 +202,5 @@ impl Panel {
 impl Drop for Panel {
     fn drop(&mut self) {
         let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
-    }
-}
-
-pub trait OutputFrom<F> {
-    fn from(from: &F, res_id: i32) -> Self;
-}
-
-impl OutputFrom<Panel> for Option<PathBuf> {
-    fn from(panel: &Panel, res_id: i32) -> Self {
-        if res_id == 1 {
-            Some(panel.get_result())
-        } else {
-            None
-        }
-    }
-}
-
-impl OutputFrom<Panel> for Option<Vec<PathBuf>> {
-    fn from(panel: &Panel, res_id: i32) -> Self {
-        if res_id == 1 {
-            Some(panel.get_results())
-        } else {
-            None
-        }
-    }
-}
-
-impl OutputFrom<Panel> for Option<FileHandle> {
-    fn from(panel: &Panel, res_id: i32) -> Self {
-        if res_id == 1 {
-            Some(FileHandle::wrap(panel.get_result()))
-        } else {
-            None
-        }
-    }
-}
-
-impl OutputFrom<Panel> for Option<Vec<FileHandle>> {
-    fn from(panel: &Panel, res_id: i32) -> Self {
-        if res_id == 1 {
-            let files = panel
-                .get_results()
-                .into_iter()
-                .map(FileHandle::wrap)
-                .collect();
-            Some(files)
-        } else {
-            None
-        }
     }
 }
