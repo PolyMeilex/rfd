@@ -1,4 +1,4 @@
-use crate::{FileDialog, FileHandle};
+use crate::FileDialog;
 
 use std::path::Path;
 use std::path::PathBuf;
