@@ -1,4 +1,8 @@
+use crate::backend::DialogFutureType;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
+
+use super::modal_future::ModalFuture;
+use super::AsModal;
 
 use cocoa_foundation::base::{id, nil};
 use cocoa_foundation::foundation::NSString;
@@ -80,6 +84,19 @@ impl NSAlert {
         let ret: i64 = unsafe { msg_send![self.ptr, runModal] };
         ret == NSAlertReturn::FirstButton as i64
     }
+
+    pub fn run_async(self) -> DialogFutureType<bool> {
+        let future = ModalFuture::new(self, |_, res_id| {
+            res_id == NSAlertReturn::FirstButton as i64
+        });
+        Box::pin(future)
+    }
+}
+
+impl AsModal for NSAlert {
+    fn modal_ptr(&self) -> id {
+        self.ptr
+    }
 }
 
 impl Drop for NSAlert {
@@ -91,16 +108,14 @@ impl Drop for NSAlert {
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> bool {
-        let dialog = NSAlert::new(self);
-        dialog.run()
+        NSAlert::new(self).run()
     }
 }
 
 use crate::backend::AsyncMessageDialogImpl;
-use crate::backend::DialogFutureType;
 
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<bool> {
-        unimplemented!("");
+        NSAlert::new(self).run_async()
     }
 }
