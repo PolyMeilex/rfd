@@ -68,9 +68,8 @@ impl<R: 'static, D: AsModal> ModalFuture<R, D> {
         };
 
         unsafe {
-            let state = state.lock().unwrap();
             let _: () = msg_send![
-                state.modal.modal_ptr(),
+                state.lock().unwrap().modal.modal_ptr(),
                 beginWithCompletionHandler: &completion
             ];
 
