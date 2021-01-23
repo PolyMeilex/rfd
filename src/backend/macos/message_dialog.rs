@@ -59,7 +59,7 @@ impl NSAlert {
         }
 
         unsafe {
-            let text = NSString::alloc(nil).init_str(&opt.text);
+            let text = NSString::alloc(nil).init_str(&opt.title);
             let _: () = msg_send![alert, setMessageText: text];
             let text = NSString::alloc(nil).init_str(&opt.description);
             let _: () = msg_send![alert, setInformativeText: text];

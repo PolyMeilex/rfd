@@ -158,7 +158,7 @@ use crate::backend::MessageDialogImpl;
 /// ## Synchronous Message Dialog
 #[derive(Default)]
 pub struct MessageDialog {
-    pub(crate) text: String,
+    pub(crate) title: String,
     pub(crate) description: String,
     pub(crate) level: MessageLevel,
     pub(crate) buttons: MessageButtons,
@@ -169,8 +169,8 @@ impl MessageDialog {
         Default::default()
     }
 
-    pub fn set_text(mut self, text: &str) -> Self {
-        self.text = text.into();
+    pub fn set_title(mut self, text: &str) -> Self {
+        self.title = text.into();
         self
     }
 

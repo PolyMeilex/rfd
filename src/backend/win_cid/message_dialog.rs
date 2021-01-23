@@ -15,8 +15,12 @@ pub struct WinMessageDialog {
 
 impl WinMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
-        let text: Vec<u16> = OsStr::new(&opt.text).encode_wide().chain(once(0)).collect();
-        let caption: Vec<u16> = OsStr::new("").encode_wide().chain(once(0)).collect();
+        let input = format!("{}\n{}", opt.title, opt.description);
+        let text: Vec<u16> = OsStr::new(&input).encode_wide().chain(once(0)).collect();
+        let caption: Vec<u16> = OsStr::new(&opt.title)
+            .encode_wide()
+            .chain(once(0))
+            .collect();
 
         let level = match opt.level {
             MessageLevel::Info => MB_ICONINFORMATION,

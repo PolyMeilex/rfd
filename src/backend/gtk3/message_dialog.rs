@@ -11,9 +11,6 @@ impl GtkMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
         super::utils::gtk_init_check();
 
-        let s: &str = &opt.text;
-        let text = CString::new(s).unwrap();
-
         let level = match opt.level {
             MessageLevel::Info => gtk_sys::GTK_MESSAGE_INFO,
             MessageLevel::Warning => gtk_sys::GTK_MESSAGE_WARNING,
@@ -26,6 +23,11 @@ impl GtkMessageDialog {
             MessageButtons::YesNo => gtk_sys::GTK_BUTTONS_YES_NO,
         };
 
+        let s: &str = &opt.title;
+        let title = CString::new(s).unwrap();
+        let s: &str = &opt.description;
+        let description = CString::new(s).unwrap();
+
         let ptr = unsafe {
             gtk_sys::gtk_message_dialog_new(
                 ptr::null_mut(),
@@ -33,9 +35,13 @@ impl GtkMessageDialog {
                 level,
                 buttons,
                 b"%s\0".as_ptr() as *mut _,
-                text.as_ptr(),
+                title.as_ptr(),
             ) as *mut gtk_sys::GtkDialog
         };
+
+        unsafe {
+            gtk_sys::gtk_message_dialog_format_secondary_text(ptr as *mut _, description.as_ptr());
+        }
 
         Self { ptr }
     }
