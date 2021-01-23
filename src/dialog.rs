@@ -170,6 +170,11 @@ impl MessageDialog {
         Default::default()
     }
 
+    pub fn set_level(mut self, level: MessageLevel) -> Self {
+        self.level = level;
+        self
+    }
+
     pub fn set_title(mut self, text: &str) -> Self {
         self.title = text.into();
         self
@@ -188,9 +193,39 @@ impl MessageDialog {
     pub fn show(self) -> bool {
         MessageDialogImpl::show(self)
     }
+}
 
-    pub fn show_async(self) -> impl Future<Output = bool> {
-        AsyncMessageDialogImpl::show_async(self)
+/// ## Asynchronous Message Dialog
+#[derive(Default)]
+pub struct AsyncMessageDialog(MessageDialog);
+
+impl AsyncMessageDialog {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn set_level(mut self, level: MessageLevel) -> Self {
+        self.0 = self.0.set_level(level);
+        self
+    }
+
+    pub fn set_title(mut self, text: &str) -> Self {
+        self.0 = self.0.set_title(text);
+        self
+    }
+
+    pub fn set_description(mut self, text: &str) -> Self {
+        self.0 = self.0.set_description(text);
+        self
+    }
+
+    pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
+        self.0 = self.0.set_buttons(btn);
+        self
+    }
+
+    pub fn show(self) -> impl Future<Output = bool> {
+        AsyncMessageDialogImpl::show_async(self.0)
     }
 }
 
