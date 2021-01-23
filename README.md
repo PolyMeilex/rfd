@@ -52,7 +52,9 @@ let data = file.read().await;
 | StartingPath | ✔     | ✔       | ✔         | ✖      |
 | Async        | ✔     | ✔       | ✔         | ✔      |
 
-[1] Sync dialog freezes when used with winit (same way as `nfd`) [#1779](https://github.com/rust-windowing/winit/issues/1779)
+[1] Macos Sync dialog freezes when used with winit (same way as `nfd`) [Caused by winit #1779](https://github.com/rust-windowing/winit/issues/1779)
+
+[1] Macos Async dialog requires an started NSApplication instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc.
 
 # rfd-extras
 
