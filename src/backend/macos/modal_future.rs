@@ -38,14 +38,12 @@ impl<R: 'static, D: AsModal> ModalFuture<R, D> {
         F: Fn(&mut D, i64) -> R + Send + 'static,
     {
         activate_cocoa_multithreading();
+
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
             modal,
         }));
-
-        let app: *mut Object = unsafe { msg_send![class!(NSApplication), sharedApplication] };
-        let was_running: bool = unsafe { msg_send![app, isRunning] };
 
         let completion = {
             let state = state.clone();
@@ -58,26 +56,28 @@ impl<R: 'static, D: AsModal> ModalFuture<R, D> {
                 if let Some(waker) = state.waker.take() {
                     waker.wake();
                 }
-
-                if !was_running {
-                    unsafe {
-                        let _: () = msg_send![app, stop: nil];
-                    }
-                }
             })
         };
 
         unsafe {
-            let _: () = msg_send![
-                state.lock().unwrap().modal.modal_ptr(),
-                beginWithCompletionHandler: &completion
-            ];
+            let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
+            let is_running: bool = msg_send![app, isRunning];
+            let window: id = msg_send![app, keyWindow];
 
-            if !was_running {
-                let _: () = msg_send![app, run];
+            // if async exec is possible start sheet modal
+            // otherwise fallback to sync
+            if is_running && !window.is_null() {
+                let _: () = msg_send![
+                    state.lock().unwrap().modal.modal_ptr(),
+                    beginSheetModalForWindow: window completionHandler: &completion
+                ];
+                std::mem::forget(completion);
+            } else {
+                let ret: i64 =
+                    unsafe { msg_send![state.lock().unwrap().modal.modal_ptr(), runModal] };
+                completion.call((ret,));
+                std::mem::drop(completion);
             }
-
-            std::mem::forget(completion);
         }
 
         Self { state }

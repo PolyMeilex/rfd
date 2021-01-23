@@ -45,13 +45,14 @@ fn main() {
                 input:
                     event::KeyboardInput {
                         state: event::ElementState::Pressed,
-                        virtual_keycode: Some(winit::event::VirtualKeyCode::D),
+                        virtual_keycode: Some(winit::event::VirtualKeyCode::F),
                         ..
                     },
                 ..
             } => {
                 let dialog = rfd::AsyncFileDialog::new()
                     .add_filter("midi", &["mid", "midi"])
+                    .add_filter("rust", &["rs", "toml"])
                     .pick_files();
 
                 let event_loop_proxy = event_loop_proxy.clone();
@@ -62,6 +63,27 @@ fn main() {
                     let names = files;
 
                     event_loop_proxy.send_event(format!("{:#?}", names)).ok();
+                });
+            }
+            WindowEvent::KeyboardInput {
+                input:
+                    event::KeyboardInput {
+                        state: event::ElementState::Pressed,
+                        virtual_keycode: Some(winit::event::VirtualKeyCode::M),
+                        ..
+                    },
+                ..
+            } => {
+                let dialog = rfd::AsyncMessageDialog::new()
+                    .set_title("Msg!")
+                    .set_description("Description!")
+                    .set_buttons(rfd::MessageButtons::YesNo)
+                    .show();
+
+                let event_loop_proxy = event_loop_proxy.clone();
+                executor.execut(async move {
+                    let val = dialog.await;
+                    event_loop_proxy.send_event(format!("Msg: {}", val)).ok();
                 });
             }
             _ => {}
