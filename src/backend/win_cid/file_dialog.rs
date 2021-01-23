@@ -1,8 +1,8 @@
-mod dialog_async;
-mod dialog_ffi;
+pub mod dialog_ffi;
+mod dialog_future;
 
-use dialog_async::{AsyncDialog, DialogFuture};
 use dialog_ffi::IDialog;
+use dialog_future::{multiple_return_future, single_return_future};
 
 use crate::backend::DialogFutureType;
 use crate::FileDialog;
@@ -46,14 +46,12 @@ impl FilePickerDialogImpl for FileDialog {
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || IDialog::build_pick_file(&self).ok()).into();
+        let ret = single_return_future(move || IDialog::build_pick_file(&self));
         Box::pin(ret)
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || IDialog::build_pick_files(&self).ok()).into();
+        let ret = multiple_return_future(move || IDialog::build_pick_files(&self));
         Box::pin(ret)
     }
 }
@@ -80,8 +78,7 @@ impl FolderPickerDialogImpl for FileDialog {
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || IDialog::build_pick_folder(&self).ok()).into();
+        let ret = single_return_future(move || IDialog::build_pick_folder(&self));
         Box::pin(ret)
     }
 }
@@ -108,8 +105,7 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || IDialog::build_save_file(&self).ok()).into();
+        let ret = single_return_future(move || IDialog::build_save_file(&self));
         Box::pin(ret)
     }
 }

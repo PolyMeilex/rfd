@@ -1,3 +1,4 @@
+use super::thread_future::ThreadFuture;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use winapi::um::winuser::{
@@ -52,6 +53,10 @@ impl WinMessageDialog {
         };
 
         ret == IDOK || ret == IDYES
+    }
+
+    pub fn run_async(self) -> ThreadFuture<bool> {
+        ThreadFuture::new(move |data| *data = Some(self.run()))
     }
 }
 
