@@ -60,6 +60,6 @@ AKA features that are not file related
 
 | Feature       | Linux | Windows | MacOS | Wasm32 |
 | ------------- | ----- | ------- | ----- | ------ |
-| MessageDialog | ✔     | ✔       |       | ✔      |
+| MessageDialog | ✔     | ✔       | ✔     | ✔      |
 | PromptDialog  |       |         |       |        |
 | ColorPicker   |       |         |       |        |
