@@ -68,3 +68,13 @@ impl MessageDialogImpl for MessageDialog {
         dialog.run()
     }
 }
+
+use crate::backend::AsyncMessageDialogImpl;
+use crate::backend::DialogFutureType;
+
+impl AsyncMessageDialogImpl for MessageDialog {
+    fn show_async(self) -> DialogFutureType<bool> {
+        let dialog = WinMessageDialog::new(self);
+        Box::pin(dialog.run_async())
+    }
+}

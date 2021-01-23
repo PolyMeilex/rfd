@@ -4,5 +4,7 @@ fn main() {
         .set_description("Description!")
         .set_buttons(rfd::MessageButtons::OkCancle)
         .show();
+
     println!("{}", res);
+    // println!("{}", futures::executor::block_on(res));
 }
