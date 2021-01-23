@@ -1,5 +1,5 @@
 use crate::FileDialog;
-use crate::FileHandle;
+
 use std::{
     ffi::{OsStr, OsString},
     iter::once,
