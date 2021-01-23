@@ -1,5 +1,5 @@
 use super::super::AsGtkDialog;
-use crate::{FileDialog, FileHandle};
+use crate::FileDialog;
 use gtk_sys::GtkFileChooser;
 
 use std::{

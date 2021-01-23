@@ -63,10 +63,8 @@ impl WinMessageDialog {
 use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) {
+    fn show(self) -> bool {
         let dialog = WinMessageDialog::new(self);
-        let res = dialog.run();
-
-        println!("{:?}", res);
+        dialog.run()
     }
 }

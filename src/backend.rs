@@ -33,7 +33,7 @@ pub trait FolderPickerDialogImpl {
 }
 
 pub trait MessageDialogImpl {
-    fn show(self);
+    fn show(self) -> bool;
 }
 
 //
@@ -60,4 +60,8 @@ pub trait AsyncFolderPickerDialogImpl {
 /// Dialog used to pick folder
 pub trait AsyncFileSaveDialogImpl {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>>;
+}
+
+pub trait AsyncMessageDialogImpl {
+    fn show_async(self) -> DialogFutureType<bool>;
 }

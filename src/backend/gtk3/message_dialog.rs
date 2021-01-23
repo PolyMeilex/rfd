@@ -1,6 +1,10 @@
 use std::ffi::CString;
 use std::ptr;
 
+use super::gtk_future::GtkDialogFuture;
+use super::utils::wait_for_cleanup;
+use super::AsGtkDialog;
+
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 pub struct GtkMessageDialog {
@@ -58,13 +62,41 @@ impl GtkMessageDialog {
     }
 }
 
+impl Drop for GtkMessageDialog {
+    fn drop(&mut self) {
+        unsafe {
+            wait_for_cleanup();
+            gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
+            wait_for_cleanup();
+        }
+    }
+}
+
+impl AsGtkDialog for GtkMessageDialog {
+    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
+        self.ptr as *mut _
+    }
+}
+
 use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) {
+    fn show(self) -> bool {
         let dialog = GtkMessageDialog::new(self);
-        let res = dialog.run();
+        dialog.run()
+    }
+}
 
-        println!("{:?}", res);
+use crate::backend::AsyncMessageDialogImpl;
+use crate::backend::DialogFutureType;
+
+impl AsyncMessageDialogImpl for MessageDialog {
+    fn show_async(self) -> DialogFutureType<bool> {
+        let builder = move || GtkMessageDialog::new(self);
+
+        let future = GtkDialogFuture::new(builder, |_, res| {
+            res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
+        });
+        Box::pin(future)
     }
 }

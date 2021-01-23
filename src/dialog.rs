@@ -153,6 +153,7 @@ impl AsyncFileDialog {
     }
 }
 
+use crate::backend::AsyncMessageDialogImpl;
 use crate::backend::MessageDialogImpl;
 
 /// ## Synchronous Message Dialog
@@ -184,8 +185,12 @@ impl MessageDialog {
         self
     }
 
-    pub fn show(self) {
+    pub fn show(self) -> bool {
         MessageDialogImpl::show(self)
+    }
+
+    pub fn show_async(self) -> impl Future<Output = bool> {
+        AsyncMessageDialogImpl::show_async(self)
     }
 }
 

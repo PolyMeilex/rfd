@@ -4,4 +4,5 @@ fn main() {
         .set_description("Description!")
         .set_buttons(rfd::MessageButtons::OkCancle)
         .show();
+    println!("{}", res);
 }
