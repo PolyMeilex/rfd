@@ -90,10 +90,17 @@ impl Drop for NSAlert {
 
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) {
+    fn show(self) -> bool {
         let dialog = NSAlert::new(self);
-        let res = dialog.run();
+        dialog.run()
+    }
+}
 
-        println!("{:?}", res);
+use crate::backend::AsyncMessageDialogImpl;
+use crate::backend::DialogFutureType;
+
+impl AsyncMessageDialogImpl for MessageDialog {
+    fn show_async(self) -> DialogFutureType<bool> {
+        unimplemented!("");
     }
 }
