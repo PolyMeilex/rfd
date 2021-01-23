@@ -1,30 +1,38 @@
-use core::cell::RefCell;
+use crate::backend::gtk3::file_dialog::dialog_ffi::GtkFileDialog;
+use crate::backend::gtk3::utils::GTK_EVENT_HANDLER;
+use crate::backend::gtk3::utils::GTK_MUTEX;
+use crate::FileHandle;
+
+use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::{GtkFileDialog, OutputFrom};
+use super::utils::gtk_init_check;
+use super::AsGtkDialog;
 
-use super::super::utils::{GTK_EVENT_HANDLER, GTK_MUTEX};
-
-struct FutureState<R> {
+struct FutureState<R, D> {
     waker: Option<Waker>,
     data: Option<R>,
-    dialog: Option<GtkFileDialog>,
+    dialog: Option<D>,
 }
 
-unsafe impl<R> Send for FutureState<R> {}
-unsafe impl Send for GtkFileDialog {}
-unsafe impl Sync for GtkFileDialog {}
+unsafe impl<R, D> Send for FutureState<R, D> {}
 
-pub struct AsyncDialog<R> {
-    state: Arc<Mutex<FutureState<R>>>,
+pub(super) struct GtkDialogFuture<R, D> {
+    state: Arc<Mutex<FutureState<R, D>>>,
 }
 
-impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
-    pub fn new<F: FnOnce() -> GtkFileDialog + Send + Sync + 'static>(init: F) -> Self {
+unsafe impl<R, D> Send for GtkDialogFuture<R, D> {}
+
+impl<R: Default + 'static, D: AsGtkDialog + 'static> GtkDialogFuture<R, D> {
+    pub fn new<B, F>(build: B, cb: F) -> Self
+    where
+        B: FnOnce() -> D + Send + 'static,
+        F: Fn(&mut D, i32) -> R + Send + 'static,
+    {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
@@ -33,7 +41,6 @@ impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
 
         {
             let state = state.clone();
-
             std::thread::spawn(move || {
                 let request = Rc::new(RefCell::new(None));
 
@@ -45,9 +52,8 @@ impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
                     move |res_id| {
                         let mut state = state.lock().unwrap();
 
-                        if let Some(dialog) = state.dialog.take() {
-                            state.data = Some(OutputFrom::from(&dialog, res_id));
-                            state.dialog.take();
+                        if let Some(mut dialog) = state.dialog.take() {
+                            state.data = Some(cb(&mut dialog, res_id));
                         }
 
                         // Drop the request
@@ -61,18 +67,19 @@ impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
 
                 GTK_MUTEX.run_locked(|| {
                     let mut state = state.lock().unwrap();
-                    if super::gtk_init_check() {
-                        state.dialog = Some(init());
+                    if gtk_init_check() {
+                        state.dialog = Some(build());
                     }
 
                     if let Some(dialog) = &state.dialog {
                         unsafe {
-                            gtk_sys::gtk_widget_show_all(dialog.ptr as *mut _);
+                            let ptr = dialog.gtk_dialog_ptr();
+                            gtk_sys::gtk_widget_show_all(ptr as *mut _);
 
-                            connect_response(dialog.ptr, callback);
+                            connect_response(ptr as *mut _, callback);
                         }
                     } else {
-                        state.data = Some(OutputFrom::get_failed());
+                        state.data = Some(Default::default());
                     }
                 });
 
@@ -84,19 +91,7 @@ impl<R: OutputFrom<GtkFileDialog> + Send + 'static> AsyncDialog<R> {
     }
 }
 
-impl<R> Into<DialogFuture<R>> for AsyncDialog<R> {
-    fn into(self) -> DialogFuture<R> {
-        DialogFuture { state: self.state }
-    }
-}
-
-pub struct DialogFuture<R> {
-    state: Arc<Mutex<FutureState<R>>>,
-}
-
-unsafe impl<R> Send for DialogFuture<R> {}
-
-impl<R> std::future::Future for DialogFuture<R> {
+impl<R, D> std::future::Future for GtkDialogFuture<R, D> {
     type Output = R;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -112,7 +107,7 @@ impl<R> std::future::Future for DialogFuture<R> {
 }
 
 use gobject_sys::GCallback;
-use gtk_sys::{GtkFileChooser, GtkResponseType};
+use gtk_sys::{GtkDialog, GtkResponseType};
 use std::ffi::c_void;
 use std::os::raw::c_char;
 
@@ -143,7 +138,7 @@ unsafe fn connect_raw<F>(
     assert!(handle > 0);
 }
 
-unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkFileChooser, f: F) {
+unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkDialog, f: F) {
     use std::mem::transmute;
 
     unsafe extern "C" fn response_trampoline<F: Fn(GtkResponseType) + 'static>(

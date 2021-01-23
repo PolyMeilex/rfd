@@ -1,7 +1,5 @@
-mod dialog_async;
-mod dialog_ffi;
+pub mod dialog_ffi;
 
-use dialog_async::{AsyncDialog, DialogFuture};
 use dialog_ffi::{GtkFileDialog, OutputFrom};
 
 use std::path::PathBuf;
@@ -9,6 +7,8 @@ use std::path::PathBuf;
 use super::utils::{gtk_init_check, GTK_MUTEX};
 use crate::backend::DialogFutureType;
 use crate::{FileDialog, FileHandle};
+
+use super::gtk_future::GtkDialogFuture;
 
 //
 // File Picker
@@ -46,15 +46,37 @@ impl FilePickerDialogImpl for FileDialog {
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || GtkFileDialog::build_pick_file(&self)).into();
-        Box::pin(ret)
+        let builder = move || GtkFileDialog::build_pick_file(&self);
+
+        let future = GtkDialogFuture::new(builder, |dialog, res_id| {
+            if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
+                dialog.get_result().map(FileHandle::wrap)
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || GtkFileDialog::build_pick_files(&self)).into();
-        Box::pin(ret)
+        let builder = move || GtkFileDialog::build_pick_files(&self);
+
+        let future = GtkDialogFuture::new(builder, |dialog, res_id| {
+            if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
+                Some(
+                    dialog
+                        .get_results()
+                        .into_iter()
+                        .map(FileHandle::wrap)
+                        .collect(),
+                )
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 }
 
@@ -81,9 +103,17 @@ impl FolderPickerDialogImpl for FileDialog {
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || GtkFileDialog::build_pick_folder(&self)).into();
-        Box::pin(ret)
+        let builder = move || GtkFileDialog::build_pick_folder(&self);
+
+        let future = GtkDialogFuture::new(builder, |dialog, res_id| {
+            if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
+                dialog.get_result().map(FileHandle::wrap)
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 }
 
@@ -110,8 +140,16 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret: DialogFuture<_> =
-            AsyncDialog::new(move || GtkFileDialog::build_save_file(&self)).into();
-        Box::pin(ret)
+        let builder = move || GtkFileDialog::build_save_file(&self);
+
+        let future = GtkDialogFuture::new(builder, |dialog, res_id| {
+            if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
+                dialog.get_result().map(FileHandle::wrap)
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
     }
 }

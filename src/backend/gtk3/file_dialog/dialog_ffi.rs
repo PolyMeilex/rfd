@@ -1,3 +1,4 @@
+use super::super::AsGtkDialog;
 use crate::{FileDialog, FileHandle};
 use gtk_sys::GtkFileChooser;
 
@@ -175,6 +176,12 @@ impl GtkFileDialog {
         dialog.add_filters(&opt.filters);
         dialog.set_path(&opt.starting_directory);
         dialog
+    }
+}
+
+impl AsGtkDialog for GtkFileDialog {
+    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
+        self.ptr as *mut _
     }
 }
 
