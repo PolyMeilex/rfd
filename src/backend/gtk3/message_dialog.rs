@@ -53,11 +53,6 @@ impl GtkMessageDialog {
     pub fn run(self) -> bool {
         let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
 
-        unsafe {
-            gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
-            super::utils::wait_for_cleanup();
-        }
-
         res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
     }
 }
