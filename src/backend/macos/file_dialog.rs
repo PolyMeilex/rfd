@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub use objc::runtime::{BOOL, NO};
 
 use super::modal_future::ModalFuture;
+use super::utils::run_on_main;
 
 //
 // File Picker
@@ -18,25 +19,29 @@ use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_pick_file(&self);
+            run_on_main(move || {
+                let panel = Panel::build_pick_file(&self);
 
-            if panel.run_modal() == 1 {
-                Some(panel.get_result())
-            } else {
-                None
-            }
+                if panel.run_modal() == 1 {
+                    Some(panel.get_result())
+                } else {
+                    None
+                }
+            })
         })
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_pick_files(&self);
+            run_on_main(move || {
+                let panel = Panel::build_pick_files(&self);
 
-            if panel.run_modal() == 1 {
-                Some(panel.get_results())
-            } else {
-                None
-            }
+                if panel.run_modal() == 1 {
+                    Some(panel.get_results())
+                } else {
+                    None
+                }
+            })
         })
     }
 }
@@ -88,12 +93,14 @@ use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_pick_folder(&self);
-            if panel.run_modal() == 1 {
-                Some(panel.get_result())
-            } else {
-                None
-            }
+            run_on_main(move || {
+                let panel = Panel::build_pick_folder(&self);
+                if panel.run_modal() == 1 {
+                    Some(panel.get_result())
+                } else {
+                    None
+                }
+            })
         })
     }
 }
@@ -124,12 +131,14 @@ use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
         objc::rc::autoreleasepool(move || {
-            let panel = Panel::build_save_file(&self);
-            if panel.run_modal() == 1 {
-                Some(panel.get_result())
-            } else {
-                None
-            }
+            run_on_main(move || {
+                let panel = Panel::build_save_file(&self);
+                if panel.run_modal() == 1 {
+                    Some(panel.get_result())
+                } else {
+                    None
+                }
+            })
         })
     }
 }

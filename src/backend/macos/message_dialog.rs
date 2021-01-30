@@ -2,6 +2,7 @@ use crate::backend::DialogFutureType;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use super::modal_future::ModalFuture;
+use super::utils::run_on_main;
 use super::AsModal;
 
 use cocoa_foundation::base::{id, nil};
@@ -104,7 +105,7 @@ impl Drop for NSAlert {
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> bool {
-        NSAlert::new(self).run()
+        objc::rc::autoreleasepool(move || run_on_main(move || NSAlert::new(self).run()))
     }
 }
 
