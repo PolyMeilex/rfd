@@ -926,6 +926,7 @@ version = "0.1.2"
 dependencies = [
  "block",
  "cocoa-foundation",
+ "dispatch",
  "glib-sys",
  "gobject-sys",
  "gtk-sys",

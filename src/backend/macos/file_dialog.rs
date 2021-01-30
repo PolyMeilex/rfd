@@ -44,35 +44,37 @@ impl FilePickerDialogImpl for FileDialog {
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let panel = Panel::build_pick_file(&self);
-
-        let future = ModalFuture::new(panel, |panel, res_id| {
-            if res_id == 1 {
-                Some(panel.get_result().into())
-            } else {
-                None
-            }
-        });
+        let future = ModalFuture::new(
+            move || Panel::build_pick_file(&self),
+            |panel, res_id| {
+                if res_id == 1 {
+                    Some(panel.get_result().into())
+                } else {
+                    None
+                }
+            },
+        );
 
         Box::pin(future)
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let panel = Panel::build_pick_files(&self);
-
-        let future = ModalFuture::new(panel, |panel, res_id| {
-            if res_id == 1 {
-                Some(
-                    panel
-                        .get_results()
-                        .into_iter()
-                        .map(FileHandle::wrap)
-                        .collect(),
-                )
-            } else {
-                None
-            }
-        });
+        let future = ModalFuture::new(
+            move || Panel::build_pick_files(&self),
+            |panel, res_id| {
+                if res_id == 1 {
+                    Some(
+                        panel
+                            .get_results()
+                            .into_iter()
+                            .map(FileHandle::wrap)
+                            .collect(),
+                    )
+                } else {
+                    None
+                }
+            },
+        );
 
         Box::pin(future)
     }
@@ -99,15 +101,16 @@ impl FolderPickerDialogImpl for FileDialog {
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let panel = Panel::build_pick_folder(&self);
-
-        let future = ModalFuture::new(panel, |panel, res_id| {
-            if res_id == 1 {
-                Some(panel.get_result().into())
-            } else {
-                None
-            }
-        });
+        let future = ModalFuture::new(
+            move || Panel::build_pick_folder(&self),
+            |panel, res_id| {
+                if res_id == 1 {
+                    Some(panel.get_result().into())
+                } else {
+                    None
+                }
+            },
+        );
 
         Box::pin(future)
     }
@@ -134,15 +137,16 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let panel = Panel::build_save_file(&self);
-
-        let future = ModalFuture::new(panel, |panel, res_id| {
-            if res_id == 1 {
-                Some(panel.get_result().into())
-            } else {
-                None
-            }
-        });
+        let future = ModalFuture::new(
+            move || Panel::build_save_file(&self),
+            |panel, res_id| {
+                if res_id == 1 {
+                    Some(panel.get_result().into())
+                } else {
+                    None
+                }
+            },
+        );
 
         Box::pin(future)
     }

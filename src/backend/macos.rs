@@ -5,6 +5,8 @@ mod modal_future;
 
 mod policy_manager;
 
+mod utils;
+
 use cocoa_foundation::base::id;
 
 pub(self) trait AsModal {

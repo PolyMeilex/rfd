@@ -85,12 +85,8 @@ impl NSAlert {
         ret == NSAlertReturn::FirstButton as i64
     }
 
-    pub fn run_async(self) -> DialogFutureType<bool> {
-        let future = ModalFuture::new(self, |_, res_id| {
-            res_id == NSAlertReturn::FirstButton as i64
-        });
-        Box::pin(future)
-    }
+    // pub fn run_async(self) -> DialogFutureType<bool> {
+    // }
 }
 
 impl AsModal for NSAlert {
@@ -116,6 +112,10 @@ use crate::backend::AsyncMessageDialogImpl;
 
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<bool> {
-        NSAlert::new(self).run_async()
+        let future = ModalFuture::new(
+            move || NSAlert::new(self),
+            |_, res_id| res_id == NSAlertReturn::FirstButton as i64,
+        );
+        Box::pin(future)
     }
 }
