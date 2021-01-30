@@ -1,8 +1,6 @@
-use objc::{class, msg_send, sel, sel_impl};
+use objc::{msg_send, sel, sel_impl};
 
 use cocoa_foundation::base::id;
-use cocoa_foundation::base::nil;
-use objc::runtime::Object;
 
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -11,7 +9,7 @@ use std::task::{Context, Poll, Waker};
 
 use super::AsModal;
 
-use super::utils::{activate_cocoa_multithreading, is_main_thread, shared_application};
+use super::utils::{activate_cocoa_multithreading, is_main_thread, NSApplication};
 
 struct FutureState<R, D> {
     waker: Option<Waker>,
@@ -53,16 +51,11 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
             }
         };
 
-        let (is_running, window) = unsafe {
-            let app: id = shared_application();
-            let is_running: bool = msg_send![app, isRunning];
-            let window: id = msg_send![app, keyWindow];
-            (is_running, window)
-        };
+        let app = NSApplication::shared_application();
 
         // if async exec is possible start sheet modal
         // otherwise fallback to sync
-        if is_running && !window.is_null() {
+        if app.is_running() && !app.key_window().is_null() {
             let state = state.clone();
             let main_runner = move || {
                 let completion = {
@@ -77,14 +70,14 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
 
                 state.lock().unwrap().modal = Some(modal);
 
-                unsafe {
-                    let window: id = msg_send![shared_application(), keyWindow];
+                let window: id = NSApplication::shared_application().key_window();
 
-                    let _: () = msg_send![
+                let _: () = unsafe {
+                    msg_send![
                         modal_ptr,
                         beginSheetModalForWindow: window completionHandler: &completion
-                    ];
-                }
+                    ]
+                };
 
                 std::mem::forget(completion);
             };
