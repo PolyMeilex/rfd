@@ -54,7 +54,11 @@ let data = file.read().await;
 
 [1] Macos Sync dialog freezes when used with winit (same way as `nfd`) [Caused by winit #1779](https://github.com/rust-windowing/winit/issues/1779)
 
-[1] Macos Async dialog requires an started NSApplication instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc.
+### Diference bettwen `MacOS Windowed App` and `MacOS NonWindowed App`
+- Macos async dialog requires an started `NSApplication` instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc. otherwise it will fallback to sync dialog.
+- It is also recomended to always spawn dialogs on main thread, RFD will do it's best to run dialogs from any thread but it is only posible in windowed app and it is still WIP (only async dialogs can do it as of now)
+- NonWindowed apps will never be able to spawn dialogs from threads diferent than main
+- NonWindowed apps will never be able to spawn async dialogs
 
 # rfd-extras
 
