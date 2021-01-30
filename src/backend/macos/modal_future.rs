@@ -21,7 +21,7 @@ pub fn activate_cocoa_multithreading() {
 struct FutureState<R, D> {
     waker: Option<Waker>,
     data: Option<R>,
-    modal: D,
+    modal: Option<D>,
 }
 
 unsafe impl<R, D> Send for FutureState<R, D> {}
@@ -42,7 +42,7 @@ impl<R: 'static, D: AsModal> ModalFuture<R, D> {
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
-            modal,
+            modal: Some(modal),
         }));
 
         let completion = {
@@ -51,7 +51,12 @@ impl<R: 'static, D: AsModal> ModalFuture<R, D> {
             block::ConcreteBlock::new(move |result: i64| {
                 let mut state = state.lock().unwrap();
 
-                state.data = Some(cb(&mut state.modal, result));
+                // take() to drop it when it's safe to do so
+                state.data = if let Some(mut modal) = state.modal.take() {
+                    Some(cb(&mut modal, result))
+                } else {
+                    None
+                };
 
                 if let Some(waker) = state.waker.take() {
                     waker.wake();
@@ -68,13 +73,15 @@ impl<R: 'static, D: AsModal> ModalFuture<R, D> {
             // otherwise fallback to sync
             if is_running && !window.is_null() {
                 let _: () = msg_send![
-                    state.lock().unwrap().modal.modal_ptr(),
+                    state.lock().unwrap().modal.as_ref().unwrap().modal_ptr(),
                     beginSheetModalForWindow: window completionHandler: &completion
                 ];
                 std::mem::forget(completion);
             } else {
-                let ret: i64 =
-                    unsafe { msg_send![state.lock().unwrap().modal.modal_ptr(), runModal] };
+                let ret: i64 = msg_send![
+                    state.lock().unwrap().modal.as_ref().unwrap().modal_ptr(),
+                    runModal
+                ];
                 completion.call((ret,));
                 std::mem::drop(completion);
             }
