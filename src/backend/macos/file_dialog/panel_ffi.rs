@@ -160,6 +160,10 @@ impl Panel {
     pub fn build_save_file(opt: &FileDialog) -> Self {
         let panel = Panel::save_panel();
 
+        if !opt.filters.is_empty() {
+            panel.add_filters(&opt);
+        }
+
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path);
         }
