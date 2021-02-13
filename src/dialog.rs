@@ -73,6 +73,20 @@ impl FileDialog {
     }
 
     /// Opens save file dialog
+    ///
+    /// #### Platform specific notes regarding save dialog filters:
+    /// - On MacOs
+    ///     - If filter is set, all files will be grayed out (no matter the extension sadly)
+    ///     - If user does not type an extension MacOs will append first available extension from filters list
+    ///     - If user types in filename with extension MacOs will check if it exists in filters list, if not it will display appropriate message
+    /// - On GTK
+    ///     - It only filters which already existing files get shown to the user
+    ///     - It does not append extensions automatically
+    ///     - It does not prevent users from adding any unsupported extension
+    /// - On Win:
+    ///     - If no extension was provided it will just add currently selected one
+    ///     - If selected extension was typed in by the user it will just return
+    ///     - If unselected extension was provided it will append selected one at the end, example: `test.png.txt`
     pub fn save_file(self) -> Option<PathBuf> {
         FileSaveDialogImpl::save_file(self)
     }
@@ -148,6 +162,21 @@ impl AsyncFileDialog {
     /// Opens save file dialog
     ///
     /// Does not exist in `WASM32`
+    ///
+    ///
+    /// #### Platform specific notes regarding save dialog filters:
+    /// - On MacOs
+    ///     - If filter is set, all files will be grayed out (no matter the extension sadly)
+    ///     - If user does not type an extension MacOs will append first available extension from filters list
+    ///     - If user types in filename with extension MacOs will check if it exists in filters list, if not it will display appropriate message
+    /// - On GTK
+    ///     - It only filters which already existing files get shown to the user
+    ///     - It does not append extensions automatically
+    ///     - It does not prevent users from adding any unsupported extension
+    /// - On Win:
+    ///     - If no extension was provided it will just add currently selected one
+    ///     - If selected extension was typed in by the user it will just return
+    ///     - If unselected extension was provided it will append selected one at the end, example: `test.png.txt`
     pub fn save_file(self) -> impl Future<Output = Option<FileHandle>> {
         AsyncFileSaveDialogImpl::save_file_async(self.file_dialog)
     }
