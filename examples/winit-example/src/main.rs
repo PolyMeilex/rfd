@@ -65,6 +65,19 @@ fn main() {
                     event_loop_proxy.send_event(format!("{:#?}", names)).ok();
                 });
             }
+            WindowEvent::DroppedFile(_file_path) => {
+                let dialog = rfd::AsyncMessageDialog::new()
+                    .set_title("Msg!")
+                    .set_description("Description!")
+                    .set_buttons(rfd::MessageButtons::YesNo)
+                    .show();
+
+                let event_loop_proxy = event_loop_proxy.clone();
+                executor.execut(async move {
+                    let val = dialog.await;
+                    event_loop_proxy.send_event(format!("Msg: {}", val)).ok();
+                });
+            },
             WindowEvent::KeyboardInput {
                 input:
                     event::KeyboardInput {
