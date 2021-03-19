@@ -53,5 +53,8 @@ name = "simple"
 [[example]]
 name = "async"
 
+[dependencies]
+raw-window-handle = "0.3.3"
+
 [package.metadata.docs.rs]
 all-features = true
