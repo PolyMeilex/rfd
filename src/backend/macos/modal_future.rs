@@ -1,4 +1,4 @@
-use objc::{msg_send, runtime::Object, sel, sel_impl};
+use objc::{msg_send, sel, sel_impl};
 
 use std::sync::{Arc, Mutex};
 use std::{mem, pin::Pin};
