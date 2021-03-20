@@ -6,15 +6,13 @@ use std::{ops::DerefMut, path::PathBuf};
 use objc::{class, msg_send, sel, sel_impl};
 use objc_id::Id;
 
-use super::super::utils::{nil, INSURL, NSURL};
+use super::super::utils::{INSURL, NSURL};
 
 use objc::runtime::{Object, YES};
 use objc::runtime::{BOOL, NO};
 use objc_foundation::{INSArray, INSString, NSArray, NSString};
 
-use super::super::policy_manager::PolicyManager;
-
-use super::super::AsModal;
+use super::super::{focus_manager::FocusManager, policy_manager::PolicyManager, AsModal};
 
 extern "C" {
     pub fn CGShieldingWindowLevel() -> i32;
@@ -26,8 +24,8 @@ fn make_nsstring(s: &str) -> Id<NSString> {
 
 pub struct Panel {
     pub(crate) panel: Id<Object>,
+    _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
-    key_window: *mut Object,
 }
 
 impl AsModal for Panel {
@@ -39,16 +37,14 @@ impl AsModal for Panel {
 impl Panel {
     pub fn new(panel: *mut Object) -> Self {
         let _policy_manager = PolicyManager::new();
-        let key_window = unsafe {
-            let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
-            msg_send![app, keyWindow]
-        };
+
+        let _focus_manager = FocusManager::new();
 
         let _: () = unsafe { msg_send![panel, setLevel: CGShieldingWindowLevel()] };
         Self {
-            _policy_manager,
             panel: unsafe { Id::from_ptr(panel) },
-            key_window,
+            _focus_manager,
+            _policy_manager,
         }
     }
 
@@ -184,11 +180,5 @@ impl Panel {
         panel.set_allows_multiple_selection(YES);
 
         panel
-    }
-}
-
-impl Drop for Panel {
-    fn drop(&mut self) {
-        let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
     }
 }

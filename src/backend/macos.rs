@@ -3,6 +3,7 @@ mod message_dialog;
 
 mod modal_future;
 
+mod focus_manager;
 mod policy_manager;
 
 mod utils;

@@ -3,9 +3,10 @@ use std::ops::DerefMut;
 use crate::backend::DialogFutureType;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
-use super::modal_future::ModalFuture;
-use super::utils::{nil, run_on_main};
-use super::AsModal;
+use super::{
+    focus_manager::FocusManager, modal_future::ModalFuture, policy_manager::PolicyManager,
+    utils::run_on_main, AsModal,
+};
 
 use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
@@ -31,11 +32,14 @@ enum NSAlertReturn {
 
 pub struct NSAlert {
     alert: Id<Object>,
-    key_window: *mut Object,
+    _focus_manager: FocusManager,
+    _policy_manager: PolicyManager,
 }
 
 impl NSAlert {
     pub fn new(opt: MessageDialog) -> Self {
+        let _policy_manager = PolicyManager::new();
+
         let alert: *mut Object = unsafe { msg_send![class!(NSAlert), new] };
 
         let level = match opt.level {
@@ -74,14 +78,12 @@ impl NSAlert {
             let _: () = msg_send![alert, setInformativeText: text];
         }
 
-        let key_window = unsafe {
-            let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
-            msg_send![app, keyWindow]
-        };
+        let _focus_manager = FocusManager::new();
 
         Self {
             alert: unsafe { Id::from_retained_ptr(alert) },
-            key_window,
+            _focus_manager,
+            _policy_manager,
         }
     }
 
@@ -94,12 +96,6 @@ impl NSAlert {
 impl AsModal for NSAlert {
     fn modal_ptr(&mut self) -> *mut Object {
         self.alert.deref_mut()
-    }
-}
-
-impl Drop for NSAlert {
-    fn drop(&mut self) {
-        let _: () = unsafe { msg_send![self.key_window, makeKeyAndOrderFront: nil] };
     }
 }
 
