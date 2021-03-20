@@ -7,6 +7,7 @@ use super::AsModal;
 
 use cocoa_foundation::base::{id, nil};
 use cocoa_foundation::foundation::NSString;
+use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};
 
 #[repr(i64)]
@@ -26,7 +27,7 @@ enum NSAlertReturn {
 }
 
 pub struct NSAlert {
-    ptr: id,
+    ptr: StrongPtr,
     key_window: id,
 }
 
@@ -76,13 +77,13 @@ impl NSAlert {
         };
 
         Self {
-            ptr: alert,
+            ptr: unsafe { StrongPtr::new(alert) },
             key_window,
         }
     }
 
     pub fn run(self) -> bool {
-        let ret: i64 = unsafe { msg_send![self.ptr, runModal] };
+        let ret: i64 = unsafe { msg_send![*self.ptr, runModal] };
         ret == NSAlertReturn::FirstButton as i64
     }
 
@@ -92,7 +93,7 @@ impl NSAlert {
 
 impl AsModal for NSAlert {
     fn modal_ptr(&self) -> id {
-        self.ptr
+        *self.ptr
     }
 }
 
