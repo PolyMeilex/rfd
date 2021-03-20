@@ -2,7 +2,7 @@ use objc::runtime::Object;
 use objc::{msg_send, sel, sel_impl};
 use objc_id::Id;
 
-use super::utils::{nil, NSApplication};
+use super::utils::{nil, INSApplication, NSApplication};
 
 pub struct FocusManager {
     key_window: Option<Id<Object>>,

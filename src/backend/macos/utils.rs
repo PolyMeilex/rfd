@@ -20,21 +20,23 @@ pub fn activate_cocoa_multithreading() {
     }
 }
 
-pub struct NSApplication(pub *mut Object);
-
-impl NSApplication {
-    pub fn shared_application() -> Self {
-        Self(unsafe { msg_send![class!(NSApplication), sharedApplication] })
+pub trait INSApplication: INSObject {
+    fn shared_application() -> Id<Self> {
+        let app = unsafe { msg_send![class!(NSApplication), sharedApplication] };
+        unsafe { Id::from_ptr(app) }
     }
 
-    pub fn is_running(&self) -> bool {
-        unsafe { msg_send![self.0, isRunning] }
+    fn is_running(&self) -> bool {
+        unsafe { msg_send![self, isRunning] }
     }
 
-    pub fn key_window(&self) -> *mut Object {
-        unsafe { msg_send![self.0, keyWindow] }
+    fn key_window(&self) -> *mut Object {
+        unsafe { msg_send![self, keyWindow] }
     }
 }
+
+object_struct!(NSApplication);
+impl INSApplication for NSApplication {}
 
 pub fn run_on_main<R: Send, F: FnOnce() -> R + Send>(run: F) -> R {
     if is_main_thread() {

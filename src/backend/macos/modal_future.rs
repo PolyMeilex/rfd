@@ -1,13 +1,13 @@
 use objc::{msg_send, runtime::Object, sel, sel_impl};
 
-use std::pin::Pin;
 use std::sync::{Arc, Mutex};
+use std::{mem, pin::Pin};
 
 use std::task::{Context, Poll, Waker};
 
 use super::AsModal;
 
-use super::utils::{activate_cocoa_multithreading, is_main_thread, NSApplication};
+use super::utils::{activate_cocoa_multithreading, is_main_thread, INSApplication, NSApplication};
 
 struct FutureState<R, D> {
     waker: Option<Waker>,
@@ -23,7 +23,7 @@ pub(super) struct ModalFuture<R, D> {
 
 unsafe impl<R, D> Send for ModalFuture<R, D> {}
 
-impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
+impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
     pub fn new<F, DBULD: FnOnce() -> D + Send>(build_modal: DBULD, cb: F) -> Self
     where
         F: Fn(&mut D, i64) -> R + Send + 'static,
@@ -63,7 +63,7 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
                     })
                 };
 
-                let window: *mut Object = NSApplication::shared_application().key_window();
+                let window: *mut Object = app.key_window();
 
                 let mut modal = build_modal();
                 let modal_ptr = modal.modal_ptr();
@@ -77,7 +77,7 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
                     ]
                 };
 
-                std::mem::forget(completion);
+                mem::forget(completion);
             };
 
             if !is_main_thread() {
