@@ -4,8 +4,9 @@ use crate::backend::DialogFutureType;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use super::{
-    focus_manager::FocusManager, modal_future::ModalFuture, policy_manager::PolicyManager,
-    utils::run_on_main, AsModal,
+    modal_future::ModalFuture,
+    utils::{run_on_main, FocusManager, PolicyManager},
+    AsModal,
 };
 
 use objc::runtime::Object;

@@ -1,10 +1,17 @@
-use std::path::PathBuf;
-
 use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
 
-use objc_foundation::{object_struct, INSObject, INSString, NSString};
-use objc_id::Id;
+mod application;
+mod focus_manager;
+mod policy_manager;
+mod url;
+mod window;
+
+pub use application::{INSApplication, NSApplication};
+pub use focus_manager::FocusManager;
+pub use policy_manager::PolicyManager;
+pub use url::{INSURL, NSURL};
+pub use window::{INSWindow, NSWindow};
 
 #[allow(non_upper_case_globals)]
 pub const nil: *mut Object = 0 as *mut _;
@@ -20,24 +27,6 @@ pub fn activate_cocoa_multithreading() {
     }
 }
 
-pub trait INSApplication: INSObject {
-    fn shared_application() -> Id<Self> {
-        let app = unsafe { msg_send![class!(NSApplication), sharedApplication] };
-        unsafe { Id::from_ptr(app) }
-    }
-
-    fn is_running(&self) -> bool {
-        unsafe { msg_send![self, isRunning] }
-    }
-
-    fn key_window(&self) -> *mut Object {
-        unsafe { msg_send![self, keyWindow] }
-    }
-}
-
-object_struct!(NSApplication);
-impl INSApplication for NSApplication {}
-
 pub fn run_on_main<R: Send, F: FnOnce() -> R + Send>(run: F) -> R {
     if is_main_thread() {
         run()
@@ -51,20 +40,3 @@ pub fn run_on_main<R: Send, F: FnOnce() -> R + Send>(run: F) -> R {
         }
     }
 }
-
-pub trait INSURL: INSObject {
-    fn file_url_with_path(s: &str, is_dir: bool) -> Id<Self> {
-        let s = NSString::from_str(s);
-        let ptr = unsafe { msg_send![class!(NSURL), fileURLWithPath: s isDirectory:is_dir] };
-        unsafe { Id::from_retained_ptr(ptr) }
-    }
-
-    fn to_path_buf(&self) -> PathBuf {
-        let s = unsafe { msg_send![self, path] };
-        let s: Id<NSString> = unsafe { Id::from_ptr(s) };
-        s.as_str().into()
-    }
-}
-
-object_struct!(NSURL);
-impl INSURL for NSURL {}

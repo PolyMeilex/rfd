@@ -12,7 +12,10 @@ use objc::runtime::{Object, YES};
 use objc::runtime::{BOOL, NO};
 use objc_foundation::{INSArray, INSString, NSArray, NSString};
 
-use super::super::{focus_manager::FocusManager, policy_manager::PolicyManager, AsModal};
+use super::super::{
+    utils::{FocusManager, PolicyManager},
+    AsModal,
+};
 
 extern "C" {
     pub fn CGShieldingWindowLevel() -> i32;
