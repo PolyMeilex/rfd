@@ -1,6 +1,4 @@
-use objc::{msg_send, sel, sel_impl};
-
-use cocoa_foundation::base::id;
+use objc::{msg_send, runtime::Object, sel, sel_impl};
 
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -65,12 +63,12 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
                     })
                 };
 
-                let modal = build_modal();
+                let window: *mut Object = NSApplication::shared_application().key_window();
+
+                let mut modal = build_modal();
                 let modal_ptr = modal.modal_ptr();
 
                 state.lock().unwrap().modal = Some(modal);
-
-                let window: id = NSApplication::shared_application().key_window();
 
                 let _: () = unsafe {
                     msg_send![
@@ -92,7 +90,7 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
             eprintln!("\n Hi! It looks like you are running async dialog in unsuported environment, I will fallback to sync dialog for you. \n");
 
             if is_main_thread() {
-                let modal = build_modal();
+                let mut modal = build_modal();
                 let modal_ptr = modal.modal_ptr();
 
                 state.lock().unwrap().modal = Some(modal);

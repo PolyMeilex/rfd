@@ -53,7 +53,7 @@ fn main() {
                 let dialog = rfd::AsyncFileDialog::new()
                     .add_filter("midi", &["mid", "midi"])
                     .add_filter("rust", &["rs", "toml"])
-                    .pick_files();
+                    .pick_file();
 
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {

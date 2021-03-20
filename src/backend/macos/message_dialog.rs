@@ -1,14 +1,17 @@
+use std::ops::DerefMut;
+
 use crate::backend::DialogFutureType;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use super::modal_future::ModalFuture;
-use super::utils::run_on_main;
+use super::utils::{nil, run_on_main};
 use super::AsModal;
 
-use cocoa_foundation::base::{id, nil};
-use cocoa_foundation::foundation::NSString;
-use objc::rc::StrongPtr;
+use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
+use objc_foundation::{INSString, NSString};
+
+use objc_id::Id;
 
 #[repr(i64)]
 #[derive(Debug, PartialEq)]
@@ -27,13 +30,13 @@ enum NSAlertReturn {
 }
 
 pub struct NSAlert {
-    ptr: StrongPtr,
-    key_window: id,
+    alert: Id<Object>,
+    key_window: *mut Object,
 }
 
 impl NSAlert {
     pub fn new(opt: MessageDialog) -> Self {
-        let alert: id = unsafe { msg_send![class!(NSAlert), new] };
+        let alert: *mut Object = unsafe { msg_send![class!(NSAlert), new] };
 
         let level = match opt.level {
             MessageLevel::Info => NSAlertStyle::Informational,
@@ -47,53 +50,50 @@ impl NSAlert {
 
         match opt.buttons {
             MessageButtons::Ok => unsafe {
-                let label = NSString::alloc(nil).init_str("OK");
+                let label = NSString::from_str("OK");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
             },
             MessageButtons::OkCancle => unsafe {
-                let label = NSString::alloc(nil).init_str("OK");
+                let label = NSString::from_str("OK");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
-                let label = NSString::alloc(nil).init_str("Cancel");
+                let label = NSString::from_str("Cancel");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
             },
             MessageButtons::YesNo => unsafe {
-                let label = NSString::alloc(nil).init_str("Yes");
+                let label = NSString::from_str("Yes");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
-                let label = NSString::alloc(nil).init_str("No");
+                let label = NSString::from_str("No");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
             },
         }
 
         unsafe {
-            let text = NSString::alloc(nil).init_str(&opt.title);
+            let text = NSString::from_str(&opt.title);
             let _: () = msg_send![alert, setMessageText: text];
-            let text = NSString::alloc(nil).init_str(&opt.description);
+            let text = NSString::from_str(&opt.description);
             let _: () = msg_send![alert, setInformativeText: text];
         }
 
         let key_window = unsafe {
-            let app: id = msg_send![class!(NSApplication), sharedApplication];
+            let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
             msg_send![app, keyWindow]
         };
 
         Self {
-            ptr: unsafe { StrongPtr::new(alert) },
+            alert: unsafe { Id::from_retained_ptr(alert) },
             key_window,
         }
     }
 
     pub fn run(self) -> bool {
-        let ret: i64 = unsafe { msg_send![*self.ptr, runModal] };
+        let ret: i64 = unsafe { msg_send![self.alert, runModal] };
         ret == NSAlertReturn::FirstButton as i64
     }
-
-    // pub fn run_async(self) -> DialogFutureType<bool> {
-    // }
 }
 
 impl AsModal for NSAlert {
-    fn modal_ptr(&self) -> id {
-        *self.ptr
+    fn modal_ptr(&mut self) -> *mut Object {
+        self.alert.deref_mut()
     }
 }
 

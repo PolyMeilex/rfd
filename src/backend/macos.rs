@@ -7,8 +7,7 @@ mod policy_manager;
 
 mod utils;
 
-use cocoa_foundation::base::id;
-
-pub(self) trait AsModal {
-    fn modal_ptr(&self) -> id;
+use objc::runtime::Object;
+trait AsModal {
+    fn modal_ptr(&mut self) -> *mut Object;
 }
