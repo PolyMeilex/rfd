@@ -97,7 +97,6 @@ impl<R: 'static + Default, D: AsModal> ModalFuture<R, D> {
 
                 let ret: i64 = unsafe { msg_send![modal_ptr, runModal] };
 
-                println!("done");
                 dialog_callback(state.clone(), ret);
             } else {
                 panic!("Fallback Sync Dialog Must Be Spawned On Main Thread (Why? If async dialog is unsuported in this env, it also means that spawining dialogs outside of main thread is also inposible");

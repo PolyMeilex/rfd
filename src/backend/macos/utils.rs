@@ -32,10 +32,6 @@ impl NSApplication {
     }
 
     pub fn key_window(&self) -> *mut Object {
-        let windows: *mut Object = unsafe { msg_send![self.0, windows] };
-        let count: i64 = unsafe { msg_send![windows, count] };
-        println!("{:?}", count);
-
         unsafe { msg_send![self.0, keyWindow] }
     }
 }
