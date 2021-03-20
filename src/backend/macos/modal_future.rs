@@ -51,9 +51,10 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
 
         let app = NSApplication::shared_application();
 
+        let win = app.get_window();
         // if async exec is possible start sheet modal
         // otherwise fallback to sync
-        if app.is_running() && !app.key_window().is_null() {
+        if app.is_running() && win.is_some() {
             let state = state.clone();
             let main_runner = move || {
                 let completion = {
@@ -63,7 +64,7 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
                     })
                 };
 
-                let window: *mut Object = app.key_window();
+                let window = win.unwrap();
 
                 let mut modal = build_modal();
                 let modal_ptr = modal.modal_ptr();
