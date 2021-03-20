@@ -44,7 +44,6 @@ pub trait INSApplication: INSObject {
             Some(key_window.share())
         } else {
             let windows = self.windows();
-            println!("{}", windows.count());
             if windows.count() > 0 {
                 let window = windows.shared_object_at(0);
                 Some(window)
