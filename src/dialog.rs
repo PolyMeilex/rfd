@@ -3,6 +3,7 @@ use crate::FileHandle;
 use std::path::Path;
 use std::path::PathBuf;
 
+#[cfg(feature = "parent")]
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
 pub(crate) struct Filter {
@@ -19,6 +20,7 @@ pub(crate) struct Filter {
 pub struct FileDialog {
     pub(crate) filters: Vec<Filter>,
     pub(crate) starting_directory: Option<PathBuf>,
+    #[cfg(feature = "parent")]
     pub(crate) parent: Option<RawWindowHandle>,
 }
 
@@ -59,6 +61,7 @@ impl FileDialog {
         self
     }
 
+    #[cfg(feature = "parent")]
     /// NoOp
     pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
         self.parent = Some(parent.raw_window_handle());
