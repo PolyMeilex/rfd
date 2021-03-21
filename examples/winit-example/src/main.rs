@@ -53,6 +53,7 @@ fn main() {
                 let dialog = rfd::AsyncFileDialog::new()
                     .add_filter("midi", &["mid", "midi"])
                     .add_filter("rust", &["rs", "toml"])
+                    .set_parent(&window)
                     .pick_file();
 
                 let event_loop_proxy = event_loop_proxy.clone();
@@ -70,6 +71,7 @@ fn main() {
                     .set_title("Msg!")
                     .set_description("Description!")
                     .set_buttons(rfd::MessageButtons::YesNo)
+                    .set_parent(&window)
                     .show();
 
                 let event_loop_proxy = event_loop_proxy.clone();
@@ -91,6 +93,7 @@ fn main() {
                     .set_title("Msg!")
                     .set_description("Description!")
                     .set_buttons(rfd::MessageButtons::YesNo)
+                    .set_parent(&window)
                     .show();
 
                 let event_loop_proxy = event_loop_proxy.clone();

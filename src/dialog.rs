@@ -62,8 +62,7 @@ impl FileDialog {
     }
 
     #[cfg(feature = "parent")]
-    /// NoOp
-    pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
+    fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
         self.parent = Some(parent.raw_window_handle());
         self
     }
@@ -148,6 +147,14 @@ impl AsyncFileDialog {
         self.file_dialog = self.file_dialog.set_directory(path);
         self
     }
+
+    #[cfg(feature = "parent")]
+    /// Set parent windows explicitly (optional)
+    /// Suported in: `macos`
+    pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
+        self.file_dialog = self.file_dialog.set_parent(parent);
+        self
+    }
 }
 
 use crate::backend::{
@@ -208,7 +215,13 @@ pub struct MessageDialog {
     pub(crate) description: String,
     pub(crate) level: MessageLevel,
     pub(crate) buttons: MessageButtons,
+    #[cfg(feature = "parent")]
+    pub(crate) parent: Option<RawWindowHandle>,
 }
+
+// Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
+// fingers crossed
+unsafe impl Send for MessageDialog {}
 
 impl MessageDialog {
     pub fn new() -> Self {
@@ -232,6 +245,12 @@ impl MessageDialog {
 
     pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
         self.buttons = btn;
+        self
+    }
+
+    #[cfg(feature = "parent")]
+    fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
+        self.parent = Some(parent.raw_window_handle());
         self
     }
 
@@ -266,6 +285,14 @@ impl AsyncMessageDialog {
 
     pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
         self.0 = self.0.set_buttons(btn);
+        self
+    }
+
+    #[cfg(feature = "parent")]
+    /// Set parent windows explicitly (optional)
+    /// Suported in: `macos`
+    pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
+        self.0 = self.0.set_parent(parent);
         self
     }
 

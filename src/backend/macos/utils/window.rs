@@ -1,9 +1,24 @@
 use objc::{msg_send, sel, sel_impl};
+use objc_id::Id;
 
 use super::nil;
 use objc_foundation::{object_struct, INSObject};
 
+#[cfg(feature = "parent")]
+use raw_window_handle::RawWindowHandle;
+
 pub trait INSWindow: INSObject {
+    #[cfg(feature = "parent")]
+    fn from_raw_window_handle(h: &RawWindowHandle) -> Id<Self> {
+        match h {
+            RawWindowHandle::MacOS(h) => {
+                let id = h.ns_window as *mut Self;
+                unsafe { Id::from_ptr(id) }
+            }
+            _ => unreachable!("Unsuported window handle, expected: MacOS"),
+        }
+    }
+
     fn make_key_and_order_front(&self) {
         let _: () = unsafe { msg_send![self, makeKeyAndOrderFront: nil] };
     }

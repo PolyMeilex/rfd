@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub use objc::runtime::{BOOL, NO};
 
 use super::modal_future::ModalFuture;
-use super::utils::run_on_main;
+use super::utils::{run_on_main, INSWindow, NSWindow};
 
 //
 // File Picker
@@ -49,7 +49,13 @@ impl FilePickerDialogImpl for FileDialog {
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        #[cfg(feature = "parent")]
+        let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
+        #[cfg(not(feature = "parent"))]
+        let win = None;
+
         let future = ModalFuture::new(
+            win,
             move || Panel::build_pick_file(&self),
             |panel, res_id| {
                 if res_id == 1 {
@@ -64,7 +70,13 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        #[cfg(feature = "parent")]
+        let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
+        #[cfg(not(feature = "parent"))]
+        let win = None;
+
         let future = ModalFuture::new(
+            win,
             move || Panel::build_pick_files(&self),
             |panel, res_id| {
                 if res_id == 1 {
@@ -108,7 +120,13 @@ impl FolderPickerDialogImpl for FileDialog {
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
+        #[cfg(feature = "parent")]
+        let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
+        #[cfg(not(feature = "parent"))]
+        let win = None;
+
         let future = ModalFuture::new(
+            win,
             move || Panel::build_pick_folder(&self),
             |panel, res_id| {
                 if res_id == 1 {
@@ -146,7 +164,13 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
+        #[cfg(feature = "parent")]
+        let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
+        #[cfg(not(feature = "parent"))]
+        let win = None;
+
         let future = ModalFuture::new(
+            win,
             move || Panel::build_save_file(&self),
             |panel, res_id| {
                 if res_id == 1 {

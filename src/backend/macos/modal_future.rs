@@ -1,4 +1,5 @@
 use objc::{msg_send, sel, sel_impl};
+use objc_id::Id;
 
 use std::sync::{Arc, Mutex};
 use std::{mem, pin::Pin};
@@ -7,7 +8,9 @@ use std::task::{Context, Poll, Waker};
 
 use super::AsModal;
 
-use super::utils::{activate_cocoa_multithreading, is_main_thread, INSApplication, NSApplication};
+use super::utils::{
+    activate_cocoa_multithreading, is_main_thread, INSApplication, NSApplication, NSWindow,
+};
 
 struct FutureState<R, D> {
     waker: Option<Waker>,
@@ -24,7 +27,11 @@ pub(super) struct ModalFuture<R, D> {
 unsafe impl<R, D> Send for ModalFuture<R, D> {}
 
 impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
-    pub fn new<F, DBULD: FnOnce() -> D + Send>(build_modal: DBULD, cb: F) -> Self
+    pub fn new<F, DBULD: FnOnce() -> D + Send>(
+        win: Option<Id<NSWindow>>,
+        build_modal: DBULD,
+        cb: F,
+    ) -> Self
     where
         F: Fn(&mut D, i64) -> R + Send + 'static,
     {
@@ -51,7 +58,12 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
 
         let app = NSApplication::shared_application();
 
-        let win = app.get_window();
+        let win = if let Some(win) = win {
+            Some(win.share())
+        } else {
+            app.get_window()
+        };
+
         // if async exec is possible start sheet modal
         // otherwise fallback to sync
         if app.is_running() && win.is_some() {
