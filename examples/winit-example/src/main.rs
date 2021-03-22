@@ -45,6 +45,27 @@ fn main() {
                 input:
                     event::KeyboardInput {
                         state: event::ElementState::Pressed,
+                        virtual_keycode: Some(winit::event::VirtualKeyCode::S),
+                        ..
+                    },
+                ..
+            } => {
+                let dialog = rfd::AsyncFileDialog::new()
+                    .add_filter("midi", &["mid", "midi"])
+                    .add_filter("rust", &["rs", "toml"])
+                    .set_parent(&window)
+                    .save_file();
+
+                let event_loop_proxy = event_loop_proxy.clone();
+                executor.execut(async move {
+                    let file = dialog.await;
+                    event_loop_proxy.send_event(format!("saved file name: {:#?}", file)).ok();
+                });
+            }
+            WindowEvent::KeyboardInput {
+                input:
+                    event::KeyboardInput {
+                        state: event::ElementState::Pressed,
                         virtual_keycode: Some(winit::event::VirtualKeyCode::F),
                         ..
                     },
@@ -66,10 +87,10 @@ fn main() {
                     event_loop_proxy.send_event(format!("{:#?}", names)).ok();
                 });
             }
-            WindowEvent::DroppedFile(_file_path) => {
+            WindowEvent::DroppedFile(file_path) => {
                 let dialog = rfd::AsyncMessageDialog::new()
-                    .set_title("Msg!")
-                    .set_description("Description!")
+                    .set_title("File dropped")
+                    .set_description(&format!("file path was: {:#?}", file_path))
                     .set_buttons(rfd::MessageButtons::YesNo)
                     .set_parent(&window)
                     .show();
