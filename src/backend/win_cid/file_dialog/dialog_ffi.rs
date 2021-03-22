@@ -73,11 +73,13 @@ impl IDialog {
 
     fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<(), HRESULT> {
         if let Some(first_filter) = filters.first() {
-            let extension: Vec<u16> = first_filter.extensions[0].encode_utf16().chain(Some(0)).collect();
-            unsafe {
-                (*self.0)
-                    .SetDefaultExtension(extension.as_ptr())
-                    .check()?;
+            if let Some(first_extension) = first_filter.extensions.first() {
+                let extension: Vec<u16> = first_extension.encode_utf16().chain(Some(0)).collect();
+                unsafe {
+                    (*self.0)
+                        .SetDefaultExtension(extension.as_ptr())
+                        .check()?;
+                }
             }
         }
 
