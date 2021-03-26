@@ -2,7 +2,7 @@
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
-[![dependency status](https://deps.rs/crate/rfd/0.2.0/status.svg)](https://deps.rs/crate/rfd/0.2.0)
+[![dependency status](https://deps.rs/crate/rfd/0.2.2/status.svg)](https://deps.rs/crate/rfd/0.2.2)
 
 Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 
@@ -55,6 +55,7 @@ let data = file.read().await;
 [1] Macos Sync dialog freezes when used with winit (same way as `nfd`) [Caused by winit #1779](https://github.com/rust-windowing/winit/issues/1779)
 
 ### Diference bettwen `MacOS Windowed App` and `MacOS NonWindowed App`
+
 - Macos async dialog requires an started `NSApplication` instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc. otherwise it will fallback to sync dialog.
 - It is also recomended to spawn dialogs on main thread, RFD can run dialogs from any thread but it is only posible in windowed app and it adds a lite bit of overhead. So it is recomended to: [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs)
 - NonWindowed apps will never be able to spawn dialogs from threads diferent than main
