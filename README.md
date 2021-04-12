@@ -1,4 +1,4 @@
-# rfd
+![img](https://i.imgur.com/YPAgTdf.png)
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
