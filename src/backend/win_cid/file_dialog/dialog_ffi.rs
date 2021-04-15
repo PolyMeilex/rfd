@@ -76,9 +76,7 @@ impl IDialog {
             if let Some(first_extension) = first_filter.extensions.first() {
                 let extension: Vec<u16> = first_extension.encode_utf16().chain(Some(0)).collect();
                 unsafe {
-                    (*self.0)
-                        .SetDefaultExtension(extension.as_ptr())
-                        .check()?;
+                    (*self.0).SetDefaultExtension(extension.as_ptr()).check()?;
                 }
             }
         }
@@ -88,11 +86,12 @@ impl IDialog {
 
             for f in filters.iter() {
                 let name: Vec<u16> = OsStr::new(&f.name).encode_wide().chain(once(0)).collect();
-                let mut ext_string = String::new();
-
-                for e in f.extensions.iter() {
-                    ext_string += &format!("*.{};", e);
-                }
+                let ext_string = f
+                    .extensions
+                    .iter()
+                    .map(|item| format!("*.{}", item))
+                    .collect::<Vec<_>>()
+                    .join(";");
 
                 let ext: Vec<u16> = OsStr::new(&ext_string)
                     .encode_wide()
@@ -139,6 +138,17 @@ impl IDialog {
 
                     (*self.0).SetDefaultFolder(item).check()?;
                 }
+            }
+        }
+        Ok(())
+    }
+
+    fn set_file_name(&self, file_name: &Option<String>) -> Result<(), HRESULT> {
+        if let Some(path) = file_name {
+            let wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();
+
+            unsafe {
+                (*self.0).SetFileName(wide_path.as_ptr()).check()?;
             }
         }
         Ok(())
@@ -203,6 +213,7 @@ impl IDialog {
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
+        dialog.set_file_name(&opt.file_name)?;
 
         Ok(dialog)
     }
@@ -212,6 +223,7 @@ impl IDialog {
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
+        dialog.set_file_name(&opt.file_name)?;
 
         Ok(dialog)
     }
@@ -233,6 +245,7 @@ impl IDialog {
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
+        dialog.set_file_name(&opt.file_name)?;
 
         unsafe {
             dialog.SetOptions(FOS_ALLOWMULTISELECT).check()?;
