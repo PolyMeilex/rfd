@@ -144,6 +144,17 @@ impl IDialog {
         Ok(())
     }
 
+    fn set_file_name(&self, file_name: &Option<String>) -> Result<(), HRESULT> {
+        if let Some(path) = file_name {
+            let wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();
+
+            unsafe {
+                (*self.0).SetFileName(wide_path.as_ptr()).check()?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn get_results(&self) -> Result<Vec<PathBuf>, HRESULT> {
         unsafe {
             let mut res_items: *mut IShellItemArray = ptr::null_mut();
@@ -203,6 +214,7 @@ impl IDialog {
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
+        dialog.set_file_name(&opt.file_name)?;
 
         Ok(dialog)
     }
@@ -212,6 +224,7 @@ impl IDialog {
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
+        dialog.set_file_name(&opt.file_name)?;
 
         Ok(dialog)
     }
@@ -233,6 +246,7 @@ impl IDialog {
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
+        dialog.set_file_name(&opt.file_name)?;
 
         unsafe {
             dialog.SetOptions(FOS_ALLOWMULTISELECT).check()?;
