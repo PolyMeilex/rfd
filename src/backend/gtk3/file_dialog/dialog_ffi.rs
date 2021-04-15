@@ -4,7 +4,7 @@ use gtk_sys::GtkFileChooser;
 
 use std::{
     ffi::{CStr, CString},
-    path::PathBuf,
+    path::{Path, PathBuf},
     ptr,
 };
 
@@ -67,7 +67,17 @@ impl GtkFileDialog {
         }
     }
 
-    fn set_path(&self, path: &Option<PathBuf>) {
+    fn set_file_name(&self, name: Option<&str>) {
+        if let Some(name) = name {
+            if let Ok(name) = CString::new(name) {
+                unsafe {
+                    gtk_sys::gtk_file_chooser_set_filename(self.ptr, name.as_ptr());
+                }
+            }
+        }
+    }
+
+    fn set_path(&self, path: Option<&Path>) {
         if let Some(path) = path {
             if let Some(path) = path.to_str() {
                 if let Ok(path) = CString::new(path) {
@@ -142,7 +152,8 @@ impl GtkFileDialog {
             GtkFileDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
         dialog.add_filters(&opt.filters);
-        dialog.set_path(&opt.starting_directory);
+        dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_file_name(opt.file_name.as_deref());
         dialog
     }
 
@@ -153,7 +164,8 @@ impl GtkFileDialog {
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr, 1) };
 
         dialog.add_filters(&opt.filters);
-        dialog.set_path(&opt.starting_directory);
+        dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_file_name(opt.file_name.as_deref());
         dialog
     }
 
@@ -164,7 +176,8 @@ impl GtkFileDialog {
             "Cancel",
             "Select",
         );
-        dialog.set_path(&opt.starting_directory);
+        dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_file_name(opt.file_name.as_deref());
         dialog
     }
 
@@ -174,7 +187,8 @@ impl GtkFileDialog {
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr, 1) };
         dialog.add_filters(&opt.filters);
-        dialog.set_path(&opt.starting_directory);
+        dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_file_name(opt.file_name.as_deref());
         dialog
     }
 }
