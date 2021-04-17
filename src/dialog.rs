@@ -66,6 +66,7 @@ impl FileDialog {
     /// #### Supported Platforms:
     /// - Windows
     /// - Linux
+    /// - Mac
     pub fn set_file_name(mut self, file_name: &str) -> Self {
         self.file_name = Some(file_name.into());
         self
@@ -162,6 +163,7 @@ impl AsyncFileDialog {
     /// #### Supported Platforms:
     /// - Windows
     /// - Linux
+    /// - Mac
     pub fn set_file_name(mut self, file_name: &str) -> Self {
         self.file_dialog = self.file_dialog.set_file_name(file_name);
         self
