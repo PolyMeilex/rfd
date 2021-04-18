@@ -71,6 +71,9 @@ impl AsGtkDialog for GtkMessageDialog {
     fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
         self.ptr as *mut _
     }
+    unsafe fn show(&self) {
+        gtk_sys::gtk_widget_show_all(self.ptr as *mut _);
+    }
 }
 
 use crate::backend::MessageDialogImpl;

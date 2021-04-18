@@ -1,6 +1,6 @@
 use super::super::AsGtkDialog;
 use crate::FileDialog;
-use gtk_sys::GtkFileChooser;
+use gtk_sys::GtkFileChooserNative;
 
 use std::{
     ffi::{CStr, CString},
@@ -17,7 +17,7 @@ pub enum GtkFileChooserAction {
 }
 
 pub struct GtkFileDialog {
-    pub ptr: *mut GtkFileChooser,
+    pub ptr: *mut GtkFileChooserNative,
 }
 
 impl GtkFileDialog {
@@ -27,15 +27,12 @@ impl GtkFileDialog {
         let btn2 = CString::new(btn2).unwrap();
 
         let ptr = unsafe {
-            let dialog = gtk_sys::gtk_file_chooser_dialog_new(
+            let dialog = gtk_sys::gtk_file_chooser_native_new(
                 title.as_ptr(),
                 ptr::null_mut(),
                 action as i32,
-                btn1.as_ptr(),
-                gtk_sys::GTK_RESPONSE_CANCEL,
                 btn2.as_ptr(),
-                gtk_sys::GTK_RESPONSE_ACCEPT,
-                ptr::null_mut::<i8>(),
+                btn1.as_ptr(),
             );
             dialog as _
         };
@@ -61,7 +58,7 @@ impl GtkFileDialog {
                         gtk_sys::gtk_file_filter_add_pattern(filter, p.as_ptr());
                     }
 
-                    gtk_sys::gtk_file_chooser_add_filter(self.ptr, filter);
+                    gtk_sys::gtk_file_chooser_add_filter(self.ptr as _, filter);
                 }
             }
         }
@@ -71,7 +68,7 @@ impl GtkFileDialog {
         if let Some(name) = name {
             if let Ok(name) = CString::new(name) {
                 unsafe {
-                    gtk_sys::gtk_file_chooser_set_filename(self.ptr, name.as_ptr());
+                    gtk_sys::gtk_file_chooser_set_filename(self.ptr as _, name.as_ptr());
                 }
             }
         }
@@ -82,7 +79,7 @@ impl GtkFileDialog {
             if let Some(path) = path.to_str() {
                 if let Ok(path) = CString::new(path) {
                     unsafe {
-                        gtk_sys::gtk_file_chooser_set_current_folder(self.ptr, path.as_ptr());
+                        gtk_sys::gtk_file_chooser_set_current_folder(self.ptr as _, path.as_ptr());
                     }
                 }
             }
@@ -91,7 +88,7 @@ impl GtkFileDialog {
 
     pub fn get_result(&self) -> Option<PathBuf> {
         let cstr = unsafe {
-            let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as *mut _);
+            let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as _);
             CStr::from_ptr(chosen_filename).to_str()
         };
 
@@ -142,7 +139,7 @@ impl GtkFileDialog {
     }
 
     pub fn run(&self) -> i32 {
-        unsafe { gtk_sys::gtk_dialog_run(self.ptr as *mut _) }
+        unsafe { gtk_sys::gtk_native_dialog_run(self.ptr as *mut _) }
     }
 }
 
@@ -161,7 +158,7 @@ impl GtkFileDialog {
         let mut dialog =
             GtkFileDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
 
-        unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr, 1) };
+        unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr as _, 1) };
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
@@ -185,7 +182,7 @@ impl GtkFileDialog {
         let mut dialog =
             GtkFileDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
 
-        unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr, 1) };
+        unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
         dialog.set_file_name(opt.file_name.as_deref());
@@ -197,13 +194,15 @@ impl AsGtkDialog for GtkFileDialog {
     fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
         self.ptr as *mut _
     }
+
+    unsafe fn show(&self) {
+        gtk_sys::gtk_native_dialog_show(self.ptr as *mut _);
+    }
 }
 
 impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {
-            super::super::utils::wait_for_cleanup();
-            gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
             super::super::utils::wait_for_cleanup();
         }
     }
