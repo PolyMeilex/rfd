@@ -20,7 +20,7 @@ let files = FileDialog::new()
     .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
     .set_directory("/")
-    .pick_files();
+    .pick_file();
 
 // Async Dialog
 let file = AsyncFileDialog::new()
