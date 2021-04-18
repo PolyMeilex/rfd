@@ -71,9 +71,9 @@ impl<R: Default + 'static, D: AsGtkDialog + 'static> GtkDialogFuture<R, D> {
 
                     if let Some(dialog) = &state.dialog {
                         unsafe {
-                            let ptr = dialog.gtk_dialog_ptr();
-                            gtk_sys::gtk_widget_show_all(ptr as *mut _);
+                            dialog.show();
 
+                            let ptr = dialog.gtk_dialog_ptr();
                             connect_response(ptr as *mut _, callback);
                         }
                     } else {

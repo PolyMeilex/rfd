@@ -7,4 +7,5 @@ mod utils;
 
 pub(self) trait AsGtkDialog {
     fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog;
+    unsafe fn show(&self);
 }
