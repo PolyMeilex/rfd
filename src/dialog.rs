@@ -57,7 +57,7 @@ impl FileDialog {
     /// - Linux
     /// - Windows
     /// - Mac
-    pub fn set_directory<P: AsRef<Path>>(mut self, path: &P) -> Self {
+    pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.starting_directory = Some(path.as_ref().into());
         self
     }
@@ -154,7 +154,7 @@ impl AsyncFileDialog {
     /// - Linux
     /// - Windows
     /// - Mac
-    pub fn set_directory<P: AsRef<Path>>(mut self, path: &P) -> Self {
+    pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.file_dialog = self.file_dialog.set_directory(path);
         self
     }

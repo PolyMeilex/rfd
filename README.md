@@ -19,14 +19,14 @@ Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 let files = FileDialog::new()
     .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
-    .set_directory(&"/")
+    .set_directory("/")
     .pick_files();
 
 // Async Dialog
 let file = AsyncFileDialog::new()
     .add_filter("text", &["txt", "rs"])
     .add_filter("rust", &["rs", "toml"])
-    .set_directory(&"/")
+    .set_directory("/")
     .pick_file()
     .await;
 
