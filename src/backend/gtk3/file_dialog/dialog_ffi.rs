@@ -204,6 +204,8 @@ impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {
             super::super::utils::wait_for_cleanup();
+            gtk_sys::gtk_native_dialog_destroy(self.ptr as _);
+            super::super::utils::wait_for_cleanup();
         }
     }
 }
