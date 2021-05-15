@@ -336,7 +336,7 @@ impl Default for MessageLevel {
 
 pub enum MessageButtons {
     Ok,
-    OkCancle,
+    OkCancel,
     YesNo,
 }
 

@@ -31,7 +31,7 @@ impl WinMessageDialog {
 
         let buttons = match opt.buttons {
             MessageButtons::Ok => MB_OK,
-            MessageButtons::OkCancle => MB_OKCANCEL,
+            MessageButtons::OkCancel => MB_OKCANCEL,
             MessageButtons::YesNo => MB_YESNO,
         };
 

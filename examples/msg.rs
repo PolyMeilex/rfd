@@ -2,7 +2,7 @@ fn main() {
     let res = rfd::MessageDialog::new()
         .set_title("Msg!")
         .set_description("Description!")
-        .set_buttons(rfd::MessageButtons::OkCancle)
+        .set_buttons(rfd::MessageButtons::OkCancel)
         .show();
 
     println!("{}", res);
