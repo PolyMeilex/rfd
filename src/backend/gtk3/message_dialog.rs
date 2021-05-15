@@ -23,7 +23,7 @@ impl GtkMessageDialog {
 
         let buttons = match opt.buttons {
             MessageButtons::Ok => gtk_sys::GTK_BUTTONS_OK,
-            MessageButtons::OkCancle => gtk_sys::GTK_BUTTONS_OK_CANCEL,
+            MessageButtons::OkCancel => gtk_sys::GTK_BUTTONS_OK_CANCEL,
             MessageButtons::YesNo => gtk_sys::GTK_BUTTONS_YES_NO,
         };
 

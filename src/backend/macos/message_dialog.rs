@@ -59,7 +59,7 @@ impl NSAlert {
                 let label = NSString::from_str("OK");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
             },
-            MessageButtons::OkCancle => unsafe {
+            MessageButtons::OkCancel => unsafe {
                 let label = NSString::from_str("OK");
                 let _: () = msg_send![alert, addButtonWithTitle: label];
                 let label = NSString::from_str("Cancel");
