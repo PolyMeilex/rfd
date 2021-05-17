@@ -118,16 +118,47 @@ impl Panel {
     }
 
     pub fn get_results(&self) -> Vec<PathBuf> {
+        get_results_iter().collect()
+    }
+
+    pub fn get_results_iter(&self) -> impl Iterator<Item = PathBuf> {
+        struct FileList {
+            count: usize,
+            urls: Id<NSArray<NSURL>>,
+        }
+
+        impl FileList {
+            fn new(urls: Vec<Id<NSArray<NSURL>>>) {
+                FileList {
+                    count: urls.len(),
+                    urls,
+                }
+            }
+        }
+
+        impl Iterator for FileList {
+            type Item = Id<NSArray<NSURL>>;
+
+            fn next(&mut self) -> Option<PathBuf> {
+                let curr_ptr = self.0;
+
+                if !curr_ptr.is_null() {
+                    let curr = unsafe { *curr_ptr };
+
+                    self.0 = curr.next;
+
+                    Some(curr)
+                } else {
+                    None
+                }
+            }
+        }
+
         unsafe {
             let urls = msg_send![self.panel, URLs];
             let urls: Id<NSArray<NSURL>> = Id::from_ptr(urls);
 
-            let mut res = Vec::new();
-            for url in urls.to_vec() {
-                res.push(url.to_path_buf());
-            }
-
-            res
+            FileList::new(urls.to_vec())
         }
     }
 }

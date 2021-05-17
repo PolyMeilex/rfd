@@ -100,6 +100,10 @@ impl GtkFileDialog {
     }
 
     pub fn get_results(&self) -> Vec<PathBuf> {
+        self.get_results_iter().collect()
+    }
+
+    pub fn get_results_iter(&self) -> impl Iterator<Item = PathBuf> {
         #[derive(Debug)]
         struct FileList(*mut glib_sys::GSList);
 
@@ -123,17 +127,15 @@ impl GtkFileDialog {
         let chosen_filenames =
             unsafe { gtk_sys::gtk_file_chooser_get_filenames(self.ptr as *mut _) };
 
-        let paths: Vec<PathBuf> = FileList(chosen_filenames)
-            .filter_map(|item| {
-                let cstr = unsafe { CStr::from_ptr(item.data as _).to_str() };
+        let paths = FileList(chosen_filenames).filter_map(|item| {
+            let cstr = unsafe { CStr::from_ptr(item.data as _).to_str() };
 
-                if let Ok(cstr) = cstr {
-                    Some(PathBuf::from(cstr.to_owned()))
-                } else {
-                    None
-                }
-            })
-            .collect();
+            if let Ok(cstr) = cstr {
+                Some(PathBuf::from(cstr.to_owned()))
+            } else {
+                None
+            }
+        });
 
         paths
     }
