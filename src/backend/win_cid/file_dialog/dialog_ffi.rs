@@ -157,52 +157,65 @@ impl IDialog {
     pub fn get_results_iter(&self) -> Result<impl Iterator<Item = PathBuf>, HRESULT> {
         struct FileList {
             items: *mut IShellItemArray,
-            count: usize,
+            id: u32,
         }
 
         impl FileList {
-            fn new(item_array: *mut IFileDialog) -> Result<Self, HRESULT> {
-                let mut res_items: *mut IShellItemArray = ptr::null_mut();
-                (*(item_array.0 as *mut IFileOpenDialog))
-                    .GetResults(&mut res_items)
-                    .check()?;
+            fn new(file_dialog: *mut IFileDialog) -> Result<Self, HRESULT> {
+                let mut items: *mut IShellItemArray = ptr::null_mut();
+                unsafe {
+                    (*(file_dialog as *mut IFileOpenDialog))
+                        .GetResults(&mut items)
+                        .check()?;
+                }
 
-                let items = &*res_items;
-                let mut count = 0;
-                items.GetCount(&mut count);
-
-                Self { items, count }
+                Ok(Self { items, id: 0 })
             }
         }
 
         impl Iterator for FileList {
-            type Item = *mut IShellItem;
+            type Item = PathBuf;
 
             fn next(&mut self) -> Option<PathBuf> {
                 let mut res_item: *mut IShellItem = ptr::null_mut();
-                items.GetItemAt(id, &mut res_item).check().ok()?;
+
+                unsafe {
+                    (&*self.items)
+                        .GetItemAt(self.id, &mut res_item)
+                        .check()
+                        .ok()?;
+                }
+
                 let mut display_name: LPWSTR = ptr::null_mut();
-                (*res_item)
-                    .GetDisplayName(SIGDN_FILESYSPATH, &mut display_name)
-                    .check()
-                    .ok()?;
+
+                unsafe {
+                    (*res_item)
+                        .GetDisplayName(SIGDN_FILESYSPATH, &mut display_name)
+                        .check()
+                        .ok()?;
+                }
                 let filename = to_os_string(&display_name);
-                CoTaskMemFree(display_name as LPVOID);
+
+                unsafe {
+                    CoTaskMemFree(display_name as LPVOID);
+                }
+
+                self.id += 1;
                 Some(PathBuf::from(filename))
             }
         }
 
         impl Drop for FileList {
             fn drop(&mut self) {
-                self.items.Release();
+                unsafe { (&*self.items).Release() };
             }
         }
 
-        FileList::new(self.0)?
+        Ok(FileList::new(self.0)?)
     }
 
     pub fn get_results(&self) -> Result<Vec<PathBuf>, HRESULT> {
-        get_results_iter()?.collect()
+        Ok(self.get_results_iter()?.collect())
     }
 
     pub fn get_result(&self) -> Result<PathBuf, HRESULT> {
