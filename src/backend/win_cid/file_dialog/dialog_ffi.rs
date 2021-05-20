@@ -1,7 +1,7 @@
 use crate::FileDialog;
 
 use std::{
-    ffi::{OsStr, OsString},
+    ffi::{c_void, OsStr, OsString},
     iter::once,
     ops::Deref,
     os::windows::{ffi::OsStrExt, prelude::OsStringExt},
@@ -28,6 +28,9 @@ use winapi::{
     Interface,
 };
 
+#[cfg(feature = "parent")]
+use raw_window_handle::RawWindowHandle;
+
 use super::super::utils::ToResult;
 
 fn to_os_string(s: &LPWSTR) -> OsString {
@@ -41,7 +44,7 @@ fn to_os_string(s: &LPWSTR) -> OsString {
     OsStringExt::from_wide(slice)
 }
 
-pub struct IDialog(pub *mut IFileDialog);
+pub struct IDialog(pub *mut IFileDialog, Option<*mut c_void>);
 
 impl IDialog {
     fn new_file_dialog(class: &GUID, id: &GUID) -> Result<*mut IFileDialog, HRESULT> {
@@ -61,14 +64,30 @@ impl IDialog {
         Ok(dialog)
     }
 
-    fn new_open_dialog() -> Result<Self, HRESULT> {
+    fn new_open_dialog(opt: &FileDialog) -> Result<Self, HRESULT> {
         let ptr = Self::new_file_dialog(&CLSID_FileOpenDialog, &IFileOpenDialog::uuidof())?;
-        Ok(Self(ptr))
+        #[cfg(feature = "parent")]
+        let parent = match opt.parent {
+            Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
+            None => None,
+            _ => unreachable!("Unsuported window handle, expected: Windows"),
+        };
+        #[cfg(not(feature = "parent"))]
+        let parent = None;
+        Ok(Self(ptr, parent))
     }
 
-    fn new_save_dialog() -> Result<Self, HRESULT> {
+    fn new_save_dialog(opt: &FileDialog) -> Result<Self, HRESULT> {
         let ptr = Self::new_file_dialog(&CLSID_FileSaveDialog, &IFileSaveDialog::uuidof())?;
-        Ok(Self(ptr))
+        #[cfg(feature = "parent")]
+        let parent = match opt.parent {
+            Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
+            None => None,
+            _ => unreachable!("Unsuported window handle, expected: Windows"),
+        };
+        #[cfg(not(feature = "parent"))]
+        let parent = None;
+        Ok(Self(ptr, parent))
     }
 
     fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<(), HRESULT> {
@@ -202,14 +221,17 @@ impl IDialog {
     }
 
     pub fn show(&self) -> Result<(), HRESULT> {
-        unsafe { self.Show(ptr::null_mut()).check()? };
+        unsafe {
+            self.Show(self.1.unwrap_or_else(|| ptr::null_mut()) as _)
+                .check()?
+        };
         Ok(())
     }
 }
 
 impl IDialog {
     pub fn build_pick_file(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = IDialog::new_open_dialog()?;
+        let dialog = IDialog::new_open_dialog(opt)?;
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
@@ -219,7 +241,7 @@ impl IDialog {
     }
 
     pub fn build_save_file(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = IDialog::new_save_dialog()?;
+        let dialog = IDialog::new_save_dialog(opt)?;
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
@@ -229,7 +251,7 @@ impl IDialog {
     }
 
     pub fn build_pick_folder(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = IDialog::new_open_dialog()?;
+        let dialog = IDialog::new_open_dialog(opt)?;
 
         dialog.set_path(&opt.starting_directory)?;
 
@@ -241,7 +263,7 @@ impl IDialog {
     }
 
     pub fn build_pick_files(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let dialog = IDialog::new_open_dialog()?;
+        let dialog = IDialog::new_open_dialog(opt)?;
 
         dialog.add_filters(&opt.filters)?;
         dialog.set_path(&opt.starting_directory)?;
