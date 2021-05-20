@@ -73,7 +73,7 @@ impl FileDialog {
     }
 
     #[cfg(feature = "parent")]
-    fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
+    pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
         self.parent = Some(parent.raw_window_handle());
         self
     }
@@ -171,7 +171,7 @@ impl AsyncFileDialog {
 
     #[cfg(feature = "parent")]
     /// Set parent windows explicitly (optional)
-    /// Suported in: `macos`
+    /// Suported in: `macos` and `windows`
     pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
         self.file_dialog = self.file_dialog.set_parent(parent);
         self
