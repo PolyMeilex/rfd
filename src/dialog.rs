@@ -73,6 +73,8 @@ impl FileDialog {
     }
 
     #[cfg(feature = "parent")]
+    /// Set parent windows explicitly (optional)
+    /// Suported in: `macos` and `windows`
     pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
         self.parent = Some(parent.raw_window_handle());
         self
