@@ -6,6 +6,7 @@ use std::path::PathBuf;
 #[cfg(feature = "parent")]
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
+#[derive(Debug, Clone)]
 pub(crate) struct Filter {
     pub name: String,
     pub extensions: Vec<String>,
@@ -16,7 +17,7 @@ pub(crate) struct Filter {
 /// - Linux
 /// - Windows
 /// - Mac
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct FileDialog {
     pub(crate) filters: Vec<Filter>,
     pub(crate) starting_directory: Option<PathBuf>,
@@ -126,7 +127,7 @@ impl FileDialog {
 /// - Windows
 /// - Mac
 /// - WASM32
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct AsyncFileDialog {
     file_dialog: FileDialog,
 }
@@ -232,7 +233,7 @@ use crate::backend::AsyncMessageDialogImpl;
 use crate::backend::MessageDialogImpl;
 
 /// ## Synchronous Message Dialog
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct MessageDialog {
     pub(crate) title: String,
     pub(crate) description: String,
@@ -283,7 +284,7 @@ impl MessageDialog {
 }
 
 /// ## Asynchronous Message Dialog
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct AsyncMessageDialog(MessageDialog);
 
 impl AsyncMessageDialog {
@@ -324,6 +325,7 @@ impl AsyncMessageDialog {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum MessageLevel {
     Info,
     Warning,
@@ -336,6 +338,7 @@ impl Default for MessageLevel {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum MessageButtons {
     Ok,
     OkCancel,
