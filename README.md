@@ -2,7 +2,7 @@
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
-[![dependency status](https://deps.rs/crate/rfd/0.4.0/status.svg)](https://deps.rs/crate/rfd/0.4.0)
+[![dependency status](https://deps.rs/crate/rfd/0.4.1/status.svg)](https://deps.rs/crate/rfd/0.4.1)
 
 Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 
