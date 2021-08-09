@@ -74,6 +74,16 @@ impl GtkFileDialog {
         }
     }
 
+    fn set_current_name(&self, name: Option<&str>) {
+        if let Some(name) = name {
+            if let Ok(name) = CString::new(name) {
+                unsafe {
+                    gtk_sys::gtk_file_chooser_set_current_name(self.ptr as _, name.as_ptr());
+                }
+            }
+        }
+    }
+
     fn set_path(&self, path: Option<&Path>) {
         if let Some(path) = path {
             if let Some(path) = path.to_str() {
@@ -162,7 +172,23 @@ impl GtkFileDialog {
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
-        dialog.set_file_name(opt.file_name.as_deref());
+
+        if let (Some(mut path), Some(file_name)) =
+            (opt.starting_directory.to_owned(), opt.file_name.as_deref())
+        {
+            path.push(file_name);
+            if path.exists() {
+                // the user edited an existing document
+                dialog.set_file_name(opt.file_name.as_deref());
+            } else {
+                // the user just created a new document
+                dialog.set_current_name(opt.file_name.as_deref());
+            }
+        } else {
+            // the user just created a new document
+            dialog.set_current_name(opt.file_name.as_deref());
+        }
+
         dialog
     }
 
