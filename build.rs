@@ -10,5 +10,4 @@ fn main() {
     // } else {
     //     println!("cargo:rustc-link-lib=framework=AppKit");
     // }
-
 }
