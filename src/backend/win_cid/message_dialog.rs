@@ -6,13 +6,26 @@ use winapi::um::winuser::{
     MB_YESNO,
 };
 
-use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt, ptr};
+#[cfg(feature = "parent")]
+use raw_window_handle::RawWindowHandle;
+
+use std::{
+    ffi::{c_void, OsStr},
+    iter::once,
+    os::windows::ffi::OsStrExt,
+    ptr,
+};
 
 pub struct WinMessageDialog {
+    parent: Option<*mut c_void>,
     text: Vec<u16>,
     caption: Vec<u16>,
     flags: u32,
 }
+
+// Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
+// fingers crossed
+unsafe impl Send for WinMessageDialog {}
 
 impl WinMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
@@ -35,7 +48,17 @@ impl WinMessageDialog {
             MessageButtons::YesNo => MB_YESNO,
         };
 
+        #[cfg(feature = "parent")]
+        let parent = match opt.parent {
+            Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
+            None => None,
+            _ => unreachable!("Unsuported window handle, expected: Windows"),
+        };
+        #[cfg(not(feature = "parent"))]
+        let parent = None;
+
         Self {
+            parent,
             text,
             caption,
             flags: level | buttons,
@@ -45,7 +68,7 @@ impl WinMessageDialog {
     pub fn run(self) -> bool {
         let ret = unsafe {
             MessageBoxW(
-                ptr::null_mut(),
+                self.parent.unwrap_or_else(|| ptr::null_mut()) as _,
                 self.text.as_ptr(),
                 self.caption.as_ptr(),
                 self.flags,
