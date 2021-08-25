@@ -109,6 +109,13 @@ impl Panel {
         }
     }
 
+    pub fn set_file_name(&self, file_name: &str) {
+        unsafe {
+            let file_name = make_nsstring(file_name);
+            let () = msg_send![self.panel, setNameFieldStringValue: file_name];
+        }
+    }
+
     pub fn get_result(&self) -> PathBuf {
         unsafe {
             let url = msg_send![self.panel, URL];
@@ -144,6 +151,10 @@ impl Panel {
             panel.set_path(path, opt.file_name.as_deref());
         }
 
+        if let Some(file_name) = &opt.file_name {
+            panel.set_file_name(file_name);
+        }
+
         panel.set_can_choose_directories(NO);
         panel.set_can_choose_files(YES);
 
@@ -159,6 +170,10 @@ impl Panel {
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path, opt.file_name.as_deref());
+        }
+
+        if let Some(file_name) = &opt.file_name {
+            panel.set_file_name(file_name);
         }
 
         panel
