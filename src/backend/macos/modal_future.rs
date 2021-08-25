@@ -100,7 +100,7 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
                 main_runner();
             }
         } else {
-            eprintln!("\n Hi! It looks like you are running async dialog in unsuported environment, I will fallback to sync dialog for you. \n");
+            eprintln!("\n Hi! It looks like you are running async dialog in unsupported environment, I will fallback to sync dialog for you. \n");
 
             if is_main_thread() {
                 let mut modal = build_modal();
@@ -112,7 +112,7 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
 
                 dialog_callback(state.clone(), ret);
             } else {
-                panic!("Fallback Sync Dialog Must Be Spawned On Main Thread (Why? If async dialog is unsuported in this env, it also means that spawining dialogs outside of main thread is also inposible");
+                panic!("Fallback Sync Dialog Must Be Spawned On Main Thread (Why? If async dialog is unsupported in this env, it also means that spawning dialogs outside of main thread is also inpossible");
             }
         }
 
