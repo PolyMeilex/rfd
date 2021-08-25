@@ -57,7 +57,7 @@ let data = file.read().await;
 ### Diference bettwen `MacOS Windowed App` and `MacOS NonWindowed App`
 
 - Macos async dialog requires an started `NSApplication` instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc. otherwise it will fallback to sync dialog.
-- It is also recomended to spawn dialogs on main thread, RFD can run dialogs from any thread but it is only posible in windowed app and it adds a lite bit of overhead. So it is recomended to: [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs)
+- It is also recomended to spawn dialogs on main thread, RFD can run dialogs from any thread but it is only possible in windowed app and it adds a lite bit of overhead. So it is recomended to: [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs)
 - NonWindowed apps will never be able to spawn dialogs from threads diferent than main
 - NonWindowed apps will never be able to spawn async dialogs
 

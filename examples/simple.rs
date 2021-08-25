@@ -13,5 +13,5 @@ fn main() {
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
-    // On wasm only async dialogs are posible
+    // On wasm only async dialogs are possible
 }
