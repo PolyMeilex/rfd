@@ -252,21 +252,34 @@ impl MessageDialog {
         Default::default()
     }
 
+    /// Set level of a dialog
+    ///
+    /// Depending on the system it can result in level specific icon to show up,
+    /// the will inform user it message is a error, warning or just information.
     pub fn set_level(mut self, level: MessageLevel) -> Self {
         self.level = level;
         self
     }
 
+    /// Set title of a dialog
     pub fn set_title(mut self, text: &str) -> Self {
         self.title = text.into();
         self
     }
 
+    /// Set description of a dialog
+    ///
+    /// Description is a content of a dialog
     pub fn set_description(mut self, text: &str) -> Self {
         self.description = text.into();
         self
     }
 
+    /// Set the set of button that will be displayed on the dialog
+    ///
+    /// - `Ok` dialog is a single `Ok` button
+    /// - `OkCancel` dialog, will display 2 buttons ok and cancel.
+    /// - `YesNo` dialog, will display 2 buttons yes and no.
     pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
         self.buttons = btn;
         self
@@ -280,6 +293,11 @@ impl MessageDialog {
         self
     }
 
+    /// Shows a message dialog:
+    ///
+    /// - In `Ok` dialog, it will return `true` when `OK` was pressed
+    /// - In `OkCancel` dialog, it will return `true` when `OK` was pressed
+    /// - In `YesNo` dialog, it will return `true` when `Yes` was pressed
     pub fn show(self) -> bool {
         MessageDialogImpl::show(self)
     }
@@ -294,21 +312,34 @@ impl AsyncMessageDialog {
         Default::default()
     }
 
+    /// Set level of a dialog
+    ///
+    /// Depending on the system it can result in level specific icon to show up,
+    /// the will inform user it message is a error, warning or just information.
     pub fn set_level(mut self, level: MessageLevel) -> Self {
         self.0 = self.0.set_level(level);
         self
     }
 
+    /// Set title of a dialog
     pub fn set_title(mut self, text: &str) -> Self {
         self.0 = self.0.set_title(text);
         self
     }
 
+    /// Set description of a dialog
+    ///
+    /// Description is a content of a dialog
     pub fn set_description(mut self, text: &str) -> Self {
         self.0 = self.0.set_description(text);
         self
     }
 
+    /// Set the set of button that will be displayed on the dialog
+    ///
+    /// - `Ok` dialog is a single `Ok` button
+    /// - `OkCancel` dialog, will display 2 buttons ok and cancel.
+    /// - `YesNo` dialog, will display 2 buttons yes and no.
     pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
         self.0 = self.0.set_buttons(btn);
         self
@@ -322,6 +353,10 @@ impl AsyncMessageDialog {
         self
     }
 
+    /// Shows a message dialog:
+    /// - In `Ok` dialog, it will return `true` when `OK` was pressed
+    /// - In `OkCancel` dialog, it will return `true` when `OK` was pressed
+    /// - In `YesNo` dialog, it will return `true` when `Yes` was pressed
     pub fn show(self) -> impl Future<Output = bool> {
         AsyncMessageDialogImpl::show_async(self.0)
     }
