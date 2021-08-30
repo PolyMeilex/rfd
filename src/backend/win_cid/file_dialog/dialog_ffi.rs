@@ -155,7 +155,8 @@ impl IDialog {
                     )
                     .check()?;
 
-                    (*self.0).SetDefaultFolder(item).check()?;
+                    // For some reason SetDefaultFolder(), does not guarantees default path, so we use SetFolder
+                    (*self.0).SetFolder(item).check()?;
                 }
             }
         }
