@@ -70,7 +70,7 @@ impl IDialog {
         let parent = match opt.parent {
             Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
             None => None,
-            _ => unreachable!("Unsuported window handle, expected: Windows"),
+            _ => unreachable!("unsupported window handle, expected: Windows"),
         };
         #[cfg(not(feature = "parent"))]
         let parent = None;
@@ -83,7 +83,7 @@ impl IDialog {
         let parent = match opt.parent {
             Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
             None => None,
-            _ => unreachable!("Unsuported window handle, expected: Windows"),
+            _ => unreachable!("unsupported window handle, expected: Windows"),
         };
         #[cfg(not(feature = "parent"))]
         let parent = None;

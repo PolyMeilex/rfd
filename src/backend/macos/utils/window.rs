@@ -15,7 +15,7 @@ pub trait INSWindow: INSObject {
                 let id = h.ns_window as *mut Self;
                 unsafe { Id::from_ptr(id) }
             }
-            _ => unreachable!("Unsuported window handle, expected: MacOS"),
+            _ => unreachable!("unsupported window handle, expected: MacOS"),
         }
     }
 
