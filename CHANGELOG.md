@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.4
+
+- Fix `set_directory` on some windows setups (#22)
+- Implement `set_file_name` on MacOS (#21)
+
 ## 0.4.3
 
 - `set_parent` support for `MessageDialog` on windows
