@@ -22,6 +22,7 @@ pub struct FileDialog {
     pub(crate) filters: Vec<Filter>,
     pub(crate) starting_directory: Option<PathBuf>,
     pub(crate) file_name: Option<String>,
+    pub(crate) title: Option<String>,
     #[cfg(feature = "parent")]
     pub(crate) parent: Option<RawWindowHandle>,
 }
@@ -70,6 +71,16 @@ impl FileDialog {
     /// - Mac
     pub fn set_file_name(mut self, file_name: &str) -> Self {
         self.file_name = Some(file_name.into());
+        self
+    }
+
+    /// Set the title of the dialog.
+    /// #### Supported Platforms:
+    /// - Windows
+    /// - Linux
+    /// - Mac
+    pub fn set_title(mut self, title: &str) -> Self {
+        self.title = Some(title.into());
         self
     }
 
@@ -169,6 +180,16 @@ impl AsyncFileDialog {
     /// - Mac
     pub fn set_file_name(mut self, file_name: &str) -> Self {
         self.file_dialog = self.file_dialog.set_file_name(file_name);
+        self
+    }
+
+    /// Set the title of the dialog.
+    /// #### Supported Platforms:
+    /// - Windows
+    /// - Linux
+    /// - Mac
+    pub fn set_title(mut self, title: &str) -> Self {
+        self.file_dialog = self.file_dialog.set_title(title);
         self
     }
 
