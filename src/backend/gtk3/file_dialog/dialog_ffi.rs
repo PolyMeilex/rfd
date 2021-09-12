@@ -156,7 +156,7 @@ impl GtkFileDialog {
 impl GtkFileDialog {
     pub fn build_pick_file(opt: &FileDialog) -> Self {
         let mut dialog =
-            GtkFileDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
+            GtkFileDialog::new(opt.title.as_deref().unwrap_or("Open File"), GtkFileChooserAction::Open, "Cancel", "Open");
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
@@ -166,7 +166,7 @@ impl GtkFileDialog {
 
     pub fn build_save_file(opt: &FileDialog) -> Self {
         let mut dialog =
-            GtkFileDialog::new("Save File", GtkFileChooserAction::Save, "Cancel", "Save");
+            GtkFileDialog::new(opt.title.as_deref().unwrap_or("Save File"), GtkFileChooserAction::Save, "Cancel", "Save");
 
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr as _, 1) };
 
@@ -194,7 +194,7 @@ impl GtkFileDialog {
 
     pub fn build_pick_folder(opt: &FileDialog) -> Self {
         let dialog = GtkFileDialog::new(
-            "Select Folder",
+            opt.title.as_deref().unwrap_or("Select Folder"),
             GtkFileChooserAction::SelectFolder,
             "Cancel",
             "Select",
@@ -206,7 +206,7 @@ impl GtkFileDialog {
 
     pub fn build_pick_files(opt: &FileDialog) -> Self {
         let mut dialog =
-            GtkFileDialog::new("Open File", GtkFileChooserAction::Open, "Cancel", "Open");
+            GtkFileDialog::new(opt.title.as_deref().unwrap_or("Open File"), GtkFileChooserAction::Open, "Cancel", "Open");
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.add_filters(&opt.filters);
