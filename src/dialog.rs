@@ -78,7 +78,7 @@ impl FileDialog {
     /// #### Supported Platforms:
     /// - Windows
     /// - Linux
-    /// - Mac
+    /// - Mac (Only below version 10.11)
     pub fn set_title(mut self, title: &str) -> Self {
         self.title = Some(title.into());
         self
@@ -187,7 +187,7 @@ impl AsyncFileDialog {
     /// #### Supported Platforms:
     /// - Windows
     /// - Linux
-    /// - Mac
+    /// - Mac (Only below version 10.11)
     pub fn set_title(mut self, title: &str) -> Self {
         self.file_dialog = self.file_dialog.set_title(title);
         self
