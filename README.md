@@ -12,6 +12,10 @@ Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 - It supports async/await syntax
 - And if one day you decide to port your program to browser, WASM support is there for you!
 
+# Dependencies
+#### On Linux:
+- GTK3 development liblaries (on debian `libgtk-3-dev` on arch `gtk3`)
+
 # Example
 
 ```rust
