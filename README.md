@@ -14,7 +14,7 @@ Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 
 # Dependencies
 #### On Linux:
-- GTK3 development liblaries (on debian `libgtk-3-dev` on arch `gtk3`)
+- GTK3 development libraries (on debian `libgtk-3-dev` on arch `gtk3`)
 
 # Example
 
@@ -58,10 +58,10 @@ let data = file.read().await;
 
 [1] Macos Sync dialog freezes when used with winit (same way as `nfd`) [Caused by winit #1779](https://github.com/rust-windowing/winit/issues/1779)
 
-### Diference bettwen `MacOS Windowed App` and `MacOS NonWindowed App`
+### Difference between `MacOS Windowed App` and `MacOS NonWindowed App`
 
-- Macos async dialog requires an started `NSApplication` instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc. otherwise it will fallback to sync dialog.
-- It is also recomended to spawn dialogs on main thread, RFD can run dialogs from any thread but it is only possible in windowed app and it adds a lite bit of overhead. So it is recomended to: [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs)
+- Macos async dialog requires a started `NSApplication` instance, so dialog is truly async only when opened in windowed env like `winit`,`SDL2`, etc. otherwise it will fallback to sync dialog.
+- It is also recommended to spawn dialogs on main thread, RFD can run dialogs from any thread but it is only possible in windowed app and it adds a little bit of overhead. So it is recommended to: [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs)
 - NonWindowed apps will never be able to spawn dialogs from threads diferent than main
 - NonWindowed apps will never be able to spawn async dialogs
 
