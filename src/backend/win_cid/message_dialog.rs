@@ -29,8 +29,7 @@ unsafe impl Send for WinMessageDialog {}
 
 impl WinMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
-        let input = format!("{}\n{}", opt.title, opt.description);
-        let text: Vec<u16> = OsStr::new(&input).encode_wide().chain(once(0)).collect();
+        let text: Vec<u16> = OsStr::new(&opt.description).encode_wide().chain(once(0)).collect();
         let caption: Vec<u16> = OsStr::new(&opt.title)
             .encode_wide()
             .chain(once(0))
