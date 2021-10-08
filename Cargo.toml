@@ -1,6 +1,6 @@
 [package]
 name = "rfd"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2018"
 
 authors = ["Poly <marynczak.bartlomiej@gmail.com>"]
