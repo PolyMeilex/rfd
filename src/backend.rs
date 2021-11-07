@@ -3,7 +3,7 @@ use std::future::Future;
 use std::path::PathBuf;
 use std::pin::Pin;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "freebsd", target_os = "linux"))]
 mod gtk3;
 #[cfg(target_os = "macos")]
 mod macos;
