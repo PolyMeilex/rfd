@@ -2,15 +2,15 @@ use super::super::thread_future::ThreadFuture;
 use super::super::utils::init_com;
 use super::dialog_ffi::IDialog;
 
-use winapi::shared::winerror::HRESULT;
+use windows::runtime::Result;
 
 use crate::file_handle::FileHandle;
 
-pub fn single_return_future<F: FnOnce() -> Result<IDialog, HRESULT> + Send + 'static>(
+pub fn single_return_future<F: FnOnce() -> Result<IDialog> + Send + 'static>(
     build: F,
 ) -> ThreadFuture<Option<FileHandle>> {
     ThreadFuture::new(move |data| {
-        let ret: Result<(), HRESULT> = (|| {
+        let ret: Result<()> = (|| {
             init_com(|| {
                 let dialog = build()?;
                 dialog.show()?;
@@ -28,11 +28,11 @@ pub fn single_return_future<F: FnOnce() -> Result<IDialog, HRESULT> + Send + 'st
     })
 }
 
-pub fn multiple_return_future<F: FnOnce() -> Result<IDialog, HRESULT> + Send + 'static>(
+pub fn multiple_return_future<F: FnOnce() -> Result<IDialog> + Send + 'static>(
     build: F,
 ) -> ThreadFuture<Option<Vec<FileHandle>>> {
     ThreadFuture::new(move |data| {
-        let ret: Result<(), HRESULT> = (|| {
+        let ret: Result<()> = (|| {
             init_com(|| {
                 let dialog = build()?;
                 dialog.show()?;

@@ -1,26 +1,24 @@
 use super::thread_future::ThreadFuture;
 use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
 
-use winapi::um::winuser::{
-    MessageBoxW, IDOK, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK, MB_OKCANCEL,
-    MB_YESNO,
+use windows::Win32::{
+    Foundation::{HWND, PWSTR},
+    UI::WindowsAndMessaging::{
+        MessageBoxW, IDOK, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK,
+        MB_OKCANCEL, MB_YESNO, MESSAGEBOX_STYLE,
+    },
 };
 
 #[cfg(feature = "parent")]
 use raw_window_handle::RawWindowHandle;
 
-use std::{
-    ffi::{c_void, OsStr},
-    iter::once,
-    os::windows::ffi::OsStrExt,
-    ptr,
-};
+use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt};
 
 pub struct WinMessageDialog {
-    parent: Option<*mut c_void>,
+    parent: Option<HWND>,
     text: Vec<u16>,
     caption: Vec<u16>,
-    flags: u32,
+    flags: MESSAGEBOX_STYLE,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
@@ -29,7 +27,10 @@ unsafe impl Send for WinMessageDialog {}
 
 impl WinMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
-        let text: Vec<u16> = OsStr::new(&opt.description).encode_wide().chain(once(0)).collect();
+        let text: Vec<u16> = OsStr::new(&opt.description)
+            .encode_wide()
+            .chain(once(0))
+            .collect();
         let caption: Vec<u16> = OsStr::new(&opt.title)
             .encode_wide()
             .chain(once(0))
@@ -49,7 +50,7 @@ impl WinMessageDialog {
 
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
+            Some(RawWindowHandle::Windows(handle)) => Some(HWND(handle.hwnd as isize)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
@@ -64,12 +65,12 @@ impl WinMessageDialog {
         }
     }
 
-    pub fn run(self) -> bool {
+    pub fn run(mut self) -> bool {
         let ret = unsafe {
             MessageBoxW(
-                self.parent.unwrap_or_else(|| ptr::null_mut()) as _,
-                self.text.as_ptr(),
-                self.caption.as_ptr(),
+                self.parent,
+                PWSTR(self.text.as_mut_ptr()),
+                PWSTR(self.caption.as_mut_ptr()),
                 self.flags,
             )
         };

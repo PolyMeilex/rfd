@@ -1,106 +1,86 @@
 use crate::FileDialog;
 
-use std::{
-    ffi::{c_void, OsStr, OsString},
-    iter::once,
-    ops::Deref,
-    os::windows::{ffi::OsStrExt, prelude::OsStringExt},
-    path::PathBuf,
-    ptr,
-};
+use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt, path::PathBuf};
 
-use winapi::{
-    shared::{
-        guiddef::GUID, minwindef::LPVOID, ntdef::LPWSTR, winerror::HRESULT,
-        wtypesbase::CLSCTX_INPROC_SERVER,
+use windows::runtime::{Interface, Result};
+use windows::Win32::{
+    Foundation::{HWND, PWSTR},
+    System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER},
+    UI::Shell::{
+        Common::COMDLG_FILTERSPEC, FileOpenDialog, FileSaveDialog, IFileDialog, IFileOpenDialog,
+        IFileSaveDialog, IShellItem, SHCreateItemFromParsingName, FOS_ALLOWMULTISELECT,
+        FOS_PICKFOLDERS, SIGDN_FILESYSPATH,
     },
-    um::{
-        combaseapi::{CoCreateInstance, CoTaskMemFree},
-        shobjidl::{
-            IFileDialog, IFileOpenDialog, IFileSaveDialog, FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS,
-        },
-        shobjidl_core::{
-            CLSID_FileOpenDialog, CLSID_FileSaveDialog, IShellItem, IShellItemArray,
-            SHCreateItemFromParsingName, SIGDN_FILESYSPATH,
-        },
-        shtypes::COMDLG_FILTERSPEC,
-    },
-    Interface,
 };
 
 #[cfg(feature = "parent")]
 use raw_window_handle::RawWindowHandle;
 
-use super::super::utils::ToResult;
-
-fn to_os_string(s: &LPWSTR) -> OsString {
-    let slice = unsafe {
-        let mut len = 0;
-        while *s.offset(len) != 0 {
-            len += 1;
+unsafe fn read_to_string(ptr: PWSTR) -> String {
+    let mut len = 0usize;
+    let mut cursor = ptr;
+    loop {
+        let val = cursor.0.read();
+        if val == 0 {
+            break;
         }
-        std::slice::from_raw_parts(*s, len as usize)
-    };
-    OsStringExt::from_wide(slice)
+        len += 1;
+        cursor = PWSTR(cursor.0.add(1));
+    }
+
+    let slice = std::slice::from_raw_parts(ptr.0, len);
+    String::from_utf16(slice).unwrap()
 }
 
-pub struct IDialog(pub *mut IFileDialog, Option<*mut c_void>);
+pub struct IDialog(pub IFileDialog, Option<HWND>);
 
 impl IDialog {
-    fn new_file_dialog(class: &GUID, id: &GUID) -> Result<*mut IFileDialog, HRESULT> {
-        let mut dialog: *mut IFileDialog = ptr::null_mut();
+    fn new_open_dialog(opt: &FileDialog) -> Result<Self> {
+        let dialog: IFileOpenDialog =
+            unsafe { CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)? };
+        let dialog: IFileDialog = dialog.into();
 
-        unsafe {
-            CoCreateInstance(
-                class,
-                ptr::null_mut(),
-                CLSCTX_INPROC_SERVER,
-                id,
-                &mut dialog as *mut *mut IFileDialog as *mut LPVOID,
-            )
-            .check()?;
-        }
-
-        Ok(dialog)
-    }
-
-    fn new_open_dialog(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let ptr = Self::new_file_dialog(&CLSID_FileOpenDialog, &IFileOpenDialog::uuidof())?;
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
+            Some(RawWindowHandle::Windows(handle)) => Some(HWND(handle.hwnd as isize)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
         #[cfg(not(feature = "parent"))]
         let parent = None;
-        Ok(Self(ptr, parent))
+
+        Ok(Self(dialog, parent))
     }
 
-    fn new_save_dialog(opt: &FileDialog) -> Result<Self, HRESULT> {
-        let ptr = Self::new_file_dialog(&CLSID_FileSaveDialog, &IFileSaveDialog::uuidof())?;
+    fn new_save_dialog(opt: &FileDialog) -> Result<Self> {
+        let dialog: IFileSaveDialog =
+            unsafe { CoCreateInstance(&FileSaveDialog, None, CLSCTX_INPROC_SERVER)? };
+        let dialog: IFileDialog = dialog.into();
+
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Windows(handle)) => Some(handle.hwnd),
+            Some(RawWindowHandle::Windows(handle)) => Some(HWND(handle.hwnd as isize)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
         #[cfg(not(feature = "parent"))]
         let parent = None;
-        Ok(Self(ptr, parent))
+
+        Ok(Self(dialog, parent))
     }
 
-    fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<(), HRESULT> {
+    fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<()> {
         if let Some(first_filter) = filters.first() {
             if let Some(first_extension) = first_filter.extensions.first() {
-                let extension: Vec<u16> = first_extension.encode_utf16().chain(Some(0)).collect();
+                let mut extension: Vec<u16> =
+                    first_extension.encode_utf16().chain(Some(0)).collect();
                 unsafe {
-                    (*self.0).SetDefaultExtension(extension.as_ptr()).check()?;
+                    self.0.SetDefaultExtension(PWSTR(extension.as_mut_ptr()))?;
                 }
             }
         }
 
-        let f_list = {
+        let mut f_list = {
             let mut f_list = Vec::new();
 
             for f in filters.iter() {
@@ -123,126 +103,115 @@ impl IDialog {
         };
 
         let spec: Vec<_> = f_list
-            .iter()
+            .iter_mut()
             .map(|(name, ext)| COMDLG_FILTERSPEC {
-                pszName: name.as_ptr(),
-                pszSpec: ext.as_ptr(),
+                pszName: PWSTR(name.as_mut_ptr()),
+                pszSpec: PWSTR(ext.as_mut_ptr()),
             })
             .collect();
 
         unsafe {
             if !spec.is_empty() {
-                (*self.0)
-                    .SetFileTypes(spec.len() as _, spec.as_ptr())
-                    .check()?;
+                self.0.SetFileTypes(spec.len() as _, spec.as_ptr())?;
             }
         }
         Ok(())
     }
 
-    fn set_path(&self, path: &Option<PathBuf>) -> Result<(), HRESULT> {
+    fn set_path(&self, path: &Option<PathBuf>) -> Result<()> {
         if let Some(path) = path {
             if let Some(path) = path.to_str() {
-                let wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();
+                let mut wide_path: Vec<u16> =
+                    OsStr::new(path).encode_wide().chain(once(0)).collect();
 
                 unsafe {
-                    let mut item: *mut IShellItem = ptr::null_mut();
-                    SHCreateItemFromParsingName(
-                        wide_path.as_ptr(),
-                        ptr::null_mut(),
-                        &IShellItem::uuidof(),
-                        &mut item as *mut *mut IShellItem as *mut *mut _,
-                    )
-                    .check()?;
+                    let mut item: Option<IShellItem> = None;
 
-                    // For some reason SetDefaultFolder(), does not guarantees default path, so we use SetFolder
-                    (*self.0).SetFolder(item).check()?;
+                    SHCreateItemFromParsingName(
+                        PWSTR(wide_path.as_mut_ptr()),
+                        None,
+                        &IShellItem::IID,
+                        &mut item as *mut _ as *mut _,
+                    )
+                    .ok();
+
+                    if let Some(item) = item {
+                        // For some reason SetDefaultFolder(), does not guarantees default path, so we use SetFolder
+                        self.0.SetFolder(item)?;
+                    }
                 }
             }
         }
         Ok(())
     }
 
-    fn set_file_name(&self, file_name: &Option<String>) -> Result<(), HRESULT> {
+    fn set_file_name(&self, file_name: &Option<String>) -> Result<()> {
         if let Some(path) = file_name {
-            let wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();
+            let mut wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();
 
             unsafe {
-                (*self.0).SetFileName(wide_path.as_ptr()).check()?;
+                self.0.SetFileName(PWSTR(wide_path.as_mut_ptr()))?;
             }
         }
         Ok(())
     }
 
-    fn set_title(&self, title: &Option<String>) -> Result<(), HRESULT> {
+    fn set_title(&self, title: &Option<String>) -> Result<()> {
         if let Some(title) = title {
-            let wide_title: Vec<u16> = OsStr::new(title).encode_wide().chain(once(0)).collect();
+            let mut wide_title: Vec<u16> = OsStr::new(title).encode_wide().chain(once(0)).collect();
 
             unsafe {
-                (*self.0).SetTitle(wide_title.as_ptr()).check()?;
+                self.0.SetTitle(PWSTR(wide_title.as_mut_ptr()))?;
             }
         }
         Ok(())
     }
 
-    pub fn get_results(&self) -> Result<Vec<PathBuf>, HRESULT> {
+    pub fn get_results(&self) -> Result<Vec<PathBuf>> {
         unsafe {
-            let mut res_items: *mut IShellItemArray = ptr::null_mut();
-            (*(self.0 as *mut IFileOpenDialog))
-                .GetResults(&mut res_items)
-                .check()?;
+            let dialog = IFileOpenDialog(self.0 .0.clone());
 
-            let items = &*res_items;
-            let mut count = 0;
-            items.GetCount(&mut count);
+            let items = dialog.GetResults()?;
+
+            let count = items.GetCount()?;
+
             let mut paths = Vec::new();
             for id in 0..count {
-                let mut res_item: *mut IShellItem = ptr::null_mut();
-                items.GetItemAt(id, &mut res_item).check()?;
-                let mut display_name: LPWSTR = ptr::null_mut();
-                (*res_item)
-                    .GetDisplayName(SIGDN_FILESYSPATH, &mut display_name)
-                    .check()?;
-                let filename = to_os_string(&display_name);
-                CoTaskMemFree(display_name as LPVOID);
+                let res_item = items.GetItemAt(id)?;
+
+                let display_name = res_item.GetDisplayName(SIGDN_FILESYSPATH)?;
+
+                let filename = read_to_string(display_name);
+
+                CoTaskMemFree(display_name.0 as _);
+
                 let path = PathBuf::from(filename);
                 paths.push(path);
             }
-            items.Release();
 
             Ok(paths)
         }
     }
 
-    pub fn get_result(&self) -> Result<PathBuf, HRESULT> {
-        let mut res_item: *mut IShellItem = ptr::null_mut();
+    pub fn get_result(&self) -> Result<PathBuf> {
         unsafe {
-            (*self.0).GetResult(&mut res_item).check()?;
+            let res_item = self.0.GetResult()?;
+            let display_name = res_item.GetDisplayName(SIGDN_FILESYSPATH)?;
 
-            let mut display_name: LPWSTR = ptr::null_mut();
-
-            (*res_item)
-                .GetDisplayName(SIGDN_FILESYSPATH, &mut display_name)
-                .check()?;
-
-            let filename = to_os_string(&display_name);
-            CoTaskMemFree(display_name as LPVOID);
+            let filename = read_to_string(display_name);
+            CoTaskMemFree(display_name.0 as _);
 
             Ok(PathBuf::from(filename))
         }
     }
 
-    pub fn show(&self) -> Result<(), HRESULT> {
-        unsafe {
-            self.Show(self.1.unwrap_or_else(|| ptr::null_mut()) as _)
-                .check()?
-        };
-        Ok(())
+    pub fn show(&self) -> Result<()> {
+        unsafe { self.0.Show(self.1) }
     }
 }
 
 impl IDialog {
-    pub fn build_pick_file(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_pick_file(opt: &FileDialog) -> Result<Self> {
         let dialog = IDialog::new_open_dialog(opt)?;
 
         dialog.add_filters(&opt.filters)?;
@@ -253,7 +222,7 @@ impl IDialog {
         Ok(dialog)
     }
 
-    pub fn build_save_file(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_save_file(opt: &FileDialog) -> Result<Self> {
         let dialog = IDialog::new_save_dialog(opt)?;
 
         dialog.add_filters(&opt.filters)?;
@@ -264,20 +233,20 @@ impl IDialog {
         Ok(dialog)
     }
 
-    pub fn build_pick_folder(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_pick_folder(opt: &FileDialog) -> Result<Self> {
         let dialog = IDialog::new_open_dialog(opt)?;
 
         dialog.set_path(&opt.starting_directory)?;
         dialog.set_title(&opt.title)?;
 
         unsafe {
-            dialog.SetOptions(FOS_PICKFOLDERS).check()?;
+            dialog.0.SetOptions(FOS_PICKFOLDERS.0 as _)?;
         }
 
         Ok(dialog)
     }
 
-    pub fn build_pick_files(opt: &FileDialog) -> Result<Self, HRESULT> {
+    pub fn build_pick_files(opt: &FileDialog) -> Result<Self> {
         let dialog = IDialog::new_open_dialog(opt)?;
 
         dialog.add_filters(&opt.filters)?;
@@ -286,22 +255,9 @@ impl IDialog {
         dialog.set_title(&opt.title)?;
 
         unsafe {
-            dialog.SetOptions(FOS_ALLOWMULTISELECT).check()?;
+            dialog.0.SetOptions(FOS_ALLOWMULTISELECT.0 as _)?;
         }
 
         Ok(dialog)
-    }
-}
-
-impl Deref for IDialog {
-    type Target = IFileDialog;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.0 }
-    }
-}
-
-impl Drop for IDialog {
-    fn drop(&mut self) {
-        unsafe { (*(self.0 as *mut IFileDialog)).Release() };
     }
 }

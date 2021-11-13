@@ -10,7 +10,7 @@ use crate::FileHandle;
 
 use std::path::PathBuf;
 
-use winapi::shared::winerror::HRESULT;
+use windows::runtime::Result;
 
 use super::utils::init_com;
 
@@ -21,7 +21,7 @@ use super::utils::init_com;
 use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
-        fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
+        fn run(opt: FileDialog) -> Result<PathBuf> {
             init_com(|| {
                 let dialog = IDialog::build_pick_file(&opt)?;
                 dialog.show()?;
@@ -32,7 +32,7 @@ impl FilePickerDialogImpl for FileDialog {
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
-        fn run(opt: FileDialog) -> Result<Vec<PathBuf>, HRESULT> {
+        fn run(opt: FileDialog) -> Result<Vec<PathBuf>> {
             init_com(|| {
                 let dialog = IDialog::build_pick_files(&opt)?;
                 dialog.show()?;
@@ -63,7 +63,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
-        fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
+        fn run(opt: FileDialog) -> Result<PathBuf> {
             init_com(|| {
                 let dialog = IDialog::build_pick_folder(&opt)?;
                 dialog.show()?;
@@ -90,7 +90,7 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
-        fn run(opt: FileDialog) -> Result<PathBuf, HRESULT> {
+        fn run(opt: FileDialog) -> Result<PathBuf> {
             init_com(|| {
                 let dialog = IDialog::build_save_file(&opt)?;
                 dialog.show()?;
