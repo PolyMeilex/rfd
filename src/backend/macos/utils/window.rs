@@ -11,7 +11,7 @@ pub trait INSWindow: INSObject {
     #[cfg(feature = "parent")]
     fn from_raw_window_handle(h: &RawWindowHandle) -> Id<Self> {
         match h {
-            RawWindowHandle::MacOS(h) => {
+            RawWindowHandle::AppKit(h) => {
                 let id = h.ns_window as *mut Self;
                 unsafe { Id::from_ptr(id) }
             }
