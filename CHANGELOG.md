@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.6.0
+- FreeBSD support
+- Port to windows-rs
+- Update RawWindowHandle to 0.4
+
 ## 0.4.4
 
 - Fix `set_directory` on some windows setups (#22)
