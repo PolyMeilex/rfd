@@ -42,7 +42,7 @@ impl IDialog {
 
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Windows(handle)) => Some(HWND(handle.hwnd as isize)),
+            Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as isize)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
@@ -59,7 +59,7 @@ impl IDialog {
 
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Windows(handle)) => Some(HWND(handle.hwnd as isize)),
+            Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as isize)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
