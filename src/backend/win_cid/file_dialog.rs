@@ -10,7 +10,7 @@ use crate::FileHandle;
 
 use std::path::PathBuf;
 
-use windows::runtime::Result;
+use windows::core::Result;
 
 use super::utils::init_com;
 

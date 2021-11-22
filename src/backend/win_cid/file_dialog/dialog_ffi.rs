@@ -2,7 +2,7 @@ use crate::FileDialog;
 
 use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt, path::PathBuf};
 
-use windows::runtime::{Interface, Result};
+use windows::core::{Interface, Result};
 use windows::Win32::{
     Foundation::{HWND, PWSTR},
     System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER},

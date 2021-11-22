@@ -1,4 +1,4 @@
-use windows::runtime::Result;
+use windows::core::Result;
 
 use windows::Win32::System::Com::{
     CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
