@@ -121,6 +121,9 @@ impl IDialog {
     fn set_path(&self, path: &Option<PathBuf>) -> Result<()> {
         if let Some(path) = path {
             if let Some(path) = path.to_str() {
+                // Strip Win32 namespace prefix from the path
+                let path = path.strip_prefix(r"\\?\").unwrap_or(path);
+
                 let mut wide_path: Vec<u16> =
                     OsStr::new(path).encode_wide().chain(once(0)).collect();
 
