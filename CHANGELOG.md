@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.6.2
+- Strip Win32 namespaces from directory paths 
+
 ## 0.6.0
 - FreeBSD support
 - Port to windows-rs
