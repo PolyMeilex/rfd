@@ -4,6 +4,7 @@ use gtk_sys::GtkFileChooserNative;
 
 use std::{
     ffi::{CStr, CString},
+    ops::Deref,
     path::{Path, PathBuf},
     ptr,
 };
@@ -155,8 +156,12 @@ impl GtkFileDialog {
 
 impl GtkFileDialog {
     pub fn build_pick_file(opt: &FileDialog) -> Self {
-        let mut dialog =
-            GtkFileDialog::new(opt.title.as_deref().unwrap_or("Open File"), GtkFileChooserAction::Open, "Cancel", "Open");
+        let mut dialog = GtkFileDialog::new(
+            opt.title.as_deref().unwrap_or("Open File"),
+            GtkFileChooserAction::Open,
+            "Cancel",
+            "Open",
+        );
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
@@ -165,8 +170,12 @@ impl GtkFileDialog {
     }
 
     pub fn build_save_file(opt: &FileDialog) -> Self {
-        let mut dialog =
-            GtkFileDialog::new(opt.title.as_deref().unwrap_or("Save File"), GtkFileChooserAction::Save, "Cancel", "Save");
+        let mut dialog = GtkFileDialog::new(
+            opt.title.as_deref().unwrap_or("Save File"),
+            GtkFileChooserAction::Save,
+            "Cancel",
+            "Save",
+        );
 
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr as _, 1) };
 
@@ -179,7 +188,7 @@ impl GtkFileDialog {
             path.push(file_name);
             if path.exists() {
                 // the user edited an existing document
-                dialog.set_file_name(opt.file_name.as_deref());
+                dialog.set_file_name(path.deref().to_str());
             } else {
                 // the user just created a new document
                 dialog.set_current_name(opt.file_name.as_deref());
@@ -205,8 +214,12 @@ impl GtkFileDialog {
     }
 
     pub fn build_pick_files(opt: &FileDialog) -> Self {
-        let mut dialog =
-            GtkFileDialog::new(opt.title.as_deref().unwrap_or("Open File"), GtkFileChooserAction::Open, "Cancel", "Open");
+        let mut dialog = GtkFileDialog::new(
+            opt.title.as_deref().unwrap_or("Open File"),
+            GtkFileChooserAction::Open,
+            "Cancel",
+            "Open",
+        );
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.add_filters(&opt.filters);
