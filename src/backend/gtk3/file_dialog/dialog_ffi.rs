@@ -165,7 +165,16 @@ impl GtkFileDialog {
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
-        dialog.set_file_name(opt.file_name.as_deref());
+
+        if let (Some(mut path), Some(file_name)) =
+            (opt.starting_directory.to_owned(), opt.file_name.as_deref())
+        {
+            path.push(file_name);
+            dialog.set_file_name(path.deref().to_str());
+        } else {
+            dialog.set_file_name(opt.file_name.as_deref());
+        }
+
         dialog
     }
 
@@ -209,7 +218,16 @@ impl GtkFileDialog {
             "Select",
         );
         dialog.set_path(opt.starting_directory.as_deref());
-        dialog.set_file_name(opt.file_name.as_deref());
+
+        if let (Some(mut path), Some(file_name)) =
+            (opt.starting_directory.to_owned(), opt.file_name.as_deref())
+        {
+            path.push(file_name);
+            dialog.set_file_name(path.deref().to_str());
+        } else {
+            dialog.set_file_name(opt.file_name.as_deref());
+        }
+
         dialog
     }
 
@@ -224,7 +242,16 @@ impl GtkFileDialog {
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
-        dialog.set_file_name(opt.file_name.as_deref());
+
+        if let (Some(mut path), Some(file_name)) =
+            (opt.starting_directory.to_owned(), opt.file_name.as_deref())
+        {
+            path.push(file_name);
+            dialog.set_file_name(path.deref().to_str());
+        } else {
+            dialog.set_file_name(opt.file_name.as_deref());
+        }
+
         dialog
     }
 }
