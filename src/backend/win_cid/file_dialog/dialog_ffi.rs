@@ -2,7 +2,7 @@ use crate::FileDialog;
 
 use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt, path::PathBuf};
 
-use windows::core::{Interface, Result};
+use windows::core::Result;
 use windows::Win32::{
     Foundation::{HWND, PWSTR},
     System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER},
@@ -32,41 +32,53 @@ unsafe fn read_to_string(ptr: PWSTR) -> String {
     String::from_utf16(slice).unwrap()
 }
 
-pub struct IDialog(pub IFileDialog, Option<HWND>);
+pub enum DialogKind {
+    Open(IFileOpenDialog),
+    Save(IFileSaveDialog),
+}
+
+impl DialogKind {
+    fn as_dialog(&self) -> IFileDialog {
+        match self {
+            Self::Open(d) => d.into(),
+            Self::Save(d) => d.into(),
+        }
+    }
+}
+
+pub struct IDialog(pub DialogKind, Option<HWND>);
 
 impl IDialog {
     fn new_open_dialog(opt: &FileDialog) -> Result<Self> {
         let dialog: IFileOpenDialog =
             unsafe { CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)? };
-        let dialog: IFileDialog = dialog.into();
 
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as isize)),
+            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd as HWND),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
         #[cfg(not(feature = "parent"))]
         let parent = None;
 
-        Ok(Self(dialog, parent))
+        Ok(Self(DialogKind::Open(dialog), parent))
     }
 
     fn new_save_dialog(opt: &FileDialog) -> Result<Self> {
         let dialog: IFileSaveDialog =
             unsafe { CoCreateInstance(&FileSaveDialog, None, CLSCTX_INPROC_SERVER)? };
-        let dialog: IFileDialog = dialog.into();
 
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as isize)),
+            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd as HWND),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
         #[cfg(not(feature = "parent"))]
         let parent = None;
 
-        Ok(Self(dialog, parent))
+        Ok(Self(DialogKind::Save(dialog), parent))
     }
 
     fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<()> {
@@ -75,7 +87,9 @@ impl IDialog {
                 let mut extension: Vec<u16> =
                     first_extension.encode_utf16().chain(Some(0)).collect();
                 unsafe {
-                    self.0.SetDefaultExtension(PWSTR(extension.as_mut_ptr()))?;
+                    self.0
+                        .as_dialog()
+                        .SetDefaultExtension(PWSTR(extension.as_mut_ptr()))?;
                 }
             }
         }
@@ -112,7 +126,9 @@ impl IDialog {
 
         unsafe {
             if !spec.is_empty() {
-                self.0.SetFileTypes(spec.len() as _, spec.as_ptr())?;
+                self.0
+                    .as_dialog()
+                    .SetFileTypes(spec.len() as _, spec.as_ptr())?;
             }
         }
         Ok(())
@@ -128,19 +144,12 @@ impl IDialog {
                     OsStr::new(path).encode_wide().chain(once(0)).collect();
 
                 unsafe {
-                    let mut item: Option<IShellItem> = None;
-
-                    SHCreateItemFromParsingName(
-                        PWSTR(wide_path.as_mut_ptr()),
-                        None,
-                        &IShellItem::IID,
-                        &mut item as *mut _ as *mut _,
-                    )
-                    .ok();
+                    let item: Option<IShellItem> =
+                        SHCreateItemFromParsingName(PWSTR(wide_path.as_mut_ptr()), None).ok();
 
                     if let Some(item) = item {
                         // For some reason SetDefaultFolder(), does not guarantees default path, so we use SetFolder
-                        self.0.SetFolder(item)?;
+                        self.0.as_dialog().SetFolder(item)?;
                     }
                 }
             }
@@ -153,7 +162,9 @@ impl IDialog {
             let mut wide_path: Vec<u16> = OsStr::new(path).encode_wide().chain(once(0)).collect();
 
             unsafe {
-                self.0.SetFileName(PWSTR(wide_path.as_mut_ptr()))?;
+                self.0
+                    .as_dialog()
+                    .SetFileName(PWSTR(wide_path.as_mut_ptr()))?;
             }
         }
         Ok(())
@@ -164,7 +175,9 @@ impl IDialog {
             let mut wide_title: Vec<u16> = OsStr::new(title).encode_wide().chain(once(0)).collect();
 
             unsafe {
-                self.0.SetTitle(PWSTR(wide_title.as_mut_ptr()))?;
+                self.0
+                    .as_dialog()
+                    .SetTitle(PWSTR(wide_title.as_mut_ptr()))?;
             }
         }
         Ok(())
@@ -172,7 +185,11 @@ impl IDialog {
 
     pub fn get_results(&self) -> Result<Vec<PathBuf>> {
         unsafe {
-            let dialog = IFileOpenDialog(self.0 .0.clone());
+            let dialog = if let DialogKind::Open(ref d) = self.0 {
+                d
+            } else {
+                unreachable!()
+            };
 
             let items = dialog.GetResults()?;
 
@@ -198,7 +215,7 @@ impl IDialog {
 
     pub fn get_result(&self) -> Result<PathBuf> {
         unsafe {
-            let res_item = self.0.GetResult()?;
+            let res_item = self.0.as_dialog().GetResult()?;
             let display_name = res_item.GetDisplayName(SIGDN_FILESYSPATH)?;
 
             let filename = read_to_string(display_name);
@@ -209,7 +226,7 @@ impl IDialog {
     }
 
     pub fn show(&self) -> Result<()> {
-        unsafe { self.0.Show(self.1) }
+        unsafe { self.0.as_dialog().Show(self.1) }
     }
 }
 
@@ -243,7 +260,7 @@ impl IDialog {
         dialog.set_title(&opt.title)?;
 
         unsafe {
-            dialog.0.SetOptions(FOS_PICKFOLDERS.0 as _)?;
+            dialog.0.as_dialog().SetOptions(FOS_PICKFOLDERS as _)?;
         }
 
         Ok(dialog)
@@ -258,7 +275,7 @@ impl IDialog {
         dialog.set_title(&opt.title)?;
 
         unsafe {
-            dialog.0.SetOptions(FOS_ALLOWMULTISELECT.0 as _)?;
+            dialog.0.as_dialog().SetOptions(FOS_ALLOWMULTISELECT as _)?;
         }
 
         Ok(dialog)

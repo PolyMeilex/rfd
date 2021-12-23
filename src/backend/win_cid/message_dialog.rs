@@ -50,7 +50,7 @@ impl WinMessageDialog {
 
         #[cfg(feature = "parent")]
         let parent = match opt.parent {
-            Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as isize)),
+            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd as HWND),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
