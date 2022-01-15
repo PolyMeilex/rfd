@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.6.3
+
+- Update `windows` crate to 0.30.
+
 ## 0.6.2
 - Strip Win32 namespaces from directory paths 
 
