@@ -2,7 +2,7 @@
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
-[![dependency status](https://deps.rs/crate/rfd/0.6.1/status.svg)](https://deps.rs/crate/rfd/0.6.1)
+[![dependency status](https://deps.rs/crate/rfd/0.6.4/status.svg)](https://deps.rs/crate/rfd/0.6.4)
 
 Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 
@@ -43,7 +43,7 @@ let data = file.read().await;
 
 | API Stability |
 | ------------- |
-| 🚧            |
+| 🚧             |
 
 | Feature      | Linux | Windows | MacOS [1] | Wasm32 |
 | ------------ | ----- | ------- | --------- | ------ |
