@@ -5,7 +5,7 @@ use super::gtk_future::GtkDialogFuture;
 use super::utils::wait_for_cleanup;
 use super::AsGtkDialog;
 
-use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 pub struct GtkMessageDialog {
     ptr: *mut gtk_sys::GtkDialog,

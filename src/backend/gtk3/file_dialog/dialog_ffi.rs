@@ -41,7 +41,7 @@ impl GtkFileDialog {
         Self { ptr }
     }
 
-    fn add_filters(&mut self, filters: &[crate::dialog::Filter]) {
+    fn add_filters(&mut self, filters: &[crate::file_dialog::Filter]) {
         for f in filters.iter() {
             if let Ok(name) = CString::new(f.name.as_str()) {
                 unsafe {

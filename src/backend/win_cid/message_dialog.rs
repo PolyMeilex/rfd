@@ -1,5 +1,5 @@
 use super::thread_future::ThreadFuture;
-use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use windows::Win32::{
     Foundation::{HWND, PWSTR},

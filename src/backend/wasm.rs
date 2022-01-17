@@ -4,7 +4,7 @@ use web_sys::Element;
 
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
-use crate::dialog::FileDialog;
+use crate::file_dialog::FileDialog;
 use crate::FileHandle;
 
 pub struct WasmDialog {
@@ -172,7 +172,7 @@ extern "C" {
 }
 
 use crate::backend::MessageDialogImpl;
-use crate::dialog::{MessageButtons, MessageDialog};
+use crate::message_dialog::{MessageButtons, MessageDialog};
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> bool {

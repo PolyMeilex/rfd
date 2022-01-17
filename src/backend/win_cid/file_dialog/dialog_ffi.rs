@@ -81,7 +81,7 @@ impl IDialog {
         Ok(Self(DialogKind::Save(dialog), parent))
     }
 
-    fn add_filters(&self, filters: &[crate::dialog::Filter]) -> Result<()> {
+    fn add_filters(&self, filters: &[crate::file_dialog::Filter]) -> Result<()> {
         if let Some(first_filter) = filters.first() {
             if let Some(first_extension) = first_filter.extensions.first() {
                 let mut extension: Vec<u16> =
