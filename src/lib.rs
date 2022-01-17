@@ -3,11 +3,13 @@ mod backend;
 mod file_handle;
 pub use file_handle::FileHandle;
 
-mod dialog;
+mod file_dialog;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use dialog::FileDialog;
+pub use file_dialog::FileDialog;
 
-pub use dialog::AsyncFileDialog;
+pub use file_dialog::AsyncFileDialog;
 
-pub use dialog::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
+mod message_dialog;
+
+pub use message_dialog::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};

@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use crate::backend::DialogFutureType;
-use crate::dialog::{MessageButtons, MessageDialog, MessageLevel};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use super::{
     modal_future::ModalFuture,
