@@ -1,28 +1,28 @@
 [package]
 name = "rfd"
 version = "0.6.3"
-edition = "2018"
+edition = "2021"
 
 authors = ["Poly <marynczak.bartlomiej@gmail.com>"]
 description = "Rusty File Dialog"
-keywords = ["file","ui","dialog"]
+keywords = ["file", "ui", "dialog"]
 license = "MIT"
 repository = "https://github.com/PolyMeilex/rfd"
 documentation = "https://docs.rs/rfd"
 
 [features]
-default=["parent"]
-parent=["raw-window-handle"]
+default = ["parent"]
+parent = ["raw-window-handle"]
 file-handle-inner = []
 
 [dev-dependencies]
-futures="0.3.12"
+futures = "0.3.12"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2.7"
 objc_id = "0.1.1"
 dispatch = "0.2.0"
-block="0.1.6"
+block = "0.1.6"
 objc-foundation = "0.1.1"
 
 
@@ -33,18 +33,18 @@ windows = { version = "0.30.0", features = [
   "Win32_UI_Shell_Common",
   "Win32_UI_Shell",
   "Win32_UI_WindowsAndMessaging",
-]} 
+] }
 
 [target.'cfg(any(target_os = "freebsd", target_os = "linux"))'.dependencies]
-gtk-sys = { version="0.14.0", features=["v3_20"] }
-glib-sys = "0.14.0"
-gobject-sys = "0.14.0"
+gtk-sys = { version = "0.15.1", features = ["v3_20"] }
+glib-sys = "0.15.1"
+gobject-sys = "0.15.1"
 lazy_static = "1.4.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen= "0.2.69"
-js-sys= "0.3.46"
-web-sys={ version = "0.3.46", features = [
+wasm-bindgen = "0.2.69"
+js-sys = "0.3.46"
+web-sys = { version = "0.3.46", features = [
   'Document',
   'Element',
   'HtmlInputElement',
@@ -63,7 +63,7 @@ name = "simple"
 name = "async"
 
 [dependencies]
-raw-window-handle = { version="0.4.1", optional=true }
+raw-window-handle = { version = "0.4.1", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
