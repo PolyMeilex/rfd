@@ -67,18 +67,12 @@ fn ok_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
 use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
-        block_on(self.pick_file_async())
-            .map(PathBuf::from)
+        block_on(self.pick_file_async()).map(PathBuf::from)
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
         block_on(self.pick_files_async())
-            .map(|vec_file_handle| {
-                vec_file_handle
-                .iter()
-                .map(PathBuf::from)
-                .collect()
-            })
+            .map(|vec_file_handle| vec_file_handle.iter().map(PathBuf::from).collect())
     }
 }
 
@@ -148,8 +142,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
-        block_on(self.pick_folder_async())
-            .map(PathBuf::from)
+        block_on(self.pick_folder_async()).map(PathBuf::from)
     }
 }
 
@@ -186,8 +179,7 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
-        block_on(self.save_file_async())
-            .map(PathBuf::from)
+        block_on(self.save_file_async()).map(PathBuf::from)
     }
 }
 
