@@ -60,6 +60,11 @@ fn ok_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
     }
 }
 
+async fn file_chooser_proxy<'a>() -> Option<FileChooserProxy<'a>> {
+    let connection = ok_or_warn(zbus::Connection::session().await)?;
+    ok_or_warn(FileChooserProxy::new(&connection).await)
+}
+
 //
 // File Picker
 //
@@ -80,8 +85,7 @@ use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let connection = ok_or_warn(zbus::Connection::session().await)?;
-            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
+            let proxy = file_chooser_proxy().await?;
             let mut options = OpenFileOptions::default()
                 .accept_label("Pick file")
                 .multiple(false);
@@ -102,8 +106,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async {
-            let connection = ok_or_warn(zbus::Connection::session().await)?;
-            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
+            let proxy = file_chooser_proxy().await?;
             let mut options = OpenFileOptions::default()
                 .accept_label("Pick file(s)")
                 .multiple(true);
@@ -150,8 +153,7 @@ use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let connection = ok_or_warn(zbus::Connection::session().await)?;
-            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
+            let proxy = file_chooser_proxy().await?;
             let mut options = OpenFileOptions::default()
                 .accept_label("Pick folder")
                 .multiple(false)
@@ -187,8 +189,7 @@ use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let connection = ok_or_warn(zbus::Connection::session().await)?;
-            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
+            let proxy = file_chooser_proxy().await?;
             let mut options = SaveFileOptions::default().accept_label("Save");
             options = add_filters_to_save_file_options(self.filters, options);
             if let Some(file_name) = self.file_name {
