@@ -67,48 +67,18 @@ fn ok_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
 use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
-        let connection = ok_or_warn(block_on(zbus::Connection::session()))?;
-        let proxy = ok_or_warn(block_on(FileChooserProxy::new(&connection)))?;
-        let mut options = OpenFileOptions::default()
-            .accept_label("Pick file")
-            .multiple(false);
-        options = add_filters_to_open_file_options(self.filters, options);
-        let selected_files = block_on(proxy.open_file(
-            &WindowIdentifier::default(),
-            &self.title.unwrap_or_else(|| "Pick a file".to_string()),
-            options,
-        ));
-        if selected_files.is_err() {
-            return None;
-        }
-        uri_to_pathbuf(&selected_files.unwrap().uris()[0])
+        block_on(self.pick_file_async())
+            .map(|file_handle| PathBuf::from(file_handle.path()))
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
-        let connection = ok_or_warn(block_on(zbus::Connection::session()))?;
-        let proxy = ok_or_warn(block_on(FileChooserProxy::new(&connection)))?;
-        let mut options = OpenFileOptions::default()
-            .accept_label("Pick file")
-            .multiple(true);
-        options = add_filters_to_open_file_options(self.filters, options);
-        let selected_files = block_on(proxy.open_file(
-            &WindowIdentifier::default(),
-            &self.title.unwrap_or_else(|| "Pick a file".to_string()),
-            options,
-        ));
-        if selected_files.is_err() {
-            return None;
-        }
-        let selected_files = selected_files
-            .unwrap()
-            .uris()
-            .iter()
-            .filter_map(|string| uri_to_pathbuf(string))
-            .collect::<Vec<PathBuf>>();
-        if selected_files.is_empty() {
-            return None;
-        }
-        Some(selected_files)
+        block_on(self.pick_files_async())
+            .map(|vec_file_handle| {
+                vec_file_handle
+                .iter()
+                .map(|file_handle| PathBuf::from(file_handle.path()))
+                .collect()
+            })
     }
 }
 
@@ -178,22 +148,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
-        let connection = ok_or_warn(block_on(zbus::Connection::session()))?;
-        let proxy = ok_or_warn(block_on(FileChooserProxy::new(&connection)))?;
-        let mut options = OpenFileOptions::default()
-            .accept_label("Pick folder")
-            .multiple(false)
-            .directory(true);
-        options = add_filters_to_open_file_options(self.filters, options);
-        let selected_files = block_on(proxy.open_file(
-            &WindowIdentifier::default(),
-            &self.title.unwrap_or_else(|| "Pick a folder".to_string()),
-            options,
-        ));
-        if selected_files.is_err() {
-            return None;
-        }
-        uri_to_pathbuf(&selected_files.unwrap().uris()[0])
+        block_on(self.pick_folder_async())
+            .map(|file_handle| PathBuf::from(file_handle.path()))
     }
 }
 
@@ -230,26 +186,8 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
-        let connection = block_on(zbus::Connection::session()).ok()?;
-        let proxy = block_on(FileChooserProxy::new(&connection)).ok()?;
-        let mut options = SaveFileOptions::default().accept_label("Save");
-        options = add_filters_to_save_file_options(self.filters, options);
-        if let Some(file_name) = self.file_name {
-            options = options.current_name(&file_name);
-        }
-        // TODO: impl zvariant::Type for PathBuf?
-        // if let Some(dir) = self.starting_directory {
-        //    options.current_folder(dir);
-        // }
-        let selected_files = block_on(proxy.save_file(
-            &WindowIdentifier::default(),
-            &self.title.unwrap_or_else(|| "Save file".to_string()),
-            options,
-        ));
-        if selected_files.is_err() {
-            return None;
-        }
-        uri_to_pathbuf(&selected_files.unwrap().uris()[0])
+        block_on(self.save_file_async())
+            .map(|file_handle| PathBuf::from(file_handle.path()))
     }
 }
 
