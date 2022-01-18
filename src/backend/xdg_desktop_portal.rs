@@ -157,8 +157,8 @@ use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let connection = zbus::Connection::session().await.ok()?;
-            let proxy = FileChooserProxy::new(&connection).await.ok()?;
+            let connection = ok_or_warn(zbus::Connection::session().await)?;
+            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
             let mut options = OpenFileOptions::default()
                 .accept_label("Pick folder")
                 .multiple(false)
@@ -195,8 +195,8 @@ use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let connection = zbus::Connection::session().await.ok()?;
-            let proxy = FileChooserProxy::new(&connection).await.ok()?;
+            let connection = ok_or_warn(zbus::Connection::session().await)?;
+            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
             let mut options = SaveFileOptions::default().accept_label("Save");
             options = add_filters_to_save_file_options(self.filters, options);
             if let Some(file_name) = self.file_name {
