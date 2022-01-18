@@ -50,7 +50,7 @@ fn uri_to_pathbuf(uri: &str) -> Option<PathBuf> {
     uri.strip_prefix("file://").map(PathBuf::from)
 }
 
-fn unwrap_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
+fn ok_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
     match result {
         Err(e) => {
             warn!("{:?}", e);
@@ -67,8 +67,8 @@ fn unwrap_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
 use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
-        let connection = unwrap_or_warn(block_on(zbus::Connection::session()))?;
-        let proxy = unwrap_or_warn(block_on(FileChooserProxy::new(&connection)))?;
+        let connection = ok_or_warn(block_on(zbus::Connection::session()))?;
+        let proxy = ok_or_warn(block_on(FileChooserProxy::new(&connection)))?;
         let mut options = OpenFileOptions::default()
             .accept_label("Pick file")
             .multiple(false);
@@ -85,8 +85,8 @@ impl FilePickerDialogImpl for FileDialog {
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
-        let connection = unwrap_or_warn(block_on(zbus::Connection::session()))?;
-        let proxy = unwrap_or_warn(block_on(FileChooserProxy::new(&connection)))?;
+        let connection = ok_or_warn(block_on(zbus::Connection::session()))?;
+        let proxy = ok_or_warn(block_on(FileChooserProxy::new(&connection)))?;
         let mut options = OpenFileOptions::default()
             .accept_label("Pick file")
             .multiple(true);
@@ -116,8 +116,8 @@ use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let connection = unwrap_or_warn(zbus::Connection::session().await)?;
-            let proxy = unwrap_or_warn(FileChooserProxy::new(&connection).await)?;
+            let connection = ok_or_warn(zbus::Connection::session().await)?;
+            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
             let mut options = OpenFileOptions::default()
                 .accept_label("Pick file")
                 .multiple(false);
@@ -138,8 +138,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async {
-            let connection = unwrap_or_warn(zbus::Connection::session().await)?;
-            let proxy = unwrap_or_warn(FileChooserProxy::new(&connection).await)?;
+            let connection = ok_or_warn(zbus::Connection::session().await)?;
+            let proxy = ok_or_warn(FileChooserProxy::new(&connection).await)?;
             let mut options = OpenFileOptions::default()
                 .accept_label("Pick file(s)")
                 .multiple(true);
@@ -178,8 +178,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
-        let connection = unwrap_or_warn(block_on(zbus::Connection::session()))?;
-        let proxy = unwrap_or_warn(block_on(FileChooserProxy::new(&connection)))?;
+        let connection = ok_or_warn(block_on(zbus::Connection::session()))?;
+        let proxy = ok_or_warn(block_on(FileChooserProxy::new(&connection)))?;
         let mut options = OpenFileOptions::default()
             .accept_label("Pick folder")
             .multiple(false)
