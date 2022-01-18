@@ -14,7 +14,14 @@ Rusty file dialogs for Windows, Linux (GTK), MacOS And WASM32.
 
 # Dependencies
 #### On Linux:
+###### For GTK version:
 - GTK3 development libraries (on debian `libgtk-3-dev` on arch `gtk3`)
+###### For XFG Portal version (in case you out-out of GTK version):
+- XDG Portal provider of you choice has to be present on the system. (Most distros have one by default) 
+
+# Features
+- `parent` Adds a dialog parenting support via `raw-window-handle`
+- `gtk3` Uses GTK for dialogs, if you know for sure that your users have XDG Portal around you can safely disable this, and drop C dependency 
 
 # Example
 
@@ -45,7 +52,7 @@ let data = file.read().await;
 | ------------- |
 | 🚧             |
 
-| Feature      | Linux | Windows | MacOS [1] | Wasm32 |
+| Feature      | Linux | Windows | MacOS     | Wasm32 |
 | ------------ | ----- | ------- | --------- | ------ |
 | SingleFile   | ✔     | ✔       | ✔         | ✔      |
 | MultipleFile | ✔     | ✔       | ✔         | ✔      |
@@ -55,8 +62,6 @@ let data = file.read().await;
 | Filters      | ✔     | ✔       | ✔         | ✔      |
 | StartingPath | ✔     | ✔       | ✔         | ✖      |
 | Async        | ✔     | ✔       | ✔         | ✔      |
-
-[1] Macos Sync dialog freezes when used with winit (same way as `nfd`) [Caused by winit #1779](https://github.com/rust-windowing/winit/issues/1779)
 
 ### Difference between `MacOS Windowed App` and `MacOS NonWindowed App`
 
