@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+- Safe Rust XDG Desktop Portal support
+
 ## 0.6.3
 
 - Update `windows` crate to 0.30.
