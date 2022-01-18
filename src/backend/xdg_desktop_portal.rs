@@ -11,7 +11,7 @@ use ashpd::desktop::file_chooser::{
 use ashpd::{zbus, WindowIdentifier};
 
 use log::warn;
-use smol::block_on;
+use pollster::block_on;
 
 //
 // Utility functions

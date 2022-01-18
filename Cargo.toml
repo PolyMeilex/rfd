@@ -38,7 +38,7 @@ windows = { version = "0.30.0", features = [
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 ashpd = "0.2.0-beta-1"
-smol = "1.2"
+pollster = "0.2"
 log = "0.4"
 gtk-sys = { version = "0.15.1", features = ["v3_20"], optional = true }
 glib-sys = { version = "0.15.1", optional = true }
