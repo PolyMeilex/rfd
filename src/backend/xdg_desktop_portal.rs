@@ -68,7 +68,7 @@ use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
         block_on(self.pick_file_async())
-            .map(|file_handle| PathBuf::from(file_handle.path()))
+            .map(PathBuf::from)
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
@@ -76,7 +76,7 @@ impl FilePickerDialogImpl for FileDialog {
             .map(|vec_file_handle| {
                 vec_file_handle
                 .iter()
-                .map(|file_handle| PathBuf::from(file_handle.path()))
+                .map(PathBuf::from)
                 .collect()
             })
     }
@@ -149,7 +149,7 @@ use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         block_on(self.pick_folder_async())
-            .map(|file_handle| PathBuf::from(file_handle.path()))
+            .map(PathBuf::from)
     }
 }
 
@@ -187,7 +187,7 @@ use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
         block_on(self.save_file_async())
-            .map(|file_handle| PathBuf::from(file_handle.path()))
+            .map(PathBuf::from)
     }
 }
 

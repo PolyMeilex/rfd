@@ -119,3 +119,15 @@ impl From<PathBuf> for FileHandle {
         Self(path)
     }
 }
+
+impl From<FileHandle> for PathBuf {
+    fn from(file_handle: FileHandle) -> Self {
+        PathBuf::from(file_handle.path())
+    }
+}
+
+impl From<&FileHandle> for PathBuf {
+    fn from(file_handle: &FileHandle) -> Self {
+        PathBuf::from(file_handle.path())
+    }
+}
