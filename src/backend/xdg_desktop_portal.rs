@@ -8,6 +8,7 @@ use ashpd::desktop::file_chooser::{
     FileChooserProxy, FileFilter, OpenFileOptions, SaveFileOptions,
 };
 // TODO: convert raw_window_handle::RawWindowHandle to ashpd::WindowIdentifier
+// https://github.com/bilelmoussaoui/ashpd/issues/40
 use ashpd::{zbus, WindowIdentifier};
 
 use log::warn;
