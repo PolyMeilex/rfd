@@ -6,7 +6,11 @@ use std::future::Future;
 #[cfg(feature = "parent")]
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
-/// ## Synchronous Message Dialog
+/// Synchronous Message Dialog. Supported platforms:
+///  * Windows
+///  * macOS
+///  * Linux (GTK only)
+///  * WASM
 #[derive(Default, Debug, Clone)]
 pub struct MessageDialog {
     pub(crate) title: String,
@@ -77,7 +81,11 @@ impl MessageDialog {
     }
 }
 
-/// ## Asynchronous Message Dialog
+/// Asynchronous Message Dialog. Supported platforms:
+///  * Windows
+///  * macOS
+///  * Linux (GTK only)
+///  * WASM
 #[derive(Default, Debug, Clone)]
 pub struct AsyncMessageDialog(MessageDialog);
 

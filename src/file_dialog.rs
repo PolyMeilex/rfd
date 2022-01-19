@@ -12,11 +12,10 @@ pub(crate) struct Filter {
     pub extensions: Vec<String>,
 }
 
-/// ## Synchronous File Dialog
-/// #### Supported Platforms:
-/// - Linux
-/// - Windows
-/// - Mac
+/// Synchronous File Dialog. Supported platforms:
+///   * Linux
+///   * Windows
+///   * Mac
 #[derive(Default, Debug, Clone)]
 pub struct FileDialog {
     pub(crate) filters: Vec<Filter>,
@@ -41,9 +40,9 @@ impl FileDialog {
     ///
     /// Takes in the name of the filter, and list of extensions
     ///
-    /// #### Name of the filter will be displayed on supported platforms
-    /// - Windows
-    /// - Linux
+    /// The name of the filter will be displayed on supported platforms:
+    ///   * Windows
+    ///   * Linux
     ///
     /// On platforms that don't support filter names, all filters will be merged into one filter
     pub fn add_filter(mut self, name: &str, extensions: &[&str]) -> Self {
@@ -54,31 +53,28 @@ impl FileDialog {
         self
     }
 
-    /// Set starting directory of the dialog.
-    /// #### Supported Platforms:
-    /// - Linux
-    /// - Windows
-    /// - Mac
+    /// Set starting directory of the dialog. Supported platforms:
+    ///   * Linux ([GTK only](https://github.com/PolyMeilex/rfd/issues/42))
+    ///   * Windows
+    ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.starting_directory = Some(path.as_ref().into());
         self
     }
 
-    /// Set starting file name of the dialog.
-    /// #### Supported Platforms:
-    /// - Windows
-    /// - Linux
-    /// - Mac
+    /// Set starting file name of the dialog. Supported platforms:
+    ///  * Windows
+    ///  * Linux
+    ///  * Mac
     pub fn set_file_name(mut self, file_name: &str) -> Self {
         self.file_name = Some(file_name.into());
         self
     }
 
-    /// Set the title of the dialog.
-    /// #### Supported Platforms:
-    /// - Windows
-    /// - Linux
-    /// - Mac (Only below version 10.11)
+    /// Set the title of the dialog. Supported platforms:
+    ///  * Windows
+    ///  * Linux
+    ///  * Mac (Only below version 10.11)
     pub fn set_title(mut self, title: &str) -> Self {
         self.title = Some(title.into());
         self
@@ -115,7 +111,7 @@ impl FileDialog {
     /// Opens save file dialog
     ///
     /// #### Platform specific notes regarding save dialog filters:
-    /// - On MacOs
+    /// - On macOS
     ///     - If filter is set, all files will be grayed out (no matter the extension sadly)
     ///     - If user does not type an extension MacOs will append first available extension from filters list
     ///     - If user types in filename with extension MacOs will check if it exists in filters list, if not it will display appropriate message
@@ -132,12 +128,11 @@ impl FileDialog {
     }
 }
 
-/// ## Asynchronous File Dialog
-/// #### Supported Platforms:
-/// - Linux
-/// - Windows
-/// - Mac
-/// - WASM32
+/// Asynchronous File Dialog. Supported platforms:
+///  * Linux
+///  * Windows
+///  * Mac
+///  * WASM32
 #[derive(Default, Debug, Clone)]
 pub struct AsyncFileDialog {
     file_dialog: FileDialog,
@@ -153,9 +148,9 @@ impl AsyncFileDialog {
     ///
     /// Takes in the name of the filter, and list of extensions
     ///
-    /// #### Name of the filter will be displayed on supported platforms
-    /// - Windows
-    /// - Linux
+    /// The name of the filter will be displayed on supported platforms:
+    ///   * Windows
+    ///   * Linux
     ///
     /// On platforms that don't support filter names, all filters will be merged into one filter
     pub fn add_filter(mut self, name: &str, extensions: &[&str]) -> Self {
@@ -163,31 +158,28 @@ impl AsyncFileDialog {
         self
     }
 
-    /// Set starting directory of the dialog.
-    /// #### Supported Platforms:
-    /// - Linux
-    /// - Windows
-    /// - Mac
+    /// Set starting directory of the dialog. Supported platforms:
+    ///   * Linux ([GTK only](https://github.com/PolyMeilex/rfd/issues/42))
+    ///   * Windows
+    ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.file_dialog = self.file_dialog.set_directory(path);
         self
     }
 
-    /// Set starting file name of the dialog.
-    /// #### Supported Platforms:
-    /// - Windows
-    /// - Linux
-    /// - Mac
+    /// Set starting file name of the dialog. Supported platforms:
+    ///  * Windows
+    ///  * Linux
+    ///  * Mac
     pub fn set_file_name(mut self, file_name: &str) -> Self {
         self.file_dialog = self.file_dialog.set_file_name(file_name);
         self
     }
 
-    /// Set the title of the dialog.
-    /// #### Supported Platforms:
-    /// - Windows
-    /// - Linux
-    /// - Mac (Only below version 10.11)
+    /// Set the title of the dialog. Supported platforms:
+    ///  * Windows
+    ///  * Linux
+    ///  * Mac (Only below version 10.11)
     pub fn set_title(mut self, title: &str) -> Self {
         self.file_dialog = self.file_dialog.set_title(title);
         self
