@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## 0.7.0
 - Safe Rust XDG Desktop Portal support
 
 ## 0.6.3
