@@ -1,5 +1,4 @@
 fn main() {
-    let res = "";
     #[cfg(any(
         target_os = "windows",
         target_os = "macos",
