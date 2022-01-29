@@ -13,7 +13,6 @@ use windows::Win32::{
     },
 };
 
-#[cfg(feature = "parent")]
 use raw_window_handle::RawWindowHandle;
 
 unsafe fn read_to_string(ptr: PWSTR) -> String {
@@ -53,14 +52,11 @@ impl IDialog {
         let dialog: IFileOpenDialog =
             unsafe { CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)? };
 
-        #[cfg(feature = "parent")]
         let parent = match opt.parent {
             Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as _)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
-        #[cfg(not(feature = "parent"))]
-        let parent = None;
 
         Ok(Self(DialogKind::Open(dialog), parent))
     }
@@ -69,14 +65,11 @@ impl IDialog {
         let dialog: IFileSaveDialog =
             unsafe { CoCreateInstance(&FileSaveDialog, None, CLSCTX_INPROC_SERVER)? };
 
-        #[cfg(feature = "parent")]
         let parent = match opt.parent {
             Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as _)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
-        #[cfg(not(feature = "parent"))]
-        let parent = None;
 
         Ok(Self(DialogKind::Save(dialog), parent))
     }
