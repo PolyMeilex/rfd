@@ -1,5 +1,7 @@
 fn main() {
+    #[cfg(not(feature = "gtk3"))]
     let res = "";
+
     #[cfg(any(
         target_os = "windows",
         target_os = "macos",
@@ -21,5 +23,4 @@ fn main() {
         .show();
 
     println!("{}", res);
-    // println!("{}", futures::executor::block_on(res));
 }
