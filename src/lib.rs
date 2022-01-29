@@ -55,7 +55,7 @@
 //!
 //! ## XDG Desktop Portal backend
 //! The XDG Desktop Portal backend is used when the `gtk3` feature is disabled with
-//! [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features). This backend will use either the GTK or KDE file dialog depending on the desktop environment
+//! [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `xdg-portal` is enabled instead. This backend will use either the GTK or KDE file dialog depending on the desktop environment
 //! in use at runtime. It does not have any non-Rust
 //! build dependencies, however it requires the user to have either the
 //! [GTK](https://github.com/flatpak/xdg-desktop-portal-gtk),
@@ -81,10 +81,8 @@
 //! Non-windowed apps will never be able to spawn async dialogs or from threads other than the main thread.
 //!
 //! # Cargo features
-//!  * `parent`: Adds a dialog parenting support via [raw-window-handle](https://github.com/rust-windowing/raw-window-handle).
-//!    [Not yet implemented](https://github.com/bilelmoussaoui/ashpd/issues/40) for XDG Desktop Portal
-//!    backend.
 //!  * `gtk3`: Uses GTK for dialogs on Linux & BSDs; has no effect on Windows and macOS
+//!  * `xdg-portal`: Uses XDG Desktop Portal instead of GTK on Linux & BSDs
 //!
 //! # State
 //!
