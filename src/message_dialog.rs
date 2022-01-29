@@ -3,7 +3,6 @@ use crate::backend::MessageDialogImpl;
 
 use std::future::Future;
 
-#[cfg(feature = "parent")]
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
 /// Synchronous Message Dialog. Supported platforms:
@@ -17,7 +16,6 @@ pub struct MessageDialog {
     pub(crate) description: String,
     pub(crate) level: MessageLevel,
     pub(crate) buttons: MessageButtons,
-    #[cfg(feature = "parent")]
     pub(crate) parent: Option<RawWindowHandle>,
 }
 
@@ -63,7 +61,6 @@ impl MessageDialog {
         self
     }
 
-    #[cfg(feature = "parent")]
     /// Set parent windows explicitly (optional)
     /// Suported in: `macos` and `windows`
     pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
@@ -127,7 +124,6 @@ impl AsyncMessageDialog {
         self
     }
 
-    #[cfg(feature = "parent")]
     /// Set parent windows explicitly (optional)
     /// Suported in: `macos` and `windows`
     pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {

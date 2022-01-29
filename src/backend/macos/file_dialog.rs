@@ -49,10 +49,7 @@ impl FilePickerDialogImpl for FileDialog {
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        #[cfg(feature = "parent")]
         let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
-        #[cfg(not(feature = "parent"))]
-        let win = None;
 
         let future = ModalFuture::new(
             win,
@@ -70,10 +67,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        #[cfg(feature = "parent")]
         let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
-        #[cfg(not(feature = "parent"))]
-        let win = None;
 
         let future = ModalFuture::new(
             win,
@@ -120,10 +114,7 @@ impl FolderPickerDialogImpl for FileDialog {
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        #[cfg(feature = "parent")]
         let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
-        #[cfg(not(feature = "parent"))]
-        let win = None;
 
         let future = ModalFuture::new(
             win,
@@ -164,10 +155,7 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        #[cfg(feature = "parent")]
         let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
-        #[cfg(not(feature = "parent"))]
-        let win = None;
 
         let future = ModalFuture::new(
             win,

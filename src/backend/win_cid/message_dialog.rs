@@ -9,7 +9,6 @@ use windows::Win32::{
     },
 };
 
-#[cfg(feature = "parent")]
 use raw_window_handle::RawWindowHandle;
 
 use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt};
@@ -48,14 +47,11 @@ impl WinMessageDialog {
             MessageButtons::YesNo => MB_YESNO,
         };
 
-        #[cfg(feature = "parent")]
         let parent = match opt.parent {
             Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as _)),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
-        #[cfg(not(feature = "parent"))]
-        let parent = None;
 
         Self {
             parent,

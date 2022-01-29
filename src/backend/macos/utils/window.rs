@@ -4,11 +4,9 @@ use objc_id::Id;
 use super::nil;
 use objc_foundation::{object_struct, INSObject};
 
-#[cfg(feature = "parent")]
 use raw_window_handle::RawWindowHandle;
 
 pub trait INSWindow: INSObject {
-    #[cfg(feature = "parent")]
     fn from_raw_window_handle(h: &RawWindowHandle) -> Id<Self> {
         match h {
             RawWindowHandle::AppKit(h) => {
