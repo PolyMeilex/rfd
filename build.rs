@@ -10,4 +10,8 @@ fn main() {
 
     #[cfg(not(any(feature = "gtk3", feature = "xdg-portal")))]
     compile_error!("You need to choose at least one backend: `gtk3` or `xdg-portal` features");
+
+    if target.contains("windows") {
+        println!("cargo:rustc-link-lib=static=oleaut32");
+    }
 }
