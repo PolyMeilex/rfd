@@ -37,6 +37,7 @@ windows = { version = "0.32.0", features = [
   "Win32_UI_Shell_Common",
   "Win32_UI_Shell",
   "Win32_UI_WindowsAndMessaging",
+  "Win32_System_Ole",
 ] }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
