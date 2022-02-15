@@ -5,6 +5,10 @@ fn main() {
         println!("cargo:rustc-link-lib=framework=AppKit");
     }
 
+    if target.contains("windows") {
+        println!("cargo:rustc-link-lib=dylib=oleaut32");
+    }
+
     #[cfg(all(feature = "gtk3", feature = "xdg-portal"))]
     compile_error!("You can't enable both GTK3 & XDG Portal features at once");
 
