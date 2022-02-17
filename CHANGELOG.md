@@ -1,5 +1,13 @@
 # Change Log
 
+## Unreleased
+
+## 0.8.0
+- `parent` feature was removed, it is always on now
+- New feature `xdg-portal` 
+- Now you have to choose one of the features `gtk3` or `xdg-portal`, gtk is on by default
+- `window` crate got updated to 0.32
+
 ## 0.7.0
 - Safe Rust XDG Desktop Portal support
 
