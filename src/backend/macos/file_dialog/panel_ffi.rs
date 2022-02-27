@@ -1,5 +1,6 @@
 use crate::FileDialog;
 
+use std::ops::Deref;
 use std::path::Path;
 use std::{ops::DerefMut, path::PathBuf};
 
@@ -8,9 +9,11 @@ use objc_id::Id;
 
 use super::super::utils::{INSURL, NSURL};
 
+use crate::backend::macos::utils::{INSWindow, NSWindow};
 use objc::runtime::{Object, YES};
 use objc::runtime::{BOOL, NO};
 use objc_foundation::{INSArray, INSString, NSArray, NSString};
+use raw_window_handle::RawWindowHandle;
 
 use super::super::{
     utils::{FocusManager, PolicyManager},
@@ -123,6 +126,13 @@ impl Panel {
         }
     }
 
+    pub fn set_parent(&self, parent: &RawWindowHandle) {
+        let id = NSWindow::from_raw_window_handle(parent);
+        unsafe {
+            let () = msg_send![id, addChildWindow: self.panel.deref() ordered: 1];
+        }
+    }
+
     pub fn get_result(&self) -> PathBuf {
         unsafe {
             let url = msg_send![self.panel, URL];
@@ -166,6 +176,10 @@ impl Panel {
             panel.set_title(title);
         }
 
+        if let Some(parent) = &opt.parent {
+            panel.set_parent(parent);
+        }
+
         panel.set_can_choose_directories(NO);
         panel.set_can_choose_files(YES);
 
@@ -191,6 +205,10 @@ impl Panel {
             panel.set_title(title);
         }
 
+        if let Some(parent) = &opt.parent {
+            panel.set_parent(parent);
+        }
+
         panel
     }
 
@@ -203,6 +221,10 @@ impl Panel {
 
         if let Some(title) = &opt.title {
             panel.set_title(title);
+        }
+
+        if let Some(parent) = &opt.parent {
+            panel.set_parent(parent);
         }
 
         panel.set_can_choose_directories(YES);
@@ -224,6 +246,10 @@ impl Panel {
 
         if let Some(title) = &opt.title {
             panel.set_title(title);
+        }
+
+        if let Some(parent) = &opt.parent {
+            panel.set_parent(parent);
         }
 
         panel.set_can_choose_directories(NO);
