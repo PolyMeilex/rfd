@@ -2,9 +2,9 @@ use crate::FileDialog;
 
 use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt, path::PathBuf};
 
-use windows::core::Result;
+use windows::core::{Result, PCWSTR, PWSTR};
 use windows::Win32::{
-    Foundation::{HWND, PWSTR},
+    Foundation::HWND,
     System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER},
     UI::Shell::{
         Common::COMDLG_FILTERSPEC, FileOpenDialog, FileSaveDialog, IFileDialog, IFileOpenDialog,
@@ -82,7 +82,7 @@ impl IDialog {
                 unsafe {
                     self.0
                         .as_dialog()
-                        .SetDefaultExtension(PWSTR(extension.as_mut_ptr()))?;
+                        .SetDefaultExtension(PCWSTR(extension.as_mut_ptr()))?;
                 }
             }
         }
@@ -112,8 +112,8 @@ impl IDialog {
         let spec: Vec<_> = f_list
             .iter_mut()
             .map(|(name, ext)| COMDLG_FILTERSPEC {
-                pszName: PWSTR(name.as_mut_ptr()),
-                pszSpec: PWSTR(ext.as_mut_ptr()),
+                pszName: PCWSTR(name.as_mut_ptr()),
+                pszSpec: PCWSTR(ext.as_mut_ptr()),
             })
             .collect();
 
@@ -138,7 +138,7 @@ impl IDialog {
 
                 unsafe {
                     let item: Option<IShellItem> =
-                        SHCreateItemFromParsingName(PWSTR(wide_path.as_mut_ptr()), None).ok();
+                        SHCreateItemFromParsingName(PCWSTR(wide_path.as_mut_ptr()), None).ok();
 
                     if let Some(item) = item {
                         // For some reason SetDefaultFolder(), does not guarantees default path, so we use SetFolder
@@ -157,7 +157,7 @@ impl IDialog {
             unsafe {
                 self.0
                     .as_dialog()
-                    .SetFileName(PWSTR(wide_path.as_mut_ptr()))?;
+                    .SetFileName(PCWSTR(wide_path.as_mut_ptr()))?;
             }
         }
         Ok(())
@@ -170,7 +170,7 @@ impl IDialog {
             unsafe {
                 self.0
                     .as_dialog()
-                    .SetTitle(PWSTR(wide_title.as_mut_ptr()))?;
+                    .SetTitle(PCWSTR(wide_title.as_mut_ptr()))?;
             }
         }
         Ok(())

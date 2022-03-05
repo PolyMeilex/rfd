@@ -31,7 +31,7 @@ block = "0.1.6"
 objc-foundation = "0.1.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.32.0", features = [
+windows = { version = "0.33", features = [
   "Win32_Foundation",
   "Win32_System_Com",
   "Win32_UI_Shell_Common",

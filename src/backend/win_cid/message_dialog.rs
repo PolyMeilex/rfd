@@ -1,11 +1,14 @@
 use super::thread_future::ThreadFuture;
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
 
-use windows::Win32::{
-    Foundation::{HWND, PWSTR},
-    UI::WindowsAndMessaging::{
-        MessageBoxW, IDOK, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK,
-        MB_OKCANCEL, MB_YESNO, MESSAGEBOX_STYLE,
+use windows::{
+    core::PCWSTR,
+    Win32::{
+        Foundation::HWND,
+        UI::WindowsAndMessaging::{
+            MessageBoxW, IDOK, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK,
+            MB_OKCANCEL, MB_YESNO, MESSAGEBOX_STYLE,
+        },
     },
 };
 
@@ -65,8 +68,8 @@ impl WinMessageDialog {
         let ret = unsafe {
             MessageBoxW(
                 self.parent,
-                PWSTR(self.text.as_mut_ptr()),
-                PWSTR(self.caption.as_mut_ptr()),
+                PCWSTR(self.text.as_mut_ptr()),
+                PCWSTR(self.caption.as_mut_ptr()),
                 self.flags,
             )
         };
