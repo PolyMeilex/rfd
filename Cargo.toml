@@ -70,4 +70,4 @@ name = "simple"
 name = "async"
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["file-handle-inner"]
