@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.8.1
+- Macos parent for sync FileDialog (#58)
+- Windows-rs update 0.33
+
 ## 0.8.0
 - `parent` feature was removed, it is always on now
 - New feature `xdg-portal` 
