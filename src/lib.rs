@@ -35,8 +35,6 @@
 //! };
 //! ```
 //!
-//! # Important Notes before compiling!
-//!
 //! # Linux & BSD backends
 //!
 //! On Linux & BSDs, two backends are available, one using the [GTK3 Rust bindings](https://gtk-rs.org/)
