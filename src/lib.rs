@@ -51,7 +51,7 @@
 //!
 //! | Distribution    | Installation Command |
 //! | --------------- | ------------ |
-//! | Fedora          | apt install gtk3-devel   |
+//! | Fedora          | dnf install gtk3-devel   |
 //! | Arch            | apt install gtk3         |
 //! | Debian & Ubuntu | apt install libgtk-3-dev |
 //!
