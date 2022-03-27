@@ -13,3 +13,20 @@ It provides both asynchronous and synchronous APIs. Supported platforms:
   * WASM32 (async only)
 
 Refer to the [documentation](https://docs.rs/rfd) for more details.
+
+
+## Platform-specific notes
+
+### Linux
+Gtk and its related libraries are used to build the support of Linux. Be sure to install following packages before building:
+
+### Arch Linux / Manjaro:
+
+```sh
+sudo pacman -S gtk3
+```
+
+### Debian / Ubuntu:
+```sh
+sudo apt install libgtk-3-dev
+```
