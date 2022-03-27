@@ -18,15 +18,4 @@ Refer to the [documentation](https://docs.rs/rfd) for more details.
 ## Platform-specific notes
 
 ### Linux
-Gtk and its related libraries are used to build the support of Linux. Be sure to install following packages before building:
-
-### Arch Linux / Manjaro:
-
-```sh
-sudo pacman -S gtk3
-```
-
-### Debian / Ubuntu:
-```sh
-sudo apt install libgtk-3-dev
-```
+Please refer to [Linux & BSD backends](https://docs.rs/rfd/latest/rfd/#linux--bsd-backends) for information about the needed dependencies to be able to compile on Linux.
