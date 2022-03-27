@@ -52,7 +52,7 @@
 //! | Distribution    | Installation Command |
 //! | --------------- | ------------ |
 //! | Fedora          | dnf install gtk3-devel   |
-//! | Arch            | apt install gtk3         |
+//! | Arch            | pacman -S gtk3         |
 //! | Debian & Ubuntu | apt install libgtk-3-dev |
 //!
 //! ## XDG Desktop Portal backend
