@@ -35,6 +35,8 @@
 //! };
 //! ```
 //!
+//! # Important Notes before compiling!
+//!
 //! # Linux & BSD backends
 //!
 //! On Linux & BSDs, two backends are available, one using the [GTK3 Rust bindings](https://gtk-rs.org/)
@@ -47,11 +49,11 @@
 //! backend requires the C library and development headers to be installed to build RFD. The package
 //! names on various distributions are:
 //!
-//! | Distribution    | Package name |
+//! | Distribution    | Installation Command |
 //! | --------------- | ------------ |
-//! | Fedora          | gtk3-devel   |
-//! | Arch            | gtk3         |
-//! | Debian & Ubuntu | libgtk-3-dev |
+//! | Fedora          | apt install gtk3-devel   |
+//! | Arch            | apt install gtk3         |
+//! | Debian & Ubuntu | apt install libgtk-3-dev |
 //!
 //! ## XDG Desktop Portal backend
 //! The XDG Desktop Portal backend is used when the `gtk3` feature is disabled with
