@@ -13,3 +13,9 @@ It provides both asynchronous and synchronous APIs. Supported platforms:
   * WASM32 (async only)
 
 Refer to the [documentation](https://docs.rs/rfd) for more details.
+
+
+## Platform-specific notes
+
+### Linux
+Please refer to [Linux & BSD backends](https://docs.rs/rfd/latest/rfd/#linux--bsd-backends) for information about the needed dependencies to be able to compile on Linux.
