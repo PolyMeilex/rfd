@@ -119,9 +119,7 @@ impl IDialog {
 
         unsafe {
             if !spec.is_empty() {
-                self.0
-                    .as_dialog()
-                    .SetFileTypes(spec.len() as _, spec.as_ptr())?;
+                self.0.as_dialog().SetFileTypes(&spec)?;
             }
         }
         Ok(())
