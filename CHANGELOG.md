@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.8.2
+- Windows-rs update 0.35
+
 ## 0.8.1
 - Macos parent for sync FileDialog (#58)
 - Windows-rs update 0.33
