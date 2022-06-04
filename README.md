@@ -2,7 +2,7 @@
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
-[![dependency status](https://deps.rs/crate/rfd/0.8.2/status.svg)](https://deps.rs/crate/rfd/0.8.2)
+[![dependency status](https://deps.rs/crate/rfd/0.8.4/status.svg)](https://deps.rs/crate/rfd/0.8.4)
 
 Rusty File Dialogs is a cross platform Rust library for using native file open/save dialogs.
 It provides both asynchronous and synchronous APIs. Supported platforms:

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.8.4
+- XDG: decode URI before converting to PathBuf #70 
+  
+## 0.8.3
+- Windows-rs update 0.37
+
 ## 0.8.2
 - Windows-rs update 0.35
 
