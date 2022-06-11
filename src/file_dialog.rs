@@ -105,6 +105,11 @@ impl FileDialog {
         FolderPickerDialogImpl::pick_folder(self)
     }
 
+    /// Pick multiple folders
+    pub fn pick_folders(self) -> Option<Vec<PathBuf>> {
+        FolderPickerDialogImpl::pick_folders(self)
+    }
+
     /// Opens save file dialog
     ///
     /// #### Platform specific notes regarding save dialog filters:
@@ -212,6 +217,14 @@ impl AsyncFileDialog {
     /// Does not exist in `WASM32`
     pub fn pick_folder(self) -> impl Future<Output = Option<FileHandle>> {
         AsyncFolderPickerDialogImpl::pick_folder_async(self.file_dialog)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Pick multiple folders
+    ///
+    /// Does not exist in `WASM32`
+    pub fn pick_folders(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
+        AsyncFolderPickerDialogImpl::pick_folders_async(self.file_dialog)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
