@@ -9,7 +9,7 @@ use windows::Win32::{
     UI::Shell::{
         Common::COMDLG_FILTERSPEC, FileOpenDialog, FileSaveDialog, IFileDialog, IFileOpenDialog,
         IFileSaveDialog, IShellItem, SHCreateItemFromParsingName, FOS_ALLOWMULTISELECT,
-        FOS_PICKFOLDERS, SIGDN_FILESYSPATH,
+        FOS_PICKFOLDERS, SIGDN_FILESYSPATH, FILEOPENDIALOGOPTIONS,
     },
 };
 
@@ -252,6 +252,20 @@ impl IDialog {
 
         unsafe {
             dialog.0.as_dialog().SetOptions(FOS_PICKFOLDERS as _)?;
+        }
+
+        Ok(dialog)
+    }
+
+    pub fn build_pick_folders(opt: &FileDialog) -> Result<Self> {
+        let dialog = IDialog::new_open_dialog(opt)?;
+
+        dialog.set_path(&opt.starting_directory)?;
+        dialog.set_title(&opt.title)?;
+        let opts = FILEOPENDIALOGOPTIONS(FOS_PICKFOLDERS.0 | FOS_ALLOWMULTISELECT.0);
+
+        unsafe {
+            dialog.0.as_dialog().SetOptions(opts)?;
         }
 
         Ok(dialog)
