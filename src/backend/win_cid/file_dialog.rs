@@ -73,12 +73,28 @@ impl FolderPickerDialogImpl for FileDialog {
 
         run(self).ok()
     }
+
+    fn pick_folders(self) -> Option<Vec<PathBuf>> {
+        fn run(opt: FileDialog) -> Result<Vec<PathBuf>> {
+            init_com(|| {
+                let dialog = IDialog::build_pick_folders(&opt)?;
+                dialog.show()?;
+                dialog.get_results()
+            })?
+        }
+        run(self).ok()
+    }
 }
 
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         let ret = single_return_future(move || IDialog::build_pick_folder(&self));
+        Box::pin(ret)
+    }
+
+    fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let ret = multiple_return_future(move || IDialog::build_pick_folders(&self));
         Box::pin(ret)
     }
 }

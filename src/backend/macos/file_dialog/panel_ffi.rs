@@ -233,6 +233,28 @@ impl Panel {
         panel
     }
 
+    pub fn build_pick_folders(opt: &FileDialog) -> Self {
+        let panel = Panel::open_panel();
+
+        if let Some(path) = &opt.starting_directory {
+            panel.set_path(path, opt.file_name.as_deref());
+        }
+
+        if let Some(title) = &opt.title {
+            panel.set_title(title);
+        }
+
+        if let Some(parent) = &opt.parent {
+            panel.set_parent(parent);
+        }
+
+        panel.set_can_choose_directories(YES);
+        panel.set_can_choose_files(NO);
+        panel.set_allows_multiple_selection(YES);
+
+        panel
+    }
+
     pub fn build_pick_files(opt: &FileDialog) -> Self {
         let panel = Panel::open_panel();
 

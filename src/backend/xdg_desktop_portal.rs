@@ -149,6 +149,11 @@ impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         block_on(self.pick_folder_async()).map(PathBuf::from)
     }
+
+    fn pick_folders(self) -> Option<Vec<PathBuf>> {
+        block_on(self.pick_folders_async())
+            .map(|vec_file_handle| vec_file_handle.iter().map(PathBuf::from).collect())
+    }
 }
 
 use crate::backend::AsyncFolderPickerDialogImpl;
@@ -172,6 +177,40 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
                 return None;
             }
             uri_to_pathbuf(&selected_files.unwrap().uris()[0]).map(FileHandle::from)
+        })
+    }
+
+    fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        Box::pin(async {
+            let proxy = file_chooser_proxy().await?;
+            let mut options = OpenFileOptions::default()
+                .accept_label("Pick folders")
+                .multiple(true)
+                .directory(true);
+            options = add_filters_to_open_file_options(self.filters, options);
+            let selected_files = proxy
+                .open_file(
+                    &WindowIdentifier::default(),
+                    &self
+                        .title
+                        .unwrap_or_else(|| "Pick one or more folders".to_string()),
+                    options,
+                )
+                .await;
+            if selected_files.is_err() {
+                return None;
+            }
+            let selected_files = selected_files
+                .unwrap()
+                .uris()
+                .iter()
+                .filter_map(|string| uri_to_pathbuf(string))
+                .map(FileHandle::from)
+                .collect::<Vec<FileHandle>>();
+            if selected_files.is_empty() {
+                return None;
+            }
+            Some(selected_files)
         })
     }
 }

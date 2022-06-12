@@ -107,6 +107,22 @@ impl FolderPickerDialogImpl for FileDialog {
             }
         })
     }
+
+    fn pick_folders(self) -> Option<Vec<PathBuf>> {
+        GTK_MUTEX.run_locked(|| {
+            if !gtk_init_check() {
+                return None;
+            };
+
+            let dialog = GtkFileDialog::build_pick_folders(&self);
+
+            if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
+                Some(dialog.get_results())
+            } else {
+                None
+            }
+        })
+    }
 }
 
 use crate::backend::AsyncFolderPickerDialogImpl;
@@ -117,6 +133,26 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
         let future = GtkDialogFuture::new(builder, |dialog, res_id| {
             if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
                 dialog.get_result().map(FileHandle::wrap)
+            } else {
+                None
+            }
+        });
+
+        Box::pin(future)
+    }
+
+    fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let builder = move || GtkFileDialog::build_pick_folders(&self);
+
+        let future = GtkDialogFuture::new(builder, |dialog, res_id| {
+            if res_id == gtk_sys::GTK_RESPONSE_ACCEPT {
+                Some(
+                    dialog
+                        .get_results()
+                        .into_iter()
+                        .map(FileHandle::wrap)
+                        .collect(),
+                )
             } else {
                 None
             }

@@ -109,6 +109,19 @@ impl FolderPickerDialogImpl for FileDialog {
             })
         })
     }
+
+    fn pick_folders(self) -> Option<Vec<PathBuf>> {
+        objc::rc::autoreleasepool(move || {
+            run_on_main(move || {
+                let panel = Panel::build_pick_folders(&self);
+                if panel.run_modal() == 1 {
+                    Some(panel.get_results())
+                } else {
+                    None
+                }
+            })
+        })
+    }
 }
 
 use crate::backend::AsyncFolderPickerDialogImpl;
@@ -122,6 +135,30 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
             |panel, res_id| {
                 if res_id == 1 {
                     Some(panel.get_result().into())
+                } else {
+                    None
+                }
+            },
+        );
+
+        Box::pin(future)
+    }
+
+    fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
+        let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
+
+        let future = ModalFuture::new(
+            win,
+            move || Panel::build_pick_folders(&self),
+            |panel, res_id| {
+                if res_id == 1 {
+                    Some(
+                        panel
+                            .get_results()
+                            .into_iter()
+                            .map(FileHandle::wrap)
+                            .collect(),
+                    )
                 } else {
                     None
                 }
