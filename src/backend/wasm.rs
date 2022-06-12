@@ -178,11 +178,11 @@ impl MessageDialogImpl for MessageDialog {
     fn show(self) -> bool {
         let text = format!("{}\n{}", self.title, self.description);
         match self.buttons {
-            MessageButtons::Ok => {
+            MessageButtons::Ok | MessageButtons::OkCustom(_) => {
                 alert(&text);
                 true
             }
-            MessageButtons::OkCancel | MessageButtons::YesNo => confirm(&text),
+            MessageButtons::OkCancel | MessageButtons::YesNo | MessageButtons::OkCancelCustom(_, _) => confirm(&text),
         }
     }
 }

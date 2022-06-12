@@ -1,14 +1,32 @@
 use super::thread_future::ThreadFuture;
-use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
+use crate::message_dialog::{MessageButtons, MessageDialog};
 
 use windows::{
     core::PCWSTR,
     Win32::{
-        Foundation::HWND,
-        UI::WindowsAndMessaging::{
-            MessageBoxW, IDOK, IDYES, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK,
-            MB_OKCANCEL, MB_YESNO, MESSAGEBOX_STYLE,
+        Foundation::{
+            HWND,
         },
+        UI::{
+            WindowsAndMessaging::{
+                IDOK, IDYES
+            },
+        }
+    },
+};
+
+#[cfg(not(feature = "common-controls-v6"))]
+use crate::message_dialog::{MessageLevel};
+
+#[cfg(not(feature = "common-controls-v6"))]
+use windows::{
+    Win32::{
+        UI::{
+            WindowsAndMessaging::{
+                MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK,
+                MB_OKCANCEL, MB_YESNO, MESSAGEBOX_STYLE,
+            },
+        }
     },
 };
 
@@ -20,33 +38,39 @@ pub struct WinMessageDialog {
     parent: Option<HWND>,
     text: Vec<u16>,
     caption: Vec<u16>,
+    #[cfg(not(feature = "common-controls-v6"))]
     flags: MESSAGEBOX_STYLE,
+    #[cfg(feature = "common-controls-v6")]
+    opt: MessageDialog,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
 // fingers crossed
 unsafe impl Send for WinMessageDialog {}
 
+fn str_to_vec_u16(str: &str) -> Vec<u16> {
+    OsStr::new(str)
+        .encode_wide()
+        .chain(once(0))
+        .collect()
+}
+
 impl WinMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
-        let text: Vec<u16> = OsStr::new(&opt.description)
-            .encode_wide()
-            .chain(once(0))
-            .collect();
-        let caption: Vec<u16> = OsStr::new(&opt.title)
-            .encode_wide()
-            .chain(once(0))
-            .collect();
+        let text: Vec<u16> = str_to_vec_u16(&opt.description);
+        let caption: Vec<u16> = str_to_vec_u16(&opt.title);
 
+        #[cfg(not(feature = "common-controls-v6"))]
         let level = match opt.level {
             MessageLevel::Info => MB_ICONINFORMATION,
             MessageLevel::Warning => MB_ICONWARNING,
             MessageLevel::Error => MB_ICONERROR,
         };
 
+        #[cfg(not(feature = "common-controls-v6"))]
         let buttons = match opt.buttons {
-            MessageButtons::Ok => MB_OK,
-            MessageButtons::OkCancel => MB_OKCANCEL,
+            MessageButtons::Ok | MessageButtons::OkCustom(_) => MB_OK,
+            MessageButtons::OkCancel | MessageButtons::OkCancelCustom(_, _) => MB_OKCANCEL,
             MessageButtons::YesNo => MB_YESNO,
         };
 
@@ -60,10 +84,107 @@ impl WinMessageDialog {
             parent,
             text,
             caption,
+            #[cfg(not(feature = "common-controls-v6"))]
             flags: level | buttons,
+            #[cfg(feature = "common-controls-v6")]
+            opt,
         }
     }
 
+    #[cfg(feature = "common-controls-v6")]
+    pub fn run(mut self) -> bool {
+        use windows::Win32::{
+            UI::Controls::{
+                TASKDIALOGCONFIG,
+                TDF_ALLOW_DIALOG_CANCELLATION,
+                TASKDIALOG_BUTTON,
+                TaskDialogIndirect,
+                TASKDIALOG_COMMON_BUTTON_FLAGS,
+                TDCBF_YES_BUTTON,
+                TDCBF_NO_BUTTON,
+                TDCBF_OK_BUTTON,
+                TDCBF_CANCEL_BUTTON,
+            },
+            Foundation::BOOL,
+        };
+
+        let mut pf_verification_flag_checked = BOOL(0);
+        let mut pn_button = 0;
+        let mut pn_radio_button = 0;
+
+        let id_custom_ok = 1000;
+        let id_custom_cancel = 1001;
+
+        let mut task_dialog_config = TASKDIALOGCONFIG {
+            cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
+            hwndParent: self.parent.unwrap_or_default(),
+            dwFlags: TDF_ALLOW_DIALOG_CANCELLATION,
+            cButtons: 0,
+            pszWindowTitle: PCWSTR(self.caption.as_mut_ptr()),
+            pszContent: PCWSTR(self.text.as_mut_ptr()),
+            ..Default::default()
+        };
+
+        let (system_buttons, custom_buttons) = match self.opt.buttons {
+            MessageButtons::Ok => {
+                (TDCBF_OK_BUTTON, vec![])
+            },
+            MessageButtons::OkCancel => {
+                (
+                    TASKDIALOG_COMMON_BUTTON_FLAGS(TDCBF_OK_BUTTON.0 | TDCBF_CANCEL_BUTTON.0),
+                    vec![],
+                )
+            },
+            MessageButtons::YesNo => {
+                (
+                    TASKDIALOG_COMMON_BUTTON_FLAGS(TDCBF_YES_BUTTON.0 | TDCBF_NO_BUTTON.0),
+                    vec![],
+                )
+            },
+            MessageButtons::OkCustom(ok_text) => {
+                (
+                    Default::default(),
+                    vec![
+                        (id_custom_ok, str_to_vec_u16(&ok_text)),
+                    ],
+                )
+            },
+            MessageButtons::OkCancelCustom(ok_text, cancel_text) => {
+                (
+                    Default::default(),
+                    vec![
+                        (id_custom_ok, str_to_vec_u16(&ok_text)),
+                        (id_custom_cancel, str_to_vec_u16(&cancel_text)),
+                    ],
+                )
+            },
+        };
+
+        let p_buttons = custom_buttons.iter().map(|(id, text)| TASKDIALOG_BUTTON {
+            nButtonID: *id,
+            pszButtonText: PCWSTR(text.as_ptr()),
+        }).collect::<Vec<_>>();
+        task_dialog_config.dwCommonButtons = system_buttons;
+        task_dialog_config.pButtons = p_buttons.as_ptr();
+        task_dialog_config.cButtons = custom_buttons.len() as u32;
+
+        let ret = unsafe {
+            TaskDialogIndirect(
+                &task_dialog_config,
+                &mut pn_button,
+                &mut pn_radio_button,
+                &mut pf_verification_flag_checked,
+            )
+        };
+
+        ret.is_ok() && (
+            pn_button == id_custom_ok
+            || pn_button == IDYES.0
+            || pn_button == IDOK.0
+        )
+    }
+
+    #[cfg(not(feature = "common-controls-v6"))]
     pub fn run(mut self) -> bool {
         let ret = unsafe {
             MessageBoxW(

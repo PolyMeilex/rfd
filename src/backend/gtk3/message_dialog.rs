@@ -25,6 +25,20 @@ impl GtkMessageDialog {
             MessageButtons::Ok => gtk_sys::GTK_BUTTONS_OK,
             MessageButtons::OkCancel => gtk_sys::GTK_BUTTONS_OK_CANCEL,
             MessageButtons::YesNo => gtk_sys::GTK_BUTTONS_YES_NO,
+            MessageButtons::OkCustom(_) => gtk_sys::GTK_BUTTONS_NONE,
+            MessageButtons::OkCancelCustom(_, _) => gtk_sys::GTK_BUTTONS_NONE,
+        };
+
+        let custom_buttons = match opt.buttons {
+            MessageButtons::OkCustom(ok_text) => vec![
+                Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
+                None
+            ],
+            MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![
+                Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
+                Some((CString::new(cancel_text).unwrap(), gtk_sys::GTK_RESPONSE_CANCEL)),
+            ],
+            _ => vec![],
         };
 
         let s: &str = &opt.title;
@@ -33,14 +47,22 @@ impl GtkMessageDialog {
         let description = CString::new(s).unwrap();
 
         let ptr = unsafe {
-            gtk_sys::gtk_message_dialog_new(
+            let dialog = gtk_sys::gtk_message_dialog_new(
                 ptr::null_mut(),
                 gtk_sys::GTK_DIALOG_MODAL,
                 level,
                 buttons,
                 b"%s\0".as_ptr() as *mut _,
                 title.as_ptr(),
-            ) as *mut gtk_sys::GtkDialog
+            ) as *mut gtk_sys::GtkDialog;
+
+            for custom_button in custom_buttons {
+                if let Some((custom_button_cstr, response_id)) = custom_button {
+                    gtk_sys::gtk_dialog_add_button(dialog, custom_button_cstr.as_ptr(), response_id);
+                }
+            }
+
+            dialog
         };
 
         unsafe {
