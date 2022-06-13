@@ -54,23 +54,32 @@ impl NSAlert {
             let _: () = msg_send![alert, setAlertStyle: level as i64];
         }
 
-        match opt.buttons {
-            MessageButtons::Ok => unsafe {
-                let label = NSString::from_str("OK");
+        let buttons = match opt.buttons {
+            MessageButtons::Ok => vec![
+                "OK".to_owned(),
+            ],
+            MessageButtons::OkCancel => vec![
+                "OK".to_owned(),
+                "Cancel".to_owned(),
+            ],
+            MessageButtons::YesNo => vec![
+                "Yes".to_owned(),
+                "No".to_owned(),
+            ],
+            MessageButtons::OkCustom(ok_text) => vec![
+                ok_text,
+            ],
+            MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![
+                ok_text,
+                cancel_text,
+            ],
+        };
+
+        for button in buttons {
+            unsafe {
+                let label = NSString::from_str(&button);
                 let _: () = msg_send![alert, addButtonWithTitle: label];
-            },
-            MessageButtons::OkCancel => unsafe {
-                let label = NSString::from_str("OK");
-                let _: () = msg_send![alert, addButtonWithTitle: label];
-                let label = NSString::from_str("Cancel");
-                let _: () = msg_send![alert, addButtonWithTitle: label];
-            },
-            MessageButtons::YesNo => unsafe {
-                let label = NSString::from_str("Yes");
-                let _: () = msg_send![alert, addButtonWithTitle: label];
-                let label = NSString::from_str("No");
-                let _: () = msg_send![alert, addButtonWithTitle: label];
-            },
+            }
         }
 
         unsafe {

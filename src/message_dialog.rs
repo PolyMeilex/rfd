@@ -153,11 +153,17 @@ impl Default for MessageLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum MessageButtons {
     Ok,
     OkCancel,
     YesNo,
+    /// One customizable button.
+    /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
+    OkCustom(String),
+    /// Two customizable buttons.
+    /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
+    OkCancelCustom(String, String)
 }
 
 impl Default for MessageButtons {
