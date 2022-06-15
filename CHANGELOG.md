@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.9.0
+- feat: customize button text, Close #74
+- feat: Add support for selecting multiple folders, fixes #73
+
 ## 0.8.4
 - XDG: decode URI before converting to PathBuf #70 
   
