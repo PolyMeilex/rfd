@@ -70,11 +70,7 @@ wasm-bindgen-futures = "0.4.19"
 name = "simple"
 [[example]]
 name = "async"
-[[example]]
-name = "msg-custom-buttons"
 
 [package.metadata.docs.rs]
 features = ["file-handle-inner"]
 
-[build-dependencies]
-embed-resource = "1.6"
