@@ -55,24 +55,11 @@ impl NSAlert {
         }
 
         let buttons = match opt.buttons {
-            MessageButtons::Ok => vec![
-                "OK".to_owned(),
-            ],
-            MessageButtons::OkCancel => vec![
-                "OK".to_owned(),
-                "Cancel".to_owned(),
-            ],
-            MessageButtons::YesNo => vec![
-                "Yes".to_owned(),
-                "No".to_owned(),
-            ],
-            MessageButtons::OkCustom(ok_text) => vec![
-                ok_text,
-            ],
-            MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![
-                ok_text,
-                cancel_text,
-            ],
+            MessageButtons::Ok => vec!["OK".to_owned()],
+            MessageButtons::OkCancel => vec!["OK".to_owned(), "Cancel".to_owned()],
+            MessageButtons::YesNo => vec!["Yes".to_owned(), "No".to_owned()],
+            MessageButtons::OkCustom(ok_text) => vec![ok_text],
+            MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![ok_text, cancel_text],
         };
 
         for button in buttons {

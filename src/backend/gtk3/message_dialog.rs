@@ -32,11 +32,14 @@ impl GtkMessageDialog {
         let custom_buttons = match opt.buttons {
             MessageButtons::OkCustom(ok_text) => vec![
                 Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
-                None
+                None,
             ],
             MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![
                 Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
-                Some((CString::new(cancel_text).unwrap(), gtk_sys::GTK_RESPONSE_CANCEL)),
+                Some((
+                    CString::new(cancel_text).unwrap(),
+                    gtk_sys::GTK_RESPONSE_CANCEL,
+                )),
             ],
             _ => vec![],
         };
@@ -58,7 +61,11 @@ impl GtkMessageDialog {
 
             for custom_button in custom_buttons {
                 if let Some((custom_button_cstr, response_id)) = custom_button {
-                    gtk_sys::gtk_dialog_add_button(dialog, custom_button_cstr.as_ptr(), response_id);
+                    gtk_sys::gtk_dialog_add_button(
+                        dialog,
+                        custom_button_cstr.as_ptr(),
+                        response_id,
+                    );
                 }
             }
 
