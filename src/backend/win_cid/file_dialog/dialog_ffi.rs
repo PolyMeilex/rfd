@@ -8,8 +8,8 @@ use windows::Win32::{
     System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER},
     UI::Shell::{
         Common::COMDLG_FILTERSPEC, FileOpenDialog, FileSaveDialog, IFileDialog, IFileOpenDialog,
-        IFileSaveDialog, IShellItem, SHCreateItemFromParsingName, FOS_ALLOWMULTISELECT,
-        FOS_PICKFOLDERS, SIGDN_FILESYSPATH, FILEOPENDIALOGOPTIONS,
+        IFileSaveDialog, IShellItem, SHCreateItemFromParsingName, FILEOPENDIALOGOPTIONS,
+        FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS, SIGDN_FILESYSPATH,
     },
 };
 

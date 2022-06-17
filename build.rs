@@ -1,5 +1,3 @@
-extern crate embed_resource;
-
 fn main() {
     let target = std::env::var("TARGET").unwrap();
 
@@ -12,7 +10,4 @@ fn main() {
 
     #[cfg(not(any(feature = "gtk3", feature = "xdg-portal")))]
     compile_error!("You need to choose at least one backend: `gtk3` or `xdg-portal` features");
-
-    #[cfg(all(target_os = "windows", feature = "common-controls-v6"))]
-    embed_resource::compile("manifest.rc");
 }

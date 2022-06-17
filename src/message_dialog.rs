@@ -163,7 +163,7 @@ pub enum MessageButtons {
     OkCustom(String),
     /// Two customizable buttons.
     /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
-    OkCancelCustom(String, String)
+    OkCancelCustom(String, String),
 }
 
 impl Default for MessageButtons {

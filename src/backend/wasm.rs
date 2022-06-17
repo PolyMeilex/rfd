@@ -182,7 +182,9 @@ impl MessageDialogImpl for MessageDialog {
                 alert(&text);
                 true
             }
-            MessageButtons::OkCancel | MessageButtons::YesNo | MessageButtons::OkCancelCustom(_, _) => confirm(&text),
+            MessageButtons::OkCancel
+            | MessageButtons::YesNo
+            | MessageButtons::OkCancelCustom(_, _) => confirm(&text),
         }
     }
 }

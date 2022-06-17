@@ -48,8 +48,10 @@ fn add_filters_to_save_file_options(
 
 // refer to https://github.com/flatpak/xdg-desktop-portal/issues/213
 fn uri_to_pathbuf(uri: &str) -> Option<PathBuf> {
-    urlencoding::decode(uri).ok()?
-        .strip_prefix("file://").map(PathBuf::from)
+    urlencoding::decode(uri)
+        .ok()?
+        .strip_prefix("file://")
+        .map(PathBuf::from)
 }
 
 fn ok_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {

@@ -80,9 +80,22 @@
 //! to [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs).
 //! Non-windowed apps will never be able to spawn async dialogs or from threads other than the main thread.
 //!
+//! # Customize button texts of message dialog in Windows
+//!
+//! `TaskDialogIndirect` API is used for showing message dialog which can have customized button texts.
+//! It is only provided by ComCtl32.dll v6 but Windows use v5 by default.
+//! If you want to customize button texts or just need a modern dialog style (aka *visual styles*), you will need to:
+//!
+//! 1. Enable cargo feature `common-controls-v6`.
+//! 2. Add an application manifest to use ComCtl32.dll v5. See [Windows Controls / Enabling Visual Styles](https://docs.microsoft.com/en-us/windows/win32/controls/cookbook-overview)
+//!
+//!
+//! Here is an [example](https://github.com/PolyMeilex/rfd/tree/master/examples/message-custom-buttons) using [embed-resource](https://docs.rs/embed-resource/latest/embed_resource/).
+//!
 //! # Cargo features
 //!  * `gtk3`: Uses GTK for dialogs on Linux & BSDs; has no effect on Windows and macOS
 //!  * `xdg-portal`: Uses XDG Desktop Portal instead of GTK on Linux & BSDs
+//!  * `common-controls-v6`: Use `TaskDialogIndirect` API from ComCtl32.dll v6 for showing message dialog. This is necessary if you need to customize dialog button texts.
 //!
 //! # State
 //!
