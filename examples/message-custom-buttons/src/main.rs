@@ -19,6 +19,7 @@ fn main() {
     let res = rfd::MessageDialog::new()
         .set_title("Msg!")
         .set_description("Description!")
+        .set_level(rfd::MessageLevel::Warning)
         .set_buttons(rfd::MessageButtons::OkCancelCustom("Got it!".to_string(), "No!".to_string()))
         .show();
 

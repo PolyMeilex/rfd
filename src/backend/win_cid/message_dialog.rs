@@ -1,5 +1,5 @@
 use super::thread_future::ThreadFuture;
-use crate::message_dialog::{MessageButtons, MessageDialog};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
 
 use windows::{
     core::PCWSTR,
@@ -8,9 +8,6 @@ use windows::{
         UI::WindowsAndMessaging::{IDOK, IDYES},
     },
 };
-
-#[cfg(not(feature = "common-controls-v6"))]
-use crate::message_dialog::MessageLevel;
 
 #[cfg(not(feature = "common-controls-v6"))]
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -103,6 +100,20 @@ impl WinMessageDialog {
             pszContent: PCWSTR(self.text.as_mut_ptr()),
             ..Default::default()
         };
+
+        let main_icon_ptr = match self.opt.level {
+            // `TD_WARNING_ICON` / `TD_ERROR_ICON` / `TD_INFORMATION_ICON` are missing in windows-rs
+            // https://github.com/microsoft/win32metadata/issues/968
+            // Workaround via hard code:
+            // TD_WARNING_ICON
+            MessageLevel::Warning => -1 as i16 as u16,
+            // TD_ERROR_ICON
+            MessageLevel::Error => -2 as i16 as u16,
+            // TD_INFORMATION_ICON
+            MessageLevel::Info => -3 as i16 as u16,
+        };
+
+        task_dialog_config.Anonymous1.pszMainIcon = PCWSTR(main_icon_ptr as *const u16);
 
         let (system_buttons, custom_buttons) = match self.opt.buttons {
             MessageButtons::Ok => (TDCBF_OK_BUTTON, vec![]),
