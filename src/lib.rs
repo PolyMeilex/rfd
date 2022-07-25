@@ -168,4 +168,6 @@ mod message_dialog;
         feature = "gtk3"
     )
 ))]
-pub use message_dialog::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
+pub use message_dialog::{
+    AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
+};

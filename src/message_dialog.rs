@@ -73,7 +73,7 @@ impl MessageDialog {
     /// - In `Ok` dialog, it will return `true` when `OK` was pressed
     /// - In `OkCancel` dialog, it will return `true` when `OK` was pressed
     /// - In `YesNo` dialog, it will return `true` when `Yes` was pressed
-    pub fn show(self) -> bool {
+    pub fn show(self) -> MessageDialogResult {
         MessageDialogImpl::show(self)
     }
 }
@@ -135,7 +135,7 @@ impl AsyncMessageDialog {
     /// - In `Ok` dialog, it will return `true` when `OK` was pressed
     /// - In `OkCancel` dialog, it will return `true` when `OK` was pressed
     /// - In `YesNo` dialog, it will return `true` when `Yes` was pressed
-    pub fn show(self) -> impl Future<Output = bool> {
+    pub fn show(self) -> impl Future<Output = MessageDialogResult> {
         AsyncMessageDialogImpl::show_async(self.0)
     }
 }
@@ -158,6 +158,7 @@ pub enum MessageButtons {
     Ok,
     OkCancel,
     YesNo,
+    YesNoCancel,
     /// One customizable button.
     /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
     OkCustom(String),
@@ -170,4 +171,13 @@ impl Default for MessageButtons {
     fn default() -> Self {
         Self::Ok
     }
+}
+
+#[derive(Debug)]
+pub enum MessageDialogResult {
+    Yes,
+    No,
+    Ok,
+    Cancel,
+    Custom(String),
 }

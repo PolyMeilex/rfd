@@ -1,3 +1,4 @@
+use crate::message_dialog::MessageDialogResult;
 use crate::FileHandle;
 use std::future::Future;
 use std::path::PathBuf;
@@ -54,7 +55,7 @@ pub trait FolderPickerDialogImpl {
 }
 
 pub trait MessageDialogImpl {
-    fn show(self) -> bool;
+    fn show(self) -> MessageDialogResult;
 }
 
 //
@@ -85,5 +86,5 @@ pub trait AsyncFileSaveDialogImpl {
 }
 
 pub trait AsyncMessageDialogImpl {
-    fn show_async(self) -> DialogFutureType<bool>;
+    fn show_async(self) -> DialogFutureType<MessageDialogResult>;
 }

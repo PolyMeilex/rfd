@@ -1,18 +1,18 @@
 use super::thread_future::ThreadFuture;
-use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
 use windows::{
     core::PCWSTR,
     Win32::{
         Foundation::HWND,
-        UI::WindowsAndMessaging::{IDOK, IDYES},
+        UI::WindowsAndMessaging::{IDCANCEL, IDNO, IDOK, IDYES},
     },
 };
 
 #[cfg(not(feature = "common-controls-v6"))]
 use windows::Win32::UI::WindowsAndMessaging::{
     MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK, MB_OKCANCEL, MB_YESNO,
-    MESSAGEBOX_STYLE,
+    MB_YESNOCANCEL, MESSAGEBOX_STYLE,
 };
 
 use raw_window_handle::RawWindowHandle;
@@ -54,6 +54,7 @@ impl WinMessageDialog {
             MessageButtons::Ok | MessageButtons::OkCustom(_) => MB_OK,
             MessageButtons::OkCancel | MessageButtons::OkCancelCustom(_, _) => MB_OKCANCEL,
             MessageButtons::YesNo => MB_YESNO,
+            MessageButtons::YesNoCancel => MB_YESNOCANCEL,
         };
 
         let parent = match opt.parent {
@@ -74,7 +75,7 @@ impl WinMessageDialog {
     }
 
     #[cfg(feature = "common-controls-v6")]
-    pub fn run(mut self) -> bool {
+    pub fn run(mut self) -> MessageDialogResult {
         use windows::Win32::{
             Foundation::BOOL,
             UI::Controls::{
@@ -125,6 +126,12 @@ impl WinMessageDialog {
                 TASKDIALOG_COMMON_BUTTON_FLAGS(TDCBF_YES_BUTTON.0 | TDCBF_NO_BUTTON.0),
                 vec![],
             ),
+            MessageButtons::YesNoCancel => (
+                TASKDIALOG_COMMON_BUTTON_FLAGS(
+                    TDCBF_YES_BUTTON.0 | TDCBF_NO_BUTTON.0 | TDCBF_CANCEL_BUTTON.0,
+                ),
+                vec![],
+            ),
             MessageButtons::OkCustom(ok_text) => (
                 Default::default(),
                 vec![(id_custom_ok, str_to_vec_u16(&ok_text))],
@@ -157,12 +164,10 @@ impl WinMessageDialog {
                 &mut pf_verification_flag_checked,
             )
         };
-
-        ret.is_ok() && (pn_button == id_custom_ok || pn_button == IDYES.0 || pn_button == IDOK.0)
     }
 
     #[cfg(not(feature = "common-controls-v6"))]
-    pub fn run(mut self) -> bool {
+    pub fn run(mut self) -> MessageDialogResult {
         let ret = unsafe {
             MessageBoxW(
                 self.parent,
@@ -172,10 +177,16 @@ impl WinMessageDialog {
             )
         };
 
-        ret == IDOK || ret == IDYES
+        match ret {
+            IDOK => MessageDialogResult::Ok,
+            IDYES => MessageDialogResult::Yes,
+            IDCANCEL => MessageDialogResult::Cancel,
+            IDNO => MessageDialogResult::No,
+            _ => MessageDialogResult::Cancel,
+        }
     }
 
-    pub fn run_async(self) -> ThreadFuture<bool> {
+    pub fn run_async(self) -> ThreadFuture<MessageDialogResult> {
         ThreadFuture::new(move |data| *data = Some(self.run()))
     }
 }
@@ -183,7 +194,7 @@ impl WinMessageDialog {
 use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) -> bool {
+    fn show(self) -> MessageDialogResult {
         let dialog = WinMessageDialog::new(self);
         dialog.run()
     }
@@ -193,7 +204,7 @@ use crate::backend::AsyncMessageDialogImpl;
 use crate::backend::DialogFutureType;
 
 impl AsyncMessageDialogImpl for MessageDialog {
-    fn show_async(self) -> DialogFutureType<bool> {
+    fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         let dialog = WinMessageDialog::new(self);
         Box::pin(dialog.run_async())
     }
