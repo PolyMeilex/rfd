@@ -6,6 +6,7 @@ use super::utils::wait_for_cleanup;
 use super::AsGtkDialog;
 
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
+use crate::MessageDialogResult;
 
 pub struct GtkMessageDialog {
     ptr: *mut gtk_sys::GtkDialog,
@@ -25,11 +26,21 @@ impl GtkMessageDialog {
             MessageButtons::Ok => gtk_sys::GTK_BUTTONS_OK,
             MessageButtons::OkCancel => gtk_sys::GTK_BUTTONS_OK_CANCEL,
             MessageButtons::YesNo => gtk_sys::GTK_BUTTONS_YES_NO,
+            MessageButtons::YesNoCancel => gtk_sys::GTK_BUTTONS_NONE,
             MessageButtons::OkCustom(_) => gtk_sys::GTK_BUTTONS_NONE,
             MessageButtons::OkCancelCustom(_, _) => gtk_sys::GTK_BUTTONS_NONE,
         };
 
         let custom_buttons = match opt.buttons {
+            MessageButtons::YesNoCancel => vec![
+                Some((CString::new("Yes").unwrap(), gtk_sys::GTK_RESPONSE_YES)),
+                Some((CString::new("No").unwrap(), gtk_sys::GTK_RESPONSE_NO)),
+                Some((
+                    CString::new("Cancel").unwrap(),
+                    gtk_sys::GTK_RESPONSE_CANCEL,
+                )),
+                None,
+            ],
             MessageButtons::OkCustom(ok_text) => vec![
                 Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
                 None,
@@ -83,10 +94,16 @@ impl GtkMessageDialog {
         Self { ptr }
     }
 
-    pub fn run(self) -> bool {
+    pub fn run(self) -> MessageDialogResult {
         let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
 
-        res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
+        match res {
+            gtk_sys::GTK_RESPONSE_OK => MessageDialogResult::Ok,
+            gtk_sys::GTK_RESPONSE_CANCEL => MessageDialogResult::Cancel,
+            gtk_sys::GTK_RESPONSE_YES => MessageDialogResult::Yes,
+            gtk_sys::GTK_RESPONSE_NO => MessageDialogResult::No,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -129,7 +146,7 @@ impl AsGtkDialog for GtkMessageDialog {
 use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) -> bool {
+    fn show(self) -> MessageDialogResult {
         let dialog = GtkMessageDialog::new(self);
         dialog.run()
     }
@@ -139,11 +156,15 @@ use crate::backend::AsyncMessageDialogImpl;
 use crate::backend::DialogFutureType;
 
 impl AsyncMessageDialogImpl for MessageDialog {
-    fn show_async(self) -> DialogFutureType<bool> {
+    fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         let builder = move || GtkMessageDialog::new(self);
 
-        let future = GtkDialogFuture::new(builder, |_, res| {
-            res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
+        let future = GtkDialogFuture::new(builder, |_, res| match res {
+            gtk_sys::GTK_RESPONSE_OK => MessageDialogResult::Ok,
+            gtk_sys::GTK_RESPONSE_CANCEL => MessageDialogResult::Cancel,
+            gtk_sys::GTK_RESPONSE_YES => MessageDialogResult::Yes,
+            gtk_sys::GTK_RESPONSE_NO => MessageDialogResult::No,
+            _ => unreachable!(),
         });
         Box::pin(future)
     }
