@@ -21,7 +21,7 @@ common-controls-v6 = ["windows/Win32_UI_Controls"]
 futures = "0.3.12"
 
 [dependencies]
-raw-window-handle = "0.4.1"
+raw-window-handle = "0.5"
 log = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
