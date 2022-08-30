@@ -7,6 +7,7 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Filter {
+    #[allow(dead_code)]
     pub name: String,
     pub extensions: Vec<String>,
 }
@@ -30,6 +31,7 @@ unsafe impl Send for FileDialog {}
 
 impl FileDialog {
     /// New file dialog builder
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new() -> Self {
         Default::default()
     }
@@ -86,6 +88,7 @@ impl FileDialog {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::backend::{FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -195,9 +198,10 @@ impl AsyncFileDialog {
     }
 }
 
-use crate::backend::{
-    AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl,
-};
+use crate::backend::AsyncFilePickerDialogImpl;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::backend::{AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl};
+
 use std::future::Future;
 
 impl AsyncFileDialog {

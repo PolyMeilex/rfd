@@ -41,6 +41,7 @@ fn main() {
         }
         event::Event::WindowEvent { event, .. } => match event {
             WindowEvent::CloseRequested { .. } => *control_flow = ControlFlow::Exit,
+            #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::KeyboardInput {
                 input:
                     event::KeyboardInput {
