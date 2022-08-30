@@ -1,6 +1,6 @@
 use winit::{
     event::{self, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{ControlFlow, EventLoopBuilder},
 };
 
 use wasm_bindgen::prelude::*;
@@ -11,7 +11,7 @@ extern "C" {
 }
 
 fn main() {
-    let event_loop = EventLoop::<String>::with_user_event();
+    let event_loop = EventLoopBuilder::<String>::with_user_event().build();
     let builder = winit::window::WindowBuilder::new();
 
     let window = builder.build(&event_loop).unwrap();
@@ -59,7 +59,9 @@ fn main() {
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {
                     let file = dialog.await;
-                    event_loop_proxy.send_event(format!("saved file name: {:#?}", file)).ok();
+                    event_loop_proxy
+                        .send_event(format!("saved file name: {:#?}", file))
+                        .ok();
                 });
             }
             WindowEvent::KeyboardInput {
@@ -100,7 +102,7 @@ fn main() {
                     let val = dialog.await;
                     event_loop_proxy.send_event(format!("Msg: {}", val)).ok();
                 });
-            },
+            }
             WindowEvent::KeyboardInput {
                 input:
                     event::KeyboardInput {

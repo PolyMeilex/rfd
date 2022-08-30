@@ -14,5 +14,5 @@ web-sys={version="0.3.46",features = [
 ]}
 
 wasm-bindgen-futures = "0.4.19"
-winit = "0.26" 
+winit = "0.27" 
 futures = {version="0.3.10",features=["thread-pool"]}
