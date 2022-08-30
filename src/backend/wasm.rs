@@ -150,8 +150,6 @@ impl Drop for WasmDialog {
     }
 }
 
-use std::future::Future;
-
 use super::{AsyncFilePickerDialogImpl, DialogFutureType};
 
 impl AsyncFilePickerDialogImpl for FileDialog {
