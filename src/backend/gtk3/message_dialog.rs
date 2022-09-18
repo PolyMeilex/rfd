@@ -9,6 +9,7 @@ use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
 use crate::MessageDialogResult;
 
 pub struct GtkMessageDialog {
+    buttons: MessageButtons,
     ptr: *mut gtk_sys::GtkDialog,
 }
 
@@ -31,7 +32,7 @@ impl GtkMessageDialog {
             MessageButtons::OkCancelCustom(_, _) => gtk_sys::GTK_BUTTONS_NONE,
         };
 
-        let custom_buttons = match opt.buttons {
+        let custom_buttons = match &opt.buttons {
             MessageButtons::YesNoCancel => vec![
                 Some((CString::new("Yes").unwrap(), gtk_sys::GTK_RESPONSE_YES)),
                 Some((CString::new("No").unwrap(), gtk_sys::GTK_RESPONSE_NO)),
@@ -42,13 +43,19 @@ impl GtkMessageDialog {
                 None,
             ],
             MessageButtons::OkCustom(ok_text) => vec![
-                Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
+                Some((
+                    CString::new(ok_text.as_bytes()).unwrap(),
+                    gtk_sys::GTK_RESPONSE_OK,
+                )),
                 None,
             ],
             MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![
-                Some((CString::new(ok_text).unwrap(), gtk_sys::GTK_RESPONSE_OK)),
                 Some((
-                    CString::new(cancel_text).unwrap(),
+                    CString::new(ok_text.as_bytes()).unwrap(),
+                    gtk_sys::GTK_RESPONSE_OK,
+                )),
+                Some((
+                    CString::new(cancel_text.as_bytes()).unwrap(),
                     gtk_sys::GTK_RESPONSE_CANCEL,
                 )),
             ],
@@ -91,18 +98,33 @@ impl GtkMessageDialog {
             gtk_sys::gtk_message_dialog_format_secondary_text(ptr as *mut _, description.as_ptr());
         }
 
-        Self { ptr }
+        Self {
+            ptr,
+            buttons: opt.buttons,
+        }
     }
 
     pub fn run(self) -> MessageDialogResult {
         let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
 
-        match res {
-            gtk_sys::GTK_RESPONSE_OK => MessageDialogResult::Ok,
-            gtk_sys::GTK_RESPONSE_CANCEL => MessageDialogResult::Cancel,
-            gtk_sys::GTK_RESPONSE_YES => MessageDialogResult::Yes,
-            gtk_sys::GTK_RESPONSE_NO => MessageDialogResult::No,
-            _ => unreachable!(),
+        use MessageButtons::*;
+        match (&self.buttons, res) {
+            (Ok | OkCancel, gtk_sys::GTK_RESPONSE_OK) => MessageDialogResult::Ok,
+            (Ok | OkCancel | YesNoCancel, gtk_sys::GTK_RESPONSE_CANCEL) => {
+                MessageDialogResult::Cancel
+            }
+            (YesNo | YesNoCancel, gtk_sys::GTK_RESPONSE_YES) => MessageDialogResult::Yes,
+            (YesNo | YesNoCancel, gtk_sys::GTK_RESPONSE_NO) => MessageDialogResult::No,
+            (OkCustom(custom), gtk_sys::GTK_RESPONSE_OK) => {
+                MessageDialogResult::Custom(custom.to_owned())
+            }
+            (OkCancelCustom(custom, _), gtk_sys::GTK_RESPONSE_OK) => {
+                MessageDialogResult::Custom(custom.to_owned())
+            }
+            (OkCancelCustom(_, custom), gtk_sys::GTK_RESPONSE_CANCEL) => {
+                MessageDialogResult::Custom(custom.to_owned())
+            }
+            _ => MessageDialogResult::Cancel,
         }
     }
 }
