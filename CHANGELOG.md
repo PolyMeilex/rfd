@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+- fix(FileDialog): fallback to current dir if path is empty
 
 ## 0.9.0
 - feat: customize button text, Close #74
