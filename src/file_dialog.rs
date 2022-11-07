@@ -58,6 +58,10 @@ impl FileDialog {
     ///   * Windows
     ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
+        let mut path = path.as_ref();
+        if path.to_str().map(|p|p.is_empty()).unwrap_or(false) {
+            path = Path::new(".")
+        }
         self.starting_directory = Some(path.as_ref().into());
         self
     }
