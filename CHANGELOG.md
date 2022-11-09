@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+- fix(FileDialog::set_directory): fallback to default if path is empty
 
 ## 0.9.0
 - feat: customize button text, Close #74
