@@ -59,6 +59,8 @@ impl GtkMessageDialog {
                 title.as_ptr(),
             ) as *mut gtk_sys::GtkDialog;
 
+            set_child_labels_selectable(dialog);
+
             for custom_button in custom_buttons {
                 if let Some((custom_button_cstr, response_id)) = custom_button {
                     gtk_sys::gtk_dialog_add_button(
@@ -83,6 +85,17 @@ impl GtkMessageDialog {
         let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
 
         res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
+    }
+}
+
+/// Sets the child labels of a widget selectable
+unsafe fn set_child_labels_selectable(dialog: *mut gtk_sys::GtkDialog) {
+    let area = gtk_sys::gtk_message_dialog_get_message_area(dialog as _);
+    let mut children = gtk_sys::gtk_container_get_children(area as _);
+    while !children.is_null() {
+        let child = (*children).data;
+        gtk_sys::gtk_label_set_selectable(child as _, 1);
+        children = (*children).next;
     }
 }
 
