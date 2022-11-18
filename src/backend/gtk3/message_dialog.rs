@@ -59,6 +59,9 @@ impl GtkMessageDialog {
                 title.as_ptr(),
             ) as *mut gtk_sys::GtkDialog;
 
+            // Also set the window title, otherwise it would be empty
+            gtk_sys::gtk_window_set_title(dialog as _, title.as_ptr());
+
             for custom_button in custom_buttons {
                 if let Some((custom_button_cstr, response_id)) = custom_button {
                     gtk_sys::gtk_dialog_add_button(
