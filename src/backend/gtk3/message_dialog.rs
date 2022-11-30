@@ -59,6 +59,7 @@ impl GtkMessageDialog {
                 title.as_ptr(),
             ) as *mut gtk_sys::GtkDialog;
 
+            set_child_labels_selectable(dialog);
             // Also set the window title, otherwise it would be empty
             gtk_sys::gtk_window_set_title(dialog as _, title.as_ptr());
 
@@ -86,6 +87,23 @@ impl GtkMessageDialog {
         let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
 
         res == gtk_sys::GTK_RESPONSE_OK || res == gtk_sys::GTK_RESPONSE_YES
+    }
+}
+
+unsafe fn is_label(type_instance: *const gobject_sys::GTypeInstance) -> bool {
+    (*(*type_instance).g_class).g_type == gtk_sys::gtk_label_get_type()
+}
+
+/// Sets the child labels of a widget selectable
+unsafe fn set_child_labels_selectable(dialog: *mut gtk_sys::GtkDialog) {
+    let area = gtk_sys::gtk_message_dialog_get_message_area(dialog as _);
+    let mut children = gtk_sys::gtk_container_get_children(area as _);
+    while !children.is_null() {
+        let child = (*children).data;
+        if is_label(child as _) {
+            gtk_sys::gtk_label_set_selectable(child as _, 1);
+        }
+        children = (*children).next;
     }
 }
 
