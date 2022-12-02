@@ -140,7 +140,7 @@ impl IDialog {
 
                     if let Some(item) = item {
                         // For some reason SetDefaultFolder(), does not guarantees default path, so we use SetFolder
-                        self.0.as_dialog().SetFolder(item)?;
+                        self.0.as_dialog().SetFolder(&item)?;
                     }
                 }
             }
@@ -194,7 +194,7 @@ impl IDialog {
 
                 let filename = read_to_string(display_name);
 
-                CoTaskMemFree(display_name.0 as _);
+                CoTaskMemFree(Some(display_name.0 as _));
 
                 let path = PathBuf::from(filename);
                 paths.push(path);
@@ -210,7 +210,7 @@ impl IDialog {
             let display_name = res_item.GetDisplayName(SIGDN_FILESYSPATH)?;
 
             let filename = read_to_string(display_name);
-            CoTaskMemFree(display_name.0 as _);
+            CoTaskMemFree(Some(display_name.0 as _));
 
             Ok(PathBuf::from(filename))
         }
