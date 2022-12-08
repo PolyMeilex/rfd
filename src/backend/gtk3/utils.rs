@@ -30,13 +30,13 @@ lazy_static! {
     pub static ref GTK_MUTEX: GtkGlobalMutex = GtkGlobalMutex::new();
 }
 
-/// # Event Hadnler
+/// # Event Handler
 /// Counts amout of iteration requests
 /// When amount of requests goes above 0 it spawns GtkThread and starts iteration
 /// When amount of requests reqches 0 it stops GtkThread, and goes idle
 pub struct GtkEventHandler {
     thread: Mutex<Option<GtkThread>>,
-    request_count: Arc<AtomicUsize>,
+    request_count: AtomicUsize,
 }
 
 unsafe impl Send for GtkEventHandler {}
@@ -49,7 +49,7 @@ lazy_static! {
 impl GtkEventHandler {
     fn new() -> Self {
         let thread = Mutex::new(None);
-        let request_count = Arc::new(AtomicUsize::new(0));
+        let request_count = AtomicUsize::new(0);
         Self {
             thread,
             request_count,
@@ -65,7 +65,8 @@ impl GtkEventHandler {
             thread.replace(GtkThread::new());
         }
 
-        IterationRequest::new(self.request_count.clone())
+        self.request_count.fetch_add(1, Ordering::Relaxed);
+        IterationRequest ()
     }
 
     fn iteration_stop(&self) {
@@ -73,26 +74,18 @@ impl GtkEventHandler {
     }
 
     fn request_iteration_stop(&self) {
+        self.request_count.fetch_sub(1, Ordering::Release);
+        
         if self.request_count.load(Ordering::Acquire) == 0 {
             self.iteration_stop();
         }
     }
 }
 
-pub struct IterationRequest {
-    request_count: Arc<AtomicUsize>,
-}
-
-impl IterationRequest {
-    fn new(request_count: Arc<AtomicUsize>) -> Self {
-        request_count.fetch_add(1, Ordering::Relaxed);
-        Self { request_count }
-    }
-}
+pub struct IterationRequest ();
 
 impl Drop for IterationRequest {
     fn drop(&mut self) {
-        self.request_count.fetch_sub(1, Ordering::Release);
         GTK_EVENT_HANDLER.request_iteration_stop();
     }
 }
