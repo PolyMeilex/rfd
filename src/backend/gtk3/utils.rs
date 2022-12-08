@@ -1,5 +1,3 @@
-use lazy_static::lazy_static;
-
 use std::ptr;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -14,7 +12,7 @@ unsafe impl Send for GtkGlobalMutex {}
 unsafe impl Sync for GtkGlobalMutex {}
 
 impl GtkGlobalMutex {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             locker: Mutex::new(()),
         }
@@ -26,9 +24,7 @@ impl GtkGlobalMutex {
     }
 }
 
-lazy_static! {
-    pub static ref GTK_MUTEX: GtkGlobalMutex = GtkGlobalMutex::new();
-}
+pub static GTK_MUTEX: GtkGlobalMutex = GtkGlobalMutex::new();
 
 /// # Event Handler
 /// Counts amout of iteration requests
@@ -42,12 +38,10 @@ pub struct GtkEventHandler {
 unsafe impl Send for GtkEventHandler {}
 unsafe impl Sync for GtkEventHandler {}
 
-lazy_static! {
-    pub static ref GTK_EVENT_HANDLER: GtkEventHandler = GtkEventHandler::new();
-}
+pub static GTK_EVENT_HANDLER: GtkEventHandler = GtkEventHandler::new();
 
 impl GtkEventHandler {
-    fn new() -> Self {
+    const fn new() -> Self {
         let thread = Mutex::new(None);
         let request_count = AtomicUsize::new(0);
         Self {
