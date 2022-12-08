@@ -13,7 +13,7 @@ documentation = "https://docs.rs/rfd"
 [features]
 default = ["gtk3"]
 file-handle-inner = []
-gtk3 = ["gtk-sys", "glib-sys", "gobject-sys", "lazy_static"]
+gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["ashpd", "urlencoding", "pollster"]
 common-controls-v6 = ["windows/Win32_UI_Controls"]
 
@@ -49,7 +49,6 @@ pollster = { version = "0.2", optional = true }
 gtk-sys = { version = "0.15.1", features = ["v3_20"], optional = true }
 glib-sys = { version = "0.15.1", optional = true }
 gobject-sys = { version = "0.15.1", optional = true }
-lazy_static = { version = "1.4.0", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.69"
