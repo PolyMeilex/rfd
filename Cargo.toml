@@ -12,7 +12,7 @@ repository = "https://github.com/PolyMeilex/rfd"
 
 [features]
 common-controls-v6 = ["windows/Win32_UI_Controls"]
-default = ["xdg-portal*"]
+default = ["xdg-portal"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["ashpd", "urlencoding", "pollster"]
