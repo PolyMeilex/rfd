@@ -152,9 +152,9 @@ impl WinMessageDialog {
         let ret = unsafe {
             TaskDialogIndirect(
                 &task_dialog_config,
-                &mut pn_button,
-                &mut pn_radio_button,
-                &mut pf_verification_flag_checked,
+                Some(&mut pn_button),
+                Some(&mut pn_radio_button),
+                Some(&mut pf_verification_flag_checked),
             )
         };
 
