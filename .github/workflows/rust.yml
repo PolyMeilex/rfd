@@ -20,10 +20,10 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             flags: ''
-          - name: Windows NO-CC6
+          - name: Windows CC6
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            flags: '--no-default-features --features xdg-portal'
+            flags: '--features common-controls-v6'
           - name: macOS
             os: macos-latest
             target: x86_64-apple-darwin
