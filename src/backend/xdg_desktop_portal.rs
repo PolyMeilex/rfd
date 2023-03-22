@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use crate::backend::DialogFutureType;
 use crate::file_dialog::Filter;
-use crate::{FileDialog, FileHandle};
+use crate::message_dialog::MessageDialog;
+use crate::{FileDialog, FileHandle, MessageButtons};
 
 use ashpd::desktop::file_chooser::{
     FileChooserProxy, FileFilter, OpenFileOptions, SaveFileOptions,
@@ -253,6 +254,58 @@ impl AsyncFileSaveDialogImpl for FileDialog {
                 return None;
             }
             uri_to_pathbuf(&selected_files.unwrap().uris()[0]).map(FileHandle::from)
+        })
+    }
+}
+
+use crate::backend::MessageDialogImpl;
+impl MessageDialogImpl for MessageDialog {
+    fn show(self) -> bool {
+        block_on(self.show_async())
+    }
+}
+
+use crate::backend::AsyncMessageDialogImpl;
+impl AsyncMessageDialogImpl for MessageDialog {
+    fn show_async(self) -> DialogFutureType<bool> {
+        Box::pin(async move {
+            match &self.buttons {
+                MessageButtons::Ok | MessageButtons::OkCustom(_) => {
+                    let res = crate::backend::linux::zenity::message(
+                        &self.level,
+                        &self.buttons,
+                        &self.title,
+                        &self.description,
+                    )
+                    .await;
+
+                    match res {
+                        Ok(res) => res,
+                        Err(err) => {
+                            log::error!("Failed to open zenity dialog: {err}");
+                            false
+                        }
+                    }
+                }
+                MessageButtons::OkCancel
+                | MessageButtons::YesNo
+                | MessageButtons::OkCancelCustom(_, _) => {
+                    let res = crate::backend::linux::zenity::question(
+                        &self.buttons,
+                        &self.title,
+                        &self.description,
+                    )
+                    .await;
+
+                    match res {
+                        Ok(res) => res,
+                        Err(err) => {
+                            log::error!("Failed to open zenity dialog: {err}");
+                            false
+                        }
+                    }
+                }
+            }
         })
     }
 }
