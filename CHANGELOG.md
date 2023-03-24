@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.11.3
+- Zenity message dialogs for xdg portal backend 
+
 ## 0.10.1
 - Update `gtk-sys` to `0.16` and `windows-rs` to `0.44`
 
