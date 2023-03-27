@@ -35,8 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Avoid spurious reports of duplicated dependencies by using precise versions of some crates
-      # In particular: avoid syn 2.0 until all crates are updated
+      # Avoid spurious reports of duplicated dependencies by using precise versions of some crates.
+      # We need this because we have no `Cargo.lock` checked in.
+      # In particular: avoid syn 2.0 until all crates are updated.
       - name: Set up package versions
         run: |
           cargo update --package async-trait --precise 0.1.66
