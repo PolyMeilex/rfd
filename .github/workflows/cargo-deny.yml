@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v3
 
       # Avoid spurious reports of duplicated dependencies by using precise versions of some crates.
-      # We need this because we have no `Cargo.lock` checked in.
+      # We need this because we have no `Cargo.lock` checked in. Maybe we should check one in?
       # In particular: avoid syn 2.0 until all crates are updated.
       - name: Set up package versions
         run: |
