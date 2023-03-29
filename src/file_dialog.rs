@@ -45,7 +45,7 @@ impl FileDialog {
     ///   * Linux
     ///
     /// On platforms that don't support filter names, all filters will be merged into one filter
-    pub fn add_filter(mut self, name: &str, extensions: &[&str]) -> Self {
+    pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.filters.push(Filter {
             name: name.into(),
             extensions: extensions.iter().map(|e| e.to_string()).collect(),
@@ -71,7 +71,7 @@ impl FileDialog {
     ///  * Windows
     ///  * Linux
     ///  * Mac
-    pub fn set_file_name(mut self, file_name: &str) -> Self {
+    pub fn set_file_name(mut self, file_name: impl Into<String>) -> Self {
         self.file_name = Some(file_name.into());
         self
     }
@@ -80,7 +80,7 @@ impl FileDialog {
     ///  * Windows
     ///  * Linux
     ///  * Mac (Only below version 10.11)
-    pub fn set_title(mut self, title: &str) -> Self {
+    pub fn set_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
         self
     }
@@ -163,7 +163,7 @@ impl AsyncFileDialog {
     ///   * Linux
     ///
     /// On platforms that don't support filter names, all filters will be merged into one filter
-    pub fn add_filter(mut self, name: &str, extensions: &[&str]) -> Self {
+    pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.file_dialog = self.file_dialog.add_filter(name, extensions);
         self
     }
@@ -181,7 +181,7 @@ impl AsyncFileDialog {
     ///  * Windows
     ///  * Linux
     ///  * Mac
-    pub fn set_file_name(mut self, file_name: &str) -> Self {
+    pub fn set_file_name(mut self, file_name: impl Into<String>) -> Self {
         self.file_dialog = self.file_dialog.set_file_name(file_name);
         self
     }
@@ -190,7 +190,7 @@ impl AsyncFileDialog {
     ///  * Windows
     ///  * Linux
     ///  * Mac (Only below version 10.11)
-    pub fn set_title(mut self, title: &str) -> Self {
+    pub fn set_title(mut self, title: impl Into<String>) -> Self {
         self.file_dialog = self.file_dialog.set_title(title);
         self
     }
