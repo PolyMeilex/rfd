@@ -1,13 +1,18 @@
 fn main() {
-    let target = std::env::var("TARGET").unwrap();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").expect("target OS not detected");
 
-    if target.contains("darwin") {
-        println!("cargo:rustc-link-lib=framework=AppKit");
+    match target_os.as_str() {
+        "macos" => println!("cargo:rustc-link-lib=framework=AppKit"),
+        "windows" => {}
+        _ => {
+            let gtk = std::env::var_os("CARGO_FEATURE_GTK3").is_some();
+            let xdg = std::env::var_os("CARGO_FEATURE_XDG_PORTAL").is_some();
+
+            if gtk && xdg {
+                panic!("You can't enable both `gtk3` and `xdg-portal` features at once");
+            } else if !gtk && !xdg {
+                panic!("You need to choose at least one backend: `gtk3` or `xdg-portal` features");
+            }
+        }
     }
-
-    #[cfg(all(feature = "gtk3", feature = "xdg-portal"))]
-    compile_error!("You can't enable both GTK3 & XDG Portal features at once");
-
-    #[cfg(not(any(feature = "gtk3", feature = "xdg-portal")))]
-    compile_error!("You need to choose at least one backend: `gtk3` or `xdg-portal` features");
 }

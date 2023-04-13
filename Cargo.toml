@@ -15,7 +15,7 @@ default = ["gtk3"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["ashpd", "urlencoding", "pollster"]
-common-controls-v6 = ["windows/Win32_UI_Controls"]
+common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
 
 [dev-dependencies]
 futures = "0.3.12"
@@ -32,7 +32,7 @@ block = "0.1.6"
 objc-foundation = "0.1.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.44", features = [
+windows-sys = { version = "0.48", features = [
   "Win32_Foundation",
   "Win32_System_Com",
   "Win32_UI_Shell_Common",
@@ -76,4 +76,3 @@ name = "async"
 
 [package.metadata.docs.rs]
 features = ["file-handle-inner"]
-
