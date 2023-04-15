@@ -5,69 +5,20 @@ use crate::file_dialog::Filter;
 use crate::message_dialog::MessageDialog;
 use crate::{FileDialog, FileHandle, MessageButtons};
 
-use ashpd::desktop::file_chooser::{
-    FileChooserProxy, FileFilter, OpenFileOptions, SaveFileOptions,
-};
+use ashpd::desktop::file_chooser::{FileFilter, OpenFileRequest, SaveFileRequest};
 // TODO: convert raw_window_handle::RawWindowHandle to ashpd::WindowIdentifier
 // https://github.com/bilelmoussaoui/ashpd/issues/40
-use ashpd::{zbus, WindowIdentifier};
 
-use log::warn;
 use pollster::block_on;
 
-//
-// Utility functions
-//
-
-fn add_filters_to_open_file_options(
-    filters: Vec<Filter>,
-    mut options: OpenFileOptions,
-) -> OpenFileOptions {
-    for filter in &filters {
+impl From<Filter> for FileFilter {
+    fn from(filter: Filter) -> Self {
         let mut ashpd_filter = FileFilter::new(&filter.name);
         for file_extension in &filter.extensions {
-            ashpd_filter = ashpd_filter.glob(&format!("*.{}", file_extension));
+            ashpd_filter = ashpd_filter.glob(&format!("*.{file_extension}"));
         }
-        options = options.add_filter(ashpd_filter);
+        ashpd_filter
     }
-    options
-}
-
-fn add_filters_to_save_file_options(
-    filters: Vec<Filter>,
-    mut options: SaveFileOptions,
-) -> SaveFileOptions {
-    for filter in &filters {
-        let mut ashpd_filter = FileFilter::new(&filter.name);
-        for file_extension in &filter.extensions {
-            ashpd_filter = ashpd_filter.glob(&format!("*.{}", file_extension));
-        }
-        options = options.add_filter(ashpd_filter);
-    }
-    options
-}
-
-// refer to https://github.com/flatpak/xdg-desktop-portal/issues/213
-fn uri_to_pathbuf(uri: &str) -> Option<PathBuf> {
-    urlencoding::decode(uri)
-        .ok()?
-        .strip_prefix("file://")
-        .map(PathBuf::from)
-}
-
-fn ok_or_warn<T, E: std::fmt::Debug>(result: Result<T, E>) -> Option<T> {
-    match result {
-        Err(e) => {
-            warn!("{:?}", e);
-            None
-        }
-        Ok(t) => Some(t),
-    }
-}
-
-async fn file_chooser_proxy<'a>() -> Option<FileChooserProxy<'a>> {
-    let connection = ok_or_warn(zbus::Connection::session().await)?;
-    ok_or_warn(FileChooserProxy::new(&connection).await)
 }
 
 //
@@ -90,55 +41,48 @@ use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let proxy = file_chooser_proxy().await?;
-            let mut options = OpenFileOptions::default()
+            OpenFileRequest::default()
                 .accept_label("Pick file")
-                .multiple(false);
-            options = add_filters_to_open_file_options(self.filters, options);
-            let selected_files = proxy
-                .open_file(
-                    &WindowIdentifier::default(),
-                    &self.title.unwrap_or_else(|| "Pick a file".to_string()),
-                    options,
-                )
-                .await;
-            if selected_files.is_err() {
-                return None;
-            }
-            uri_to_pathbuf(&selected_files.unwrap().uris()[0]).map(FileHandle::from)
+                .multiple(false)
+                .title(&*self.title.unwrap_or_else(|| "Pick a file".to_string()))
+                .filters(self.filters.into_iter().map(From::from))
+                .send()
+                .await
+                .ok()
+                .and_then(|request| request.response().ok())
+                .and_then(|response| {
+                    response
+                        .uris()
+                        .get(0)
+                        .and_then(|uri| uri.to_file_path().ok())
+                })
+                .map(FileHandle::from)
         })
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async {
-            let proxy = file_chooser_proxy().await?;
-            let mut options = OpenFileOptions::default()
+            OpenFileRequest::default()
                 .accept_label("Pick file(s)")
-                .multiple(true);
-            options = add_filters_to_open_file_options(self.filters, options);
-            let selected_files = proxy
-                .open_file(
-                    &WindowIdentifier::default(),
-                    &self
+                .multiple(true)
+                .title(
+                    &*self
                         .title
                         .unwrap_or_else(|| "Pick one or more files".to_string()),
-                    options,
                 )
-                .await;
-            if selected_files.is_err() {
-                return None;
-            }
-            let selected_files = selected_files
-                .unwrap()
-                .uris()
-                .iter()
-                .filter_map(|string| uri_to_pathbuf(string))
-                .map(FileHandle::from)
-                .collect::<Vec<FileHandle>>();
-            if selected_files.is_empty() {
-                return None;
-            }
-            Some(selected_files)
+                .filters(self.filters.into_iter().map(From::from))
+                .send()
+                .await
+                .ok()
+                .and_then(|request| request.response().ok())
+                .map(|response| {
+                    response
+                        .uris()
+                        .iter()
+                        .filter_map(|uri| uri.to_file_path().ok())
+                        .map(FileHandle::from)
+                        .collect::<Vec<FileHandle>>()
+                })
         })
     }
 }
@@ -163,57 +107,50 @@ use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async {
-            let proxy = file_chooser_proxy().await?;
-            let mut options = OpenFileOptions::default()
+            OpenFileRequest::default()
                 .accept_label("Pick folder")
                 .multiple(false)
-                .directory(true);
-            options = add_filters_to_open_file_options(self.filters, options);
-            let selected_files = proxy
-                .open_file(
-                    &WindowIdentifier::default(),
-                    &self.title.unwrap_or_else(|| "Pick a folder".to_string()),
-                    options,
-                )
-                .await;
-            if selected_files.is_err() {
-                return None;
-            }
-            uri_to_pathbuf(&selected_files.unwrap().uris()[0]).map(FileHandle::from)
+                .directory(true)
+                .title(&*self.title.unwrap_or_else(|| "Pick a folder".to_string()))
+                .filters(self.filters.into_iter().map(From::from))
+                .send()
+                .await
+                .ok()
+                .and_then(|request| request.response().ok())
+                .and_then(|response| {
+                    response
+                        .uris()
+                        .get(0)
+                        .and_then(|uri| uri.to_file_path().ok())
+                })
+                .map(FileHandle::from)
         })
     }
 
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async {
-            let proxy = file_chooser_proxy().await?;
-            let mut options = OpenFileOptions::default()
+            OpenFileRequest::default()
                 .accept_label("Pick folders")
                 .multiple(true)
-                .directory(true);
-            options = add_filters_to_open_file_options(self.filters, options);
-            let selected_files = proxy
-                .open_file(
-                    &WindowIdentifier::default(),
-                    &self
+                .directory(true)
+                .title(
+                    &*self
                         .title
                         .unwrap_or_else(|| "Pick one or more folders".to_string()),
-                    options,
                 )
-                .await;
-            if selected_files.is_err() {
-                return None;
-            }
-            let selected_files = selected_files
-                .unwrap()
-                .uris()
-                .iter()
-                .filter_map(|string| uri_to_pathbuf(string))
-                .map(FileHandle::from)
-                .collect::<Vec<FileHandle>>();
-            if selected_files.is_empty() {
-                return None;
-            }
-            Some(selected_files)
+                .filters(self.filters.into_iter().map(From::from))
+                .send()
+                .await
+                .ok()
+                .and_then(|request| request.response().ok())
+                .map(|response| {
+                    response
+                        .uris()
+                        .iter()
+                        .filter_map(|uri| uri.to_file_path().ok())
+                        .map(FileHandle::from)
+                        .collect::<Vec<FileHandle>>()
+                })
         })
     }
 }
@@ -232,28 +169,25 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        Box::pin(async {
-            let proxy = file_chooser_proxy().await?;
-            let mut options = SaveFileOptions::default().accept_label("Save");
-            options = add_filters_to_save_file_options(self.filters, options);
-            if let Some(file_name) = self.file_name {
-                options = options.current_name(&file_name);
-            }
-            // TODO: impl zvariant::Type for PathBuf?
-            // if let Some(dir) = self.starting_directory {
-            //    options.current_folder(dir);
-            // }
-            let selected_files = proxy
-                .save_file(
-                    &WindowIdentifier::default(),
-                    &self.title.unwrap_or_else(|| "Save file".to_string()),
-                    options,
-                )
-                .await;
-            if selected_files.is_err() {
-                return None;
-            }
-            uri_to_pathbuf(&selected_files.unwrap().uris()[0]).map(FileHandle::from)
+        Box::pin(async move {
+            SaveFileRequest::default()
+                .accept_label("Save")
+                .title(&*self.title.unwrap_or_else(|| "Save file".to_string()))
+                .current_name(self.file_name.as_deref())
+                .filters(self.filters.into_iter().map(From::from))
+                .current_folder::<PathBuf>(self.starting_directory)
+                .expect("File path should not be nul-terminated")
+                .send()
+                .await
+                .ok()
+                .and_then(|request| request.response().ok())
+                .and_then(|response| {
+                    response
+                        .uris()
+                        .get(0)
+                        .and_then(|uri| uri.to_file_path().ok())
+                })
+                .map(FileHandle::from)
         })
     }
 }
