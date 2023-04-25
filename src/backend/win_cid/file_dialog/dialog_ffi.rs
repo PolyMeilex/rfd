@@ -1,208 +1,25 @@
 use super::super::utils::str_to_vec_u16;
+pub(crate) use super::com::Result;
+use super::com::{
+    wrap_err, IFileDialog, IFileDialogV, IFileOpenDialog, IShellItem, COMDLG_FILTERSPEC,
+    FILEOPENDIALOGOPTIONS, HWND,
+};
 use crate::FileDialog;
 
-use std::{ffi::c_void, path::PathBuf};
-
-use windows_sys::core::{GUID, HRESULT, PCWSTR, PWSTR};
-use windows_sys::Win32::{
-    Foundation::HWND,
-    System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER},
-    UI::Shell::{
-        Common::COMDLG_FILTERSPEC, FileOpenDialog, FileSaveDialog, SHCreateItemFromParsingName,
-        FILEOPENDIALOGOPTIONS, FOS_ALLOWMULTISELECT, FOS_PICKFOLDERS, SIGDN, SIGDN_FILESYSPATH,
+use windows_sys::{
+    core::GUID,
+    Win32::{
+        System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER},
+        UI::Shell::{
+            FileOpenDialog, FileSaveDialog, SHCreateItemFromParsingName, FOS_ALLOWMULTISELECT,
+            FOS_PICKFOLDERS,
+        },
     },
 };
 
+use std::{ffi::c_void, path::PathBuf};
+
 use raw_window_handle::RawWindowHandle;
-
-#[inline]
-unsafe fn read_to_string(ptr: *const u16) -> String {
-    let mut cursor = ptr;
-
-    loop {
-        if *cursor == 0 {
-            break;
-        }
-
-        cursor = cursor.add(1);
-    }
-
-    let slice = std::slice::from_raw_parts(ptr, cursor.offset_from(ptr) as usize);
-    String::from_utf16(slice).unwrap()
-}
-
-pub type Result<T> = std::result::Result<T, HRESULT>;
-
-#[inline]
-fn wrap_err(hresult: HRESULT) -> Result<()> {
-    if hresult >= 0 {
-        Ok(())
-    } else {
-        Err(hresult)
-    }
-}
-
-#[repr(C)]
-struct Interface<T> {
-    vtable: *mut T,
-}
-
-impl<T> Interface<T> {
-    #[inline]
-    fn vtbl(&self) -> &T {
-        unsafe { &*self.vtable }
-    }
-}
-
-#[repr(C)]
-struct IUnknownV {
-    __query_interface: usize,
-    __add_ref: usize,
-    release: unsafe extern "system" fn(this: *mut c_void) -> u32,
-}
-
-type IUnknown = Interface<IUnknownV>;
-
-#[inline]
-fn drop_impl(ptr: *mut std::ffi::c_void) {
-    unsafe {
-        ((*ptr.cast::<IUnknown>()).vtbl().release)(ptr);
-    }
-}
-
-#[repr(C)]
-struct IShellItemV {
-    base: IUnknownV,
-    __bind_to_handler: usize,
-    __get_parent: usize,
-    get_display_name:
-        unsafe extern "system" fn(this: *mut c_void, name_look: SIGDN, name: *mut PWSTR) -> HRESULT,
-    __get_attributes: usize,
-    __compare: usize,
-}
-
-#[repr(C)]
-struct IShellItem(*mut Interface<IShellItemV>);
-
-impl IShellItem {
-    fn get_path(&self) -> Result<PathBuf> {
-        let filename = unsafe {
-            let mut dname = std::mem::MaybeUninit::uninit();
-            wrap_err(((*self.0).vtbl().get_display_name)(
-                self.0.cast(),
-                SIGDN_FILESYSPATH,
-                dname.as_mut_ptr(),
-            ))?;
-
-            let dname = dname.assume_init();
-            let fname = read_to_string(dname);
-            CoTaskMemFree(dname.cast());
-            fname
-        };
-
-        Ok(filename.into())
-    }
-}
-
-impl Drop for IShellItem {
-    fn drop(&mut self) {
-        drop_impl(self.0.cast());
-    }
-}
-
-#[repr(C)]
-struct IShellItemArrayV {
-    base: IUnknownV,
-    __bind_to_handler: usize,
-    __get_property_store: usize,
-    __get_property_description_list: usize,
-    __get_attributes: usize,
-    get_count: unsafe extern "system" fn(this: *mut c_void, num_items: *mut u32) -> HRESULT,
-    get_item_at: unsafe extern "system" fn(
-        this: *mut c_void,
-        dwindex: u32,
-        ppsi: *mut IShellItem,
-    ) -> HRESULT,
-    __enum_items: usize,
-}
-
-#[repr(C)]
-struct IShellItemArray(*mut Interface<IShellItemArrayV>);
-
-impl Drop for IShellItemArray {
-    fn drop(&mut self) {
-        drop_impl(self.0.cast());
-    }
-}
-
-#[repr(C)]
-struct IModalWindowV {
-    base: IUnknownV,
-    show: unsafe extern "system" fn(this: *mut c_void, owner: HWND) -> HRESULT,
-}
-
-/// <https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nn-shobjidl_core-ifiledialog>
-#[repr(C)]
-struct IFileDialogV {
-    base: IModalWindowV,
-    set_file_types: unsafe extern "system" fn(
-        this: *mut c_void,
-        count_filetypes: u32,
-        filter_spec: *const COMDLG_FILTERSPEC,
-    ) -> HRESULT,
-    __set_file_type_index: usize,
-    __get_file_type_index: usize,
-    __advise: usize,
-    __unadvise: usize,
-    set_options:
-        unsafe extern "system" fn(this: *mut c_void, options: FILEOPENDIALOGOPTIONS) -> HRESULT,
-    __get_options: usize,
-    __set_default_folder: usize,
-    set_folder: unsafe extern "system" fn(this: *mut c_void, shell_item: *mut c_void) -> HRESULT,
-    __get_folder: usize,
-    __get_current_selection: usize,
-    set_file_name: unsafe extern "system" fn(this: *mut c_void, name: PCWSTR) -> HRESULT,
-    __get_file_name: usize,
-    set_title: unsafe extern "system" fn(this: *mut c_void, title: PCWSTR) -> HRESULT,
-    __set_ok_button_label: usize,
-    __set_file_name_label: usize,
-    get_result:
-        unsafe extern "system" fn(this: *mut c_void, shell_item: *mut IShellItem) -> HRESULT,
-    __add_place: usize,
-    set_default_extension:
-        unsafe extern "system" fn(this: *mut c_void, default_ext: PCWSTR) -> HRESULT,
-    __close: usize,
-    __set_client_guid: usize,
-    __clear_client_data: usize,
-    __set_filter: usize,
-}
-
-#[repr(C)]
-struct IFileDialog(*mut Interface<IFileDialogV>);
-
-impl Drop for IFileDialog {
-    fn drop(&mut self) {
-        drop_impl(self.0.cast());
-    }
-}
-
-/// <https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nn-shobjidl_core-ifileopendialog>
-#[repr(C)]
-struct IFileOpenDialogV {
-    base: IFileDialogV,
-    /// <https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileopendialog-getresults>
-    get_results:
-        unsafe extern "system" fn(this: *mut c_void, results: *mut IShellItemArray) -> HRESULT,
-    __get_selected_items: usize,
-}
-
-struct IFileOpenDialog(*mut Interface<IFileOpenDialogV>);
-
-impl Drop for IFileOpenDialog {
-    fn drop(&mut self) {
-        drop_impl(self.0.cast());
-    }
-}
 
 enum DialogInner {
     Open(IFileOpenDialog),
@@ -251,7 +68,7 @@ impl DialogInner {
     }
 
     #[inline]
-    unsafe fn fd(&self) -> (*mut std::ffi::c_void, &IFileDialogV) {
+    unsafe fn fd(&self) -> (*mut c_void, &IFileDialogV) {
         match self {
             Self::Save(s) => unsafe { (s.0.cast(), (*s.0).vtbl()) },
             Self::Open(o) => unsafe { (o.0.cast(), &(*o.0).vtbl().base) },
@@ -313,24 +130,12 @@ impl DialogInner {
     unsafe fn get_results(&self) -> Result<Vec<PathBuf>> {
         let Self::Open(od) = self else { unreachable!() };
 
-        let mut res = std::mem::MaybeUninit::uninit();
-        wrap_err(((*(*od.0).vtable).get_results)(
-            od.0.cast(),
-            res.as_mut_ptr(),
-        ))?;
-        let items = res.assume_init();
-
-        let sia = items.0.cast();
-        let svt = &*(*items.0).vtable;
-
-        let mut count = 0;
-        wrap_err((svt.get_count)(sia, &mut count))?;
+        let items = od.get_results()?;
+        let count = items.get_count()?;
 
         let mut paths = Vec::with_capacity(count as usize);
         for index in 0..count {
-            let mut item = std::mem::MaybeUninit::uninit();
-            wrap_err((svt.get_item_at)(sia, index, item.as_mut_ptr()))?;
-            let item = item.assume_init();
+            let item = items.get_item_at(index)?;
 
             let path = item.get_path()?;
             paths.push(path);

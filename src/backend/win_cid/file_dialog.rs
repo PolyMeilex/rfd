@@ -1,3 +1,4 @@
+mod com;
 pub mod dialog_ffi;
 mod dialog_future;
 
