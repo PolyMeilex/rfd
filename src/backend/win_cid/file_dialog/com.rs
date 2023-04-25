@@ -1,8 +1,13 @@
+#![allow(non_snake_case)]
+
 use std::ffi::c_void;
 use windows_sys::core::{HRESULT, PCWSTR, PWSTR};
-pub use windows_sys::Win32::{
-    Foundation::HWND,
-    UI::Shell::{Common::COMDLG_FILTERSPEC, FILEOPENDIALOGOPTIONS, SIGDN, SIGDN_FILESYSPATH},
+pub use windows_sys::{
+    core::GUID,
+    Win32::{
+        Foundation::HWND,
+        UI::Shell::{Common::COMDLG_FILTERSPEC, FILEOPENDIALOGOPTIONS, SIGDN, SIGDN_FILESYSPATH},
+    },
 };
 
 pub(crate) type Result<T> = std::result::Result<T, HRESULT>;
@@ -17,7 +22,7 @@ pub(super) fn wrap_err(hresult: HRESULT) -> Result<()> {
 }
 
 #[inline]
-pub(super) unsafe fn read_to_string(ptr: *const u16) -> String {
+unsafe fn read_to_string(ptr: *const u16) -> String {
     let mut cursor = ptr;
 
     while *cursor != 0 {
@@ -59,12 +64,26 @@ fn drop_impl(ptr: *mut c_void) {
 #[repr(C)]
 pub(super) struct IShellItemV {
     base: IUnknownV,
-    __bind_to_handler: usize,
-    __get_parent: usize,
-    pub(super) get_display_name:
-        unsafe extern "system" fn(this: *mut c_void, name_look: SIGDN, name: *mut PWSTR) -> HRESULT,
-    __get_attributes: usize,
-    __compare: usize,
+    BindToHandler: unsafe extern "system" fn(
+        this: *mut c_void,
+        pbc: *mut c_void,
+        bhid: *const GUID,
+        riid: *const GUID,
+        ppv: *mut *mut c_void,
+    ) -> HRESULT,
+    GetParent: unsafe extern "system" fn(this: *mut c_void, ppsi: *mut *mut c_void) -> HRESULT,
+    GetDisplayName: unsafe extern "system" fn(
+        this: *mut c_void,
+        sigdnname: SIGDN,
+        ppszname: *mut PWSTR,
+    ) -> HRESULT,
+    GetAttributes: usize,
+    Compare: unsafe extern "system" fn(
+        this: *mut c_void,
+        psi: *mut c_void,
+        hint: u32,
+        piorder: *mut i32,
+    ) -> HRESULT,
 }
 
 #[repr(transparent)]
@@ -74,7 +93,7 @@ impl IShellItem {
     pub(super) fn get_path(&self) -> Result<std::path::PathBuf> {
         let filename = unsafe {
             let mut dname = std::mem::MaybeUninit::uninit();
-            wrap_err(((*self.0).vtbl().get_display_name)(
+            wrap_err(((*self.0).vtbl().GetDisplayName)(
                 self.0.cast(),
                 SIGDN_FILESYSPATH,
                 dname.as_mut_ptr(),
@@ -99,18 +118,24 @@ impl Drop for IShellItem {
 #[repr(C)]
 struct IShellItemArrayV {
     base: IUnknownV,
-    __bind_to_handler: usize,
-    __get_property_store: usize,
-    __get_property_description_list: usize,
-    __get_attributes: usize,
-    pub(super) get_count:
-        unsafe extern "system" fn(this: *mut c_void, num_items: *mut u32) -> HRESULT,
-    pub(super) get_item_at: unsafe extern "system" fn(
+    BindToHandler: unsafe extern "system" fn(
+        this: *mut c_void,
+        pbc: *mut c_void,
+        bhid: *const GUID,
+        riid: *const GUID,
+        ppvout: *mut *mut c_void,
+    ) -> HRESULT,
+    GetPropertyStore: usize,
+    GetPropertyDescriptionList: usize,
+    GetAttributes: usize,
+    GetCount: unsafe extern "system" fn(this: *mut c_void, pdwnumitems: *mut u32) -> HRESULT,
+    GetItemAt: unsafe extern "system" fn(
         this: *mut c_void,
         dwindex: u32,
         ppsi: *mut IShellItem,
     ) -> HRESULT,
-    __enum_items: usize,
+    EnumItems:
+        unsafe extern "system" fn(this: *mut c_void, ppenumshellitems: *mut *mut c_void) -> HRESULT,
 }
 
 #[repr(transparent)]
@@ -121,7 +146,7 @@ impl IShellItemArray {
     pub(super) fn get_count(&self) -> Result<u32> {
         let mut count = 0;
         unsafe {
-            wrap_err(((*self.0).vtbl().get_count)(self.0.cast(), &mut count))?;
+            wrap_err(((*self.0).vtbl().GetCount)(self.0.cast(), &mut count))?;
         }
         Ok(count)
     }
@@ -130,7 +155,7 @@ impl IShellItemArray {
     pub(super) fn get_item_at(&self, index: u32) -> Result<IShellItem> {
         let mut item = std::mem::MaybeUninit::uninit();
         unsafe {
-            wrap_err(((*self.0).vtbl().get_item_at)(
+            wrap_err(((*self.0).vtbl().GetItemAt)(
                 self.0.cast(),
                 index,
                 item.as_mut_ptr(),
@@ -149,44 +174,54 @@ impl Drop for IShellItemArray {
 #[repr(C)]
 pub(super) struct IModalWindowV {
     base: IUnknownV,
-    pub(super) show: unsafe extern "system" fn(this: *mut c_void, owner: HWND) -> HRESULT,
+    pub(super) Show: unsafe extern "system" fn(this: *mut c_void, owner: HWND) -> HRESULT,
 }
 
 /// <https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nn-shobjidl_core-ifiledialog>
 #[repr(C)]
 pub(super) struct IFileDialogV {
     pub(super) base: IModalWindowV,
-    pub(super) set_file_types: unsafe extern "system" fn(
+    pub(super) SetFileTypes: unsafe extern "system" fn(
         this: *mut c_void,
-        count_filetypes: u32,
-        filter_spec: *const COMDLG_FILTERSPEC,
+        cfiletypes: u32,
+        rgfilterspec: *const COMDLG_FILTERSPEC,
     ) -> HRESULT,
-    __set_file_type_index: usize,
-    __get_file_type_index: usize,
-    __advise: usize,
-    __unadvise: usize,
-    pub(super) set_options:
-        unsafe extern "system" fn(this: *mut c_void, options: FILEOPENDIALOGOPTIONS) -> HRESULT,
-    __get_options: usize,
-    __set_default_folder: usize,
-    pub(super) set_folder:
-        unsafe extern "system" fn(this: *mut c_void, shell_item: *mut c_void) -> HRESULT,
-    __get_folder: usize,
-    __get_current_selection: usize,
-    pub(super) set_file_name: unsafe extern "system" fn(this: *mut c_void, name: PCWSTR) -> HRESULT,
-    __get_file_name: usize,
-    pub(super) set_title: unsafe extern "system" fn(this: *mut c_void, title: PCWSTR) -> HRESULT,
-    __set_ok_button_label: usize,
-    __set_file_name_label: usize,
-    pub(super) get_result:
-        unsafe extern "system" fn(this: *mut c_void, shell_item: *mut IShellItem) -> HRESULT,
-    __add_place: usize,
-    pub(super) set_default_extension:
-        unsafe extern "system" fn(this: *mut c_void, default_ext: PCWSTR) -> HRESULT,
-    __close: usize,
-    __set_client_guid: usize,
-    __clear_client_data: usize,
-    __set_filter: usize,
+    SetFileTypeIndex: unsafe extern "system" fn(this: *mut c_void, ifiletype: u32) -> HRESULT,
+    GetFileTypeIndex: unsafe extern "system" fn(this: *mut c_void, pifiletype: *mut u32) -> HRESULT,
+    Advise: unsafe extern "system" fn(
+        this: *mut c_void,
+        pfde: *mut c_void,
+        pdwcookie: *mut u32,
+    ) -> HRESULT,
+    Unadvise: unsafe extern "system" fn(this: *mut c_void, dwcookie: u32) -> HRESULT,
+    pub(super) SetOptions:
+        unsafe extern "system" fn(this: *mut c_void, fos: FILEOPENDIALOGOPTIONS) -> HRESULT,
+    GetOptions:
+        unsafe extern "system" fn(this: *mut c_void, pfos: *mut FILEOPENDIALOGOPTIONS) -> HRESULT,
+    SetDefaultFolder: unsafe extern "system" fn(this: *mut c_void, psi: *mut c_void) -> HRESULT,
+    pub(super) SetFolder: unsafe extern "system" fn(this: *mut c_void, psi: *mut c_void) -> HRESULT,
+    GetFolder: unsafe extern "system" fn(this: *mut c_void, ppsi: *mut *mut c_void) -> HRESULT,
+    GetCurrentSelection:
+        unsafe extern "system" fn(this: *mut c_void, ppsi: *mut *mut c_void) -> HRESULT,
+    pub(super) SetFileName:
+        unsafe extern "system" fn(this: *mut c_void, pszname: PCWSTR) -> HRESULT,
+    GetFileName: unsafe extern "system" fn(this: *mut c_void, pszname: *mut PWSTR) -> HRESULT,
+    pub(super) SetTitle: unsafe extern "system" fn(this: *mut c_void, psztitle: PCWSTR) -> HRESULT,
+    SetOkButtonLabel: unsafe extern "system" fn(this: *mut c_void, psztext: PCWSTR) -> HRESULT,
+    SetFileNameLabel: unsafe extern "system" fn(this: *mut c_void, pszlabel: PCWSTR) -> HRESULT,
+    pub(super) GetResult:
+        unsafe extern "system" fn(this: *mut c_void, ppsi: *mut IShellItem) -> HRESULT,
+    AddPlace: unsafe extern "system" fn(
+        this: *mut c_void,
+        psi: *mut c_void,
+        fdap: windows_sys::Win32::UI::Shell::FDAP,
+    ) -> HRESULT,
+    pub(super) SetDefaultExtension:
+        unsafe extern "system" fn(this: *mut c_void, pszdefaultextension: PCWSTR) -> HRESULT,
+    Close: unsafe extern "system" fn(this: *mut c_void, hr: HRESULT) -> HRESULT,
+    SetClientGuid: unsafe extern "system" fn(this: *mut c_void, guid: *const GUID) -> HRESULT,
+    ClearClientData: unsafe extern "system" fn(this: *mut c_void) -> HRESULT,
+    SetFilter: unsafe extern "system" fn(this: *mut c_void, pfilter: *mut c_void) -> HRESULT,
 }
 
 #[repr(transparent)]
@@ -203,9 +238,10 @@ impl Drop for IFileDialog {
 pub(super) struct IFileOpenDialogV {
     pub(super) base: IFileDialogV,
     /// <https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ifileopendialog-getresults>
-    pub(super) get_results:
-        unsafe extern "system" fn(this: *mut c_void, results: *mut IShellItemArray) -> HRESULT,
-    __get_selected_items: usize,
+    GetResults:
+        unsafe extern "system" fn(this: *mut c_void, ppenum: *mut IShellItemArray) -> HRESULT,
+    GetSelectedItems:
+        unsafe extern "system" fn(this: *mut c_void, ppsai: *mut *mut c_void) -> HRESULT,
 }
 
 #[repr(transparent)]
@@ -216,7 +252,7 @@ impl IFileOpenDialog {
     pub(super) fn get_results(&self) -> Result<IShellItemArray> {
         let mut res = std::mem::MaybeUninit::uninit();
         unsafe {
-            wrap_err((((*self.0).vtbl()).get_results)(
+            wrap_err((((*self.0).vtbl()).GetResults)(
                 self.0.cast(),
                 res.as_mut_ptr(),
             ))?;

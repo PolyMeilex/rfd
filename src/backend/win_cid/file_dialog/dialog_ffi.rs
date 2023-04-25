@@ -78,50 +78,50 @@ impl DialogInner {
     #[inline]
     unsafe fn set_options(&self, opts: FILEOPENDIALOGOPTIONS) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.set_options)(d, opts))
+        wrap_err((v.SetOptions)(d, opts))
     }
 
     #[inline]
     unsafe fn set_title(&self, title: &[u16]) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.set_title)(d, title.as_ptr()))
+        wrap_err((v.SetTitle)(d, title.as_ptr()))
     }
 
     #[inline]
     unsafe fn set_default_extension(&self, extension: &[u16]) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.set_default_extension)(d, extension.as_ptr()))
+        wrap_err((v.SetDefaultExtension)(d, extension.as_ptr()))
     }
 
     #[inline]
     unsafe fn set_file_types(&self, specs: &[COMDLG_FILTERSPEC]) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.set_file_types)(d, specs.len() as _, specs.as_ptr()))
+        wrap_err((v.SetFileTypes)(d, specs.len() as _, specs.as_ptr()))
     }
 
     #[inline]
     unsafe fn set_filename(&self, fname: &[u16]) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.set_file_name)(d, fname.as_ptr()))
+        wrap_err((v.SetFileName)(d, fname.as_ptr()))
     }
 
     #[inline]
     unsafe fn set_folder(&self, folder: &IShellItem) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.set_folder)(d, folder.0.cast()))
+        wrap_err((v.SetFolder)(d, folder.0.cast()))
     }
 
     #[inline]
     unsafe fn show(&self, parent: Option<HWND>) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.base.show)(d, parent.unwrap_or_default()))
+        wrap_err((v.base.Show)(d, parent.unwrap_or_default()))
     }
 
     #[inline]
     unsafe fn get_result(&self) -> Result<PathBuf> {
         let (d, v) = self.fd();
         let mut res = std::mem::MaybeUninit::uninit();
-        wrap_err((v.get_result)(d, res.as_mut_ptr()))?;
+        wrap_err((v.GetResult)(d, res.as_mut_ptr()))?;
         let res = res.assume_init();
         res.get_path()
     }
