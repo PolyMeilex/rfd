@@ -1,7 +1,8 @@
+mod com;
 pub mod dialog_ffi;
 mod dialog_future;
 
-use dialog_ffi::IDialog;
+use dialog_ffi::{IDialog, Result};
 use dialog_future::{multiple_return_future, single_return_future};
 
 use crate::backend::DialogFutureType;
@@ -9,8 +10,6 @@ use crate::FileDialog;
 use crate::FileHandle;
 
 use std::path::PathBuf;
-
-use windows::core::Result;
 
 use super::utils::init_com;
 
