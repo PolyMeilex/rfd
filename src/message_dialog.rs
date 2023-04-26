@@ -38,7 +38,7 @@ impl MessageDialog {
     }
 
     /// Set title of a dialog
-    pub fn set_title(mut self, text: &str) -> Self {
+    pub fn set_title(mut self, text: impl Into<String>) -> Self {
         self.title = text.into();
         self
     }
@@ -46,7 +46,7 @@ impl MessageDialog {
     /// Set description of a dialog
     ///
     /// Description is a content of a dialog
-    pub fn set_description(mut self, text: &str) -> Self {
+    pub fn set_description(mut self, text: impl Into<String>) -> Self {
         self.description = text.into();
         self
     }
@@ -101,7 +101,7 @@ impl AsyncMessageDialog {
     }
 
     /// Set title of a dialog
-    pub fn set_title(mut self, text: &str) -> Self {
+    pub fn set_title(mut self, text: impl Into<String>) -> Self {
         self.0 = self.0.set_title(text);
         self
     }
@@ -109,7 +109,7 @@ impl AsyncMessageDialog {
     /// Set description of a dialog
     ///
     /// Description is a content of a dialog
-    pub fn set_description(mut self, text: &str) -> Self {
+    pub fn set_description(mut self, text: impl Into<String>) -> Self {
         self.0 = self.0.set_description(text);
         self
     }
