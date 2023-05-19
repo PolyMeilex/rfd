@@ -1,0 +1,42 @@
+# https://github.com/EmbarkStudios/cargo-deny
+# To run locally: `cargo install cargo-deny && cargo deny check`
+
+name: cargo-deny
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu GTK
+            target: x86_64-unknown-linux-gnu
+            flags: "--no-default-features --features gtk3"
+          - name: Ubuntu XDG
+            target: x86_64-unknown-linux-gnu
+            flags: "--no-default-features --features xdg-portal"
+          - name: Windows
+            target: x86_64-pc-windows-msvc
+            flags: ""
+          - name: Windows CC6
+            target: x86_64-pc-windows-msvc
+            flags: "--features common-controls-v6"
+          - name: macOS
+            target: x86_64-apple-darwin
+            flags: ""
+          - name: WASM32
+            target: wasm32-unknown-unknown
+            flags: ""
+
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          log-level: error
+          command: check
+          arguments: ${{ matrix.flags }} --target  ${{ matrix.target }}
