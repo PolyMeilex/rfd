@@ -1,4 +1,5 @@
-![img](https://i.imgur.com/YPAgTdf.png)
+![img](https://github.com/PolyMeilex/rfd/assets/20758186/9bef59fa-60f0-448c-b9db-44ab436ee611)
+
 
 [![version](https://img.shields.io/crates/v/rfd.svg)](https://crates.io/crates/rfd)
 [![Documentation](https://docs.rs/rfd/badge.svg)](https://docs.rs/rfd)
