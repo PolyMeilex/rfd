@@ -30,6 +30,7 @@ impl GtkMessageDialog {
             MessageButtons::YesNoCancel => gtk_sys::GTK_BUTTONS_NONE,
             MessageButtons::OkCustom(_) => gtk_sys::GTK_BUTTONS_NONE,
             MessageButtons::OkCancelCustom(_, _) => gtk_sys::GTK_BUTTONS_NONE,
+            MessageButtons::YesNoCancelCustom(_, _, _) => gtk_sys::GTK_BUTTONS_NONE,
         };
 
         let custom_buttons = match &opt.buttons {
@@ -58,6 +59,15 @@ impl GtkMessageDialog {
                     CString::new(cancel_text.as_bytes()).unwrap(),
                     gtk_sys::GTK_RESPONSE_CANCEL,
                 )),
+            ],
+            MessageButtons::YesNoCancelCustom(yes_text, no_text, cancel_text) => vec![
+                Some((CString::new(yes_text).unwrap(), gtk_sys::GTK_RESPONSE_YES)),
+                Some((CString::new(no_text).unwrap(), gtk_sys::GTK_RESPONSE_NO)),
+                Some((
+                    CString::new(cancel_text).unwrap(),
+                    gtk_sys::GTK_RESPONSE_CANCEL,
+                )),
+                None,
             ],
             _ => vec![],
         };
@@ -122,6 +132,15 @@ impl GtkMessageDialog {
                 MessageDialogResult::Custom(custom.to_owned())
             }
             (OkCancelCustom(_, custom), gtk_sys::GTK_RESPONSE_CANCEL) => {
+                MessageDialogResult::Custom(custom.to_owned())
+            }
+            (YesNoCancelCustom(custom, _, _), gtk_sys::GTK_RESPONSE_YES) => {
+                MessageDialogResult::Custom(custom.to_owned())
+            },
+            (YesNoCancelCustom(_, custom, _), gtk_sys::GTK_RESPONSE_NO) => {
+                MessageDialogResult::Custom(custom.to_owned())
+            },
+            (YesNoCancelCustom(_, _, custom), gtk_sys::GTK_RESPONSE_CANCEL) => {
                 MessageDialogResult::Custom(custom.to_owned())
             }
             _ => MessageDialogResult::Cancel,

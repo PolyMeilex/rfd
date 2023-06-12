@@ -66,6 +66,9 @@ impl NSAlert {
             MessageButtons::OkCancelCustom(ok_text, cancel_text) => {
                 vec![ok_text.to_owned(), cancel_text.to_owned()]
             }
+            MessageButtons::YesNoCancelCustom(yes_text, no_text, cancel_text) => {
+                vec![yes_text.to_owned(), no_text.to_owned(), cancel_text.to_owned()]
+            }
         };
 
         for button in buttons {
@@ -129,6 +132,15 @@ fn dialog_result(buttons: &MessageButtons, ret: i64) -> MessageDialogResult {
             MessageDialogResult::Custom(custom.to_owned())
         }
         MessageButtons::OkCancelCustom(_, custom) if ret == NSAlertReturn::SecondButton as i64 => {
+            MessageDialogResult::Custom(custom.to_owned())
+        }
+        MessageButtons::YesNoCancelCustom(custom, _, _) if ret == NSAlertReturn::FirstButton as i64 => {
+            MessageDialogResult::Custom(custom.to_owned())
+        }
+        MessageButtons::YesNoCancelCustom(_, custom, _) if ret == NSAlertReturn::SecondButton as i64 => {
+            MessageDialogResult::Custom(custom.to_owned())
+        }
+        MessageButtons::YesNoCancelCustom(_, _, custom) if ret == NSAlertReturn::ThirdButton as i64 => {
             MessageDialogResult::Custom(custom.to_owned())
         }
         _ => MessageDialogResult::Cancel,

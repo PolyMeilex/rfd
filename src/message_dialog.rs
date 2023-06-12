@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::backend::AsyncMessageDialogImpl;
 use crate::backend::MessageDialogImpl;
 
@@ -54,8 +55,9 @@ impl MessageDialog {
     /// Set the set of button that will be displayed on the dialog
     ///
     /// - `Ok` dialog is a single `Ok` button
-    /// - `OkCancel` dialog, will display 2 buttons ok and cancel.
-    /// - `YesNo` dialog, will display 2 buttons yes and no.
+    /// - `OkCancel` dialog, will display 2 buttons: ok and cancel.
+    /// - `YesNo` dialog, will display 2 buttons: yes and no.
+    /// - `YesNoCancel` dialog, will display 3 buttons: yes, no, and cancel.
     pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
         self.buttons = btn;
         self
@@ -68,11 +70,7 @@ impl MessageDialog {
         self
     }
 
-    /// Shows a message dialog:
-    ///
-    /// - In `Ok` dialog, it will return `true` when `OK` was pressed
-    /// - In `OkCancel` dialog, it will return `true` when `OK` was pressed
-    /// - In `YesNo` dialog, it will return `true` when `Yes` was pressed
+    /// Shows a message dialog and returns the button that was pressed.
     pub fn show(self) -> MessageDialogResult {
         MessageDialogImpl::show(self)
     }
@@ -119,6 +117,7 @@ impl AsyncMessageDialog {
     /// - `Ok` dialog is a single `Ok` button
     /// - `OkCancel` dialog, will display 2 buttons ok and cancel.
     /// - `YesNo` dialog, will display 2 buttons yes and no.
+    /// - `YesNoCancel` dialog, will display 3 buttons: yes, no, and cancel.
     pub fn set_buttons(mut self, btn: MessageButtons) -> Self {
         self.0 = self.0.set_buttons(btn);
         self
@@ -131,10 +130,7 @@ impl AsyncMessageDialog {
         self
     }
 
-    /// Shows a message dialog:
-    /// - In `Ok` dialog, it will return `true` when `OK` was pressed
-    /// - In `OkCancel` dialog, it will return `true` when `OK` was pressed
-    /// - In `YesNo` dialog, it will return `true` when `Yes` was pressed
+    /// Shows a message dialog and returns the button that was pressed.
     pub fn show(self) -> impl Future<Output = MessageDialogResult> {
         AsyncMessageDialogImpl::show_async(self.0)
     }
@@ -165,6 +161,9 @@ pub enum MessageButtons {
     /// Two customizable buttons.
     /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
     OkCancelCustom(String, String),
+    /// Three customizable buttons.
+    /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
+    YesNoCancelCustom(String, String, String),
 }
 
 impl Default for MessageButtons {
@@ -181,4 +180,16 @@ pub enum MessageDialogResult {
     #[default]
     Cancel,
     Custom(String),
+}
+
+impl Display for MessageDialogResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Yes => "Yes".to_string(),
+            Self::No => "No".to_string(),
+            Self::Ok => "Ok".to_string(),
+            Self::Cancel => "Cancel".to_string(),
+            Self::Custom(custom) => format!("Custom({custom})"),
+        })
+    }
 }

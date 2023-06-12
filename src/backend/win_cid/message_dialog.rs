@@ -54,7 +54,7 @@ impl WinMessageDialog {
             MessageButtons::Ok | MessageButtons::OkCustom(_) => MB_OK,
             MessageButtons::OkCancel | MessageButtons::OkCancelCustom(_, _) => MB_OKCANCEL,
             MessageButtons::YesNo => MB_YESNO,
-            MessageButtons::YesNoCancel => MB_YESNOCANCEL,
+            MessageButtons::YesNoCancel | MessageButtons::YesNoCancelCustom(_, _, _) => MB_YESNOCANCEL,
         };
 
         let parent = match opt.parent {
@@ -89,8 +89,10 @@ impl WinMessageDialog {
         let mut pn_button = 0;
         let mut pn_radio_button = 0;
 
-        let id_custom_ok = 1000;
-        let id_custom_cancel = 1001;
+        const ID_CUSTOM_OK: i32 = 1000;
+        const ID_CUSTOM_CANCEL: i32 = 1001;
+        const ID_CUSTOM_YES: i32 = 1004;
+        const ID_CUSTOM_NO: i32 = 1008;
 
         let mut task_dialog_config = TASKDIALOGCONFIG {
             cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
@@ -116,7 +118,7 @@ impl WinMessageDialog {
 
         task_dialog_config.Anonymous1.pszMainIcon = PCWSTR(main_icon_ptr as *const u16);
 
-        let (system_buttons, custom_buttons) = match self.opt.buttons {
+        let (system_buttons, custom_buttons) = match &self.opt.buttons {
             MessageButtons::Ok => (TDCBF_OK_BUTTON, vec![]),
             MessageButtons::OkCancel => (
                 TASKDIALOG_COMMON_BUTTON_FLAGS(TDCBF_OK_BUTTON.0 | TDCBF_CANCEL_BUTTON.0),
@@ -134,13 +136,21 @@ impl WinMessageDialog {
             ),
             MessageButtons::OkCustom(ok_text) => (
                 Default::default(),
-                vec![(id_custom_ok, str_to_vec_u16(&ok_text))],
+                vec![(ID_CUSTOM_OK, str_to_vec_u16(ok_text))],
             ),
             MessageButtons::OkCancelCustom(ok_text, cancel_text) => (
                 Default::default(),
                 vec![
-                    (id_custom_ok, str_to_vec_u16(&ok_text)),
-                    (id_custom_cancel, str_to_vec_u16(&cancel_text)),
+                    (ID_CUSTOM_OK, str_to_vec_u16(ok_text)),
+                    (ID_CUSTOM_CANCEL, str_to_vec_u16(cancel_text)),
+                ],
+            ),
+            MessageButtons::YesNoCancelCustom(yes_text, no_text, cancel_text) => (
+                Default::default(),
+                vec![
+                    (ID_CUSTOM_YES, str_to_vec_u16(yes_text)),
+                    (ID_CUSTOM_NO, str_to_vec_u16(no_text)),
+                    (ID_CUSTOM_CANCEL, str_to_vec_u16(cancel_text)),
                 ],
             ),
         };
@@ -159,11 +169,41 @@ impl WinMessageDialog {
         let ret = unsafe {
             TaskDialogIndirect(
                 &task_dialog_config,
-                &mut pn_button,
-                &mut pn_radio_button,
-                &mut pf_verification_flag_checked,
+                Some(&mut pn_button as *mut i32),
+                Some(&mut pn_radio_button as *mut i32),
+                Some(&mut pf_verification_flag_checked as *mut BOOL),
             )
         };
+        
+        if ret.is_err() {
+            return MessageDialogResult::Cancel;
+        }
+
+        use windows::Win32::UI::WindowsAndMessaging::MESSAGEBOX_RESULT;
+        match MESSAGEBOX_RESULT(pn_button) {
+            IDOK => MessageDialogResult::Ok,
+            IDYES => MessageDialogResult::Yes,
+            IDCANCEL => MessageDialogResult::Cancel,
+            IDNO => MessageDialogResult::No,
+            MESSAGEBOX_RESULT(custom) => match self.opt.buttons {
+                MessageButtons::OkCustom(ok_text) => match custom {
+                    ID_CUSTOM_OK => MessageDialogResult::Custom(ok_text),
+                    _ => MessageDialogResult::Cancel,
+                },
+                MessageButtons::OkCancelCustom(ok_text, cancel_text) => match custom {
+                    ID_CUSTOM_OK => MessageDialogResult::Custom(ok_text),
+                    ID_CUSTOM_CANCEL => MessageDialogResult::Custom(cancel_text),
+                    _ => MessageDialogResult::Cancel,
+                },
+                MessageButtons::YesNoCancelCustom(yes_text, no_text, cancel_text) => match custom {
+                    ID_CUSTOM_YES => MessageDialogResult::Custom(yes_text),
+                    ID_CUSTOM_NO => MessageDialogResult::Custom(no_text),
+                    ID_CUSTOM_CANCEL => MessageDialogResult::Custom(cancel_text),
+                    _ => MessageDialogResult::Cancel,
+                }
+                _ => MessageDialogResult::Cancel,
+            }
+        }
     }
 
     #[cfg(not(feature = "common-controls-v6"))]
