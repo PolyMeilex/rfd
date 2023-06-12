@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::backend::DialogFutureType;
 use crate::file_dialog::Filter;
 use crate::message_dialog::MessageDialog;
-use crate::{FileDialog, FileHandle, MessageButtons};
+use crate::{FileDialog, FileHandle, MessageButtons, MessageDialogResult};
 
 use ashpd::desktop::file_chooser::{FileFilter, OpenFileRequest, SaveFileRequest};
 // TODO: convert raw_window_handle::RawWindowHandle to ashpd::WindowIdentifier
@@ -194,7 +194,7 @@ impl AsyncFileSaveDialogImpl for FileDialog {
 
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) -> bool {
+    fn show(self) -> MessageDialogResult {
         block_on(self.show_async())
     }
 }
