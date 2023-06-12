@@ -5,7 +5,7 @@ use web_sys::Element;
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
 use crate::file_dialog::FileDialog;
-use crate::FileHandle;
+use crate::{FileHandle, MessageDialogResult};
 
 pub struct WasmDialog {
     overlay: Element,
@@ -169,20 +169,27 @@ extern "C" {
     fn confirm(s: &str) -> bool;
 }
 
-use crate::backend::MessageDialogImpl;
-use crate::message_dialog::{MessageButtons, MessageDialog};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogImpl};
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) -> bool {
+    fn show(self) -> MessageDialogResult {
         let text = format!("{}\n{}", self.title, self.description);
         match self.buttons {
             MessageButtons::Ok | MessageButtons::OkCustom(_) => {
                 alert(&text);
-                true
+                MessageDialogResult::Ok
             }
             MessageButtons::OkCancel
+            | MessageButtons::OkCancelCustom(..)
             | MessageButtons::YesNo
-            | MessageButtons::OkCancelCustom(_, _) => confirm(&text),
+            | MessageButtons::YesNoCancel
+            | MessageButtons::YesNoCancelCustom(..) => {
+                if confirm(&text) {
+                    MessageDialogResult::Ok
+                } else {
+                    MessageDialogResult::Cancel
+                }
+            }
         }
     }
 }
