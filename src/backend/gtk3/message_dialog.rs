@@ -136,10 +136,10 @@ impl GtkMessageDialog {
             }
             (YesNoCancelCustom(custom, _, _), gtk_sys::GTK_RESPONSE_YES) => {
                 MessageDialogResult::Custom(custom.to_owned())
-            },
+            }
             (YesNoCancelCustom(_, custom, _), gtk_sys::GTK_RESPONSE_NO) => {
                 MessageDialogResult::Custom(custom.to_owned())
-            },
+            }
             (YesNoCancelCustom(_, _, custom), gtk_sys::GTK_RESPONSE_CANCEL) => {
                 MessageDialogResult::Custom(custom.to_owned())
             }

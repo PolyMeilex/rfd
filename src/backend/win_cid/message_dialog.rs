@@ -46,7 +46,9 @@ impl WinMessageDialog {
             MessageButtons::Ok | MessageButtons::OkCustom(_) => MB_OK,
             MessageButtons::OkCancel | MessageButtons::OkCancelCustom(_, _) => MB_OKCANCEL,
             MessageButtons::YesNo => MB_YESNO,
-            MessageButtons::YesNoCancel | MessageButtons::YesNoCancelCustom(_, _, _) => MB_YESNOCANCEL,
+            MessageButtons::YesNoCancel | MessageButtons::YesNoCancelCustom(_, _, _) => {
+                MB_YESNOCANCEL
+            }
         };
 
         let parent = match opt.parent {
@@ -73,8 +75,8 @@ impl WinMessageDialog {
             UI::Controls::{
                 TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOGCONFIG_0, TASKDIALOGCONFIG_1,
                 TASKDIALOG_BUTTON, TDCBF_CANCEL_BUTTON, TDCBF_NO_BUTTON, TDCBF_OK_BUTTON,
-                TDCBF_YES_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION,
-                TD_ERROR_ICON, TD_INFORMATION_ICON, TD_WARNING_ICON,
+                TDCBF_YES_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION, TD_ERROR_ICON,
+                TD_INFORMATION_ICON, TD_WARNING_ICON,
             },
         };
 
@@ -97,7 +99,10 @@ impl WinMessageDialog {
             MessageButtons::Ok => (TDCBF_OK_BUTTON, vec![]),
             MessageButtons::OkCancel => (TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON, vec![]),
             MessageButtons::YesNo => (TDCBF_YES_BUTTON | TDCBF_NO_BUTTON, vec![]),
-            MessageButtons::YesNoCancel => (TDCBF_YES_BUTTON | TDCBF_NO_BUTTON | TDCBF_CANCEL_BUTTON, vec![]),
+            MessageButtons::YesNoCancel => (
+                TDCBF_YES_BUTTON | TDCBF_NO_BUTTON | TDCBF_CANCEL_BUTTON,
+                vec![],
+            ),
             MessageButtons::OkCustom(ok_text) => (
                 Default::default(),
                 vec![(ID_CUSTOM_OK, str_to_vec_u16(ok_text))],
@@ -166,7 +171,7 @@ impl WinMessageDialog {
                 &mut pf_verification_flag_checked as *mut BOOL,
             )
         };
-        
+
         if ret != 0 {
             return MessageDialogResult::Cancel;
         }
@@ -191,9 +196,9 @@ impl WinMessageDialog {
                     ID_CUSTOM_NO => MessageDialogResult::Custom(no_text),
                     ID_CUSTOM_CANCEL => MessageDialogResult::Custom(cancel_text),
                     _ => MessageDialogResult::Cancel,
-                }
+                },
                 _ => MessageDialogResult::Cancel,
-            }
+            },
         }
     }
 
