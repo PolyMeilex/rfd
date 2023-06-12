@@ -169,7 +169,8 @@ extern "C" {
     fn confirm(s: &str) -> bool;
 }
 
-use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogImpl};
+use crate::backend::MessageDialogImpl;
+use crate::message_dialog::{MessageButtons, MessageDialog};
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
@@ -197,7 +198,7 @@ impl MessageDialogImpl for MessageDialog {
 use crate::backend::AsyncMessageDialogImpl;
 
 impl AsyncMessageDialogImpl for MessageDialog {
-    fn show_async(self) -> DialogFutureType<bool> {
+    fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         let val = MessageDialogImpl::show(self);
         Box::pin(std::future::ready(val))
     }
