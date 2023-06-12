@@ -61,10 +61,10 @@ impl GtkMessageDialog {
                 )),
             ],
             MessageButtons::YesNoCancelCustom(yes_text, no_text, cancel_text) => vec![
-                Some((CString::new(yes_text).unwrap(), gtk_sys::GTK_RESPONSE_YES)),
-                Some((CString::new(no_text).unwrap(), gtk_sys::GTK_RESPONSE_NO)),
+                Some((CString::new(yes_text.as_bytes()).unwrap(), gtk_sys::GTK_RESPONSE_YES)),
+                Some((CString::new(no_text.as_bytes()).unwrap(), gtk_sys::GTK_RESPONSE_NO)),
                 Some((
-                    CString::new(cancel_text).unwrap(),
+                    CString::new(cancel_text.as_bytes()).unwrap(),
                     gtk_sys::GTK_RESPONSE_CANCEL,
                 )),
                 None,

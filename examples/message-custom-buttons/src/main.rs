@@ -1,21 +1,4 @@
 fn main() {
-    #[cfg(not(feature = "gtk3"))]
-    let res = "";
-
-    #[cfg(any(
-        target_os = "windows",
-        target_os = "macos",
-        all(
-            any(
-                target_os = "linux",
-                target_os = "freebsd",
-                target_os = "dragonfly",
-                target_os = "netbsd",
-                target_os = "openbsd"
-            ),
-            feature = "gtk3"
-        )
-    ))]
     let res = rfd::MessageDialog::new()
         .set_title("Msg!")
         .set_description("Description!")
@@ -25,21 +8,8 @@ fn main() {
             "No!".to_string(),
         ))
         .show();
+    println!("{res}");
 
-    #[cfg(any(
-        target_os = "windows",
-        target_os = "macos",
-        all(
-            any(
-                target_os = "linux",
-                target_os = "freebsd",
-                target_os = "dragonfly",
-                target_os = "netbsd",
-                target_os = "openbsd"
-            ),
-            feature = "gtk3"
-        )
-    ))]
     let res = rfd::MessageDialog::new()
         .set_title("Do you want to save the changes you made?")
         .set_description("Your changes will be lost if you don't save them.")
@@ -50,6 +20,5 @@ fn main() {
             "Cancel".to_string(),
         ))
         .show();
-
-    println!("{}", res);
+    println!("{res}");
 }

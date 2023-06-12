@@ -121,7 +121,7 @@ unsafe fn connect_raw<F>(
 
     unsafe extern "C" fn destroy_closure<F>(ptr: *mut c_void, _: *mut gobject_sys::GClosure) {
         // destroy
-        Box::<F>::from_raw(ptr as *mut _);
+        let _ = Box::<F>::from_raw(ptr as *mut _);
     }
     assert_eq!(mem::size_of::<*mut F>(), mem::size_of::<gpointer>());
     assert!(trampoline.is_some());
