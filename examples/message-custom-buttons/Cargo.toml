@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rfd = {version = "0.10.0", path = "../..", features=["common-controls-v6"]}
+rfd = {version = "0.11.3", path = "../..", features=["common-controls-v6"]}
 
 [build-dependencies]
 embed-resource = "1.6"

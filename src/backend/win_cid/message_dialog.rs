@@ -67,17 +67,14 @@ impl WinMessageDialog {
     }
 
     #[cfg(feature = "common-controls-v6")]
-    pub fn run(mut self) -> MessageDialogResult {
-        use windows::Win32::{
+    pub fn run(self) -> MessageDialogResult {
+        use windows_sys::Win32::{
             Foundation::BOOL,
-            UI::{
-                Controls::{
-                    TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOGCONFIG_0, TASKDIALOGCONFIG_1,
-                    TASKDIALOG_BUTTON, TDCBF_CANCEL_BUTTON, TDCBF_NO_BUTTON, TDCBF_OK_BUTTON,
-                    TDCBF_YES_BUTTON, TASKDIALOG_COMMON_BUTTON_FLAGS, TDF_ALLOW_DIALOG_CANCELLATION,
-                    TD_ERROR_ICON, TD_INFORMATION_ICON, TD_WARNING_ICON,
-                },
-                WindowsAndMessaging::MESSAGEBOX_RESULT,
+            UI::Controls::{
+                TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOGCONFIG_0, TASKDIALOGCONFIG_1,
+                TASKDIALOG_BUTTON, TDCBF_CANCEL_BUTTON, TDCBF_NO_BUTTON, TDCBF_OK_BUTTON,
+                TDCBF_YES_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION,
+                TD_ERROR_ICON, TD_INFORMATION_ICON, TD_WARNING_ICON,
             },
         };
 
@@ -96,7 +93,7 @@ impl WinMessageDialog {
             MessageLevel::Info => TD_INFORMATION_ICON,
         };
 
-        let (system_buttons, custom_buttons) = match self.opt.buttons {
+        let (system_buttons, custom_buttons) = match &self.opt.buttons {
             MessageButtons::Ok => (TDCBF_OK_BUTTON, vec![]),
             MessageButtons::OkCancel => (TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON, vec![]),
             MessageButtons::YesNo => (TDCBF_YES_BUTTON | TDCBF_NO_BUTTON, vec![]),
@@ -164,22 +161,22 @@ impl WinMessageDialog {
         let ret = unsafe {
             TaskDialogIndirect(
                 &task_dialog_config,
-                Some(&mut pn_button as *mut i32),
-                Some(&mut pn_radio_button as *mut i32),
-                Some(&mut pf_verification_flag_checked as *mut BOOL),
+                &mut pn_button as *mut i32,
+                &mut pn_radio_button as *mut i32,
+                &mut pf_verification_flag_checked as *mut BOOL,
             )
         };
         
-        if ret.is_err() {
+        if ret != 0 {
             return MessageDialogResult::Cancel;
         }
 
-        match MESSAGEBOX_RESULT(pn_button) {
+        match pn_button {
             IDOK => MessageDialogResult::Ok,
             IDYES => MessageDialogResult::Yes,
             IDCANCEL => MessageDialogResult::Cancel,
             IDNO => MessageDialogResult::No,
-            MESSAGEBOX_RESULT(custom) => match self.opt.buttons {
+            custom => match self.opt.buttons {
                 MessageButtons::OkCustom(ok_text) => match custom {
                     ID_CUSTOM_OK => MessageDialogResult::Custom(ok_text),
                     _ => MessageDialogResult::Cancel,
