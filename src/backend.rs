@@ -12,6 +12,18 @@ use std::pin::Pin;
         target_os = "netbsd",
         target_os = "openbsd"
     ),
+    not(feature = "gtk3")
+))]
+mod linux;
+
+#[cfg(all(
+    any(
+        target_os = "linux",
+        target_os = "freebsd",
+        target_os = "dragonfly",
+        target_os = "netbsd",
+        target_os = "openbsd"
+    ),
     feature = "gtk3"
 ))]
 mod gtk3;

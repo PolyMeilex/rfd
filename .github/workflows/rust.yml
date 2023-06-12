@@ -20,10 +20,10 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             flags: ''
-          - name: Windows NO-CC6
+          - name: Windows CC6
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            flags: '--no-default-features --features xdg-portal'
+            flags: '--features common-controls-v6'
           - name: macOS
             os: macos-latest
             target: x86_64-apple-darwin
@@ -36,14 +36,14 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: "[Ubuntu] install dependencies"
       if: matrix.name == 'Ubuntu GTK'
       run: sudo apt update && sudo apt install libgtk-3-dev
     - name: "[WASM] rustup"
       if: matrix.name == 'WASM32'
       run: rustup target add wasm32-unknown-unknown
-    - uses: Swatinem/rust-cache@v1
+    - uses: Swatinem/rust-cache@v2
     - name: Build
       run: cargo build --target ${{ matrix.target }} ${{ matrix.flags }}
     - name: Test

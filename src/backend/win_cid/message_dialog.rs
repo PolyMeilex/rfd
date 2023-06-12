@@ -1,23 +1,19 @@
 use super::thread_future::ThreadFuture;
+use super::utils::str_to_vec_u16;
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
-use windows::{
-    core::PCWSTR,
-    Win32::{
-        Foundation::HWND,
-        UI::WindowsAndMessaging::{IDCANCEL, IDNO, IDOK, IDYES},
-    },
+use windows_sys::Win32::{
+    Foundation::HWND,
+    UI::WindowsAndMessaging::{IDCANCEL, IDNO, IDOK, IDYES},
 };
 
 #[cfg(not(feature = "common-controls-v6"))]
-use windows::Win32::UI::WindowsAndMessaging::{
+use windows_sys::Win32::UI::WindowsAndMessaging::{
     MessageBoxW, MB_ICONERROR, MB_ICONINFORMATION, MB_ICONWARNING, MB_OK, MB_OKCANCEL, MB_YESNO,
     MB_YESNOCANCEL, MESSAGEBOX_STYLE,
 };
 
 use raw_window_handle::RawWindowHandle;
-
-use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt};
 
 pub struct WinMessageDialog {
     parent: Option<HWND>,
@@ -32,10 +28,6 @@ pub struct WinMessageDialog {
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
 // fingers crossed
 unsafe impl Send for WinMessageDialog {}
-
-fn str_to_vec_u16(str: &str) -> Vec<u16> {
-    OsStr::new(str).encode_wide().chain(once(0)).collect()
-}
 
 impl WinMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
@@ -58,7 +50,7 @@ impl WinMessageDialog {
         };
 
         let parent = match opt.parent {
-            Some(RawWindowHandle::Win32(handle)) => Some(HWND(handle.hwnd as _)),
+            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd as _),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
@@ -78,14 +70,18 @@ impl WinMessageDialog {
     pub fn run(mut self) -> MessageDialogResult {
         use windows::Win32::{
             Foundation::BOOL,
-            UI::Controls::{
-                TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOG_BUTTON,
-                TASKDIALOG_COMMON_BUTTON_FLAGS, TDCBF_CANCEL_BUTTON, TDCBF_NO_BUTTON,
-                TDCBF_OK_BUTTON, TDCBF_YES_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION,
+            UI::{
+                Controls::{
+                    TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOGCONFIG_0, TASKDIALOGCONFIG_1,
+                    TASKDIALOG_BUTTON, TDCBF_CANCEL_BUTTON, TDCBF_NO_BUTTON, TDCBF_OK_BUTTON,
+                    TDCBF_YES_BUTTON, TASKDIALOG_COMMON_BUTTON_FLAGS, TDF_ALLOW_DIALOG_CANCELLATION,
+                    TD_ERROR_ICON, TD_INFORMATION_ICON, TD_WARNING_ICON,
+                },
+                WindowsAndMessaging::MESSAGEBOX_RESULT,
             },
         };
 
-        let mut pf_verification_flag_checked = BOOL(0);
+        let mut pf_verification_flag_checked = 0;
         let mut pn_button = 0;
         let mut pn_radio_button = 0;
 
@@ -94,46 +90,17 @@ impl WinMessageDialog {
         const ID_CUSTOM_YES: i32 = 1004;
         const ID_CUSTOM_NO: i32 = 1008;
 
-        let mut task_dialog_config = TASKDIALOGCONFIG {
-            cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
-            hwndParent: self.parent.unwrap_or_default(),
-            dwFlags: TDF_ALLOW_DIALOG_CANCELLATION,
-            cButtons: 0,
-            pszWindowTitle: PCWSTR(self.caption.as_mut_ptr()),
-            pszContent: PCWSTR(self.text.as_mut_ptr()),
-            ..Default::default()
-        };
-
         let main_icon_ptr = match self.opt.level {
-            // `TD_WARNING_ICON` / `TD_ERROR_ICON` / `TD_INFORMATION_ICON` are missing in windows-rs
-            // https://github.com/microsoft/win32metadata/issues/968
-            // Workaround via hard code:
-            // TD_WARNING_ICON
-            MessageLevel::Warning => -1 as i16 as u16,
-            // TD_ERROR_ICON
-            MessageLevel::Error => -2 as i16 as u16,
-            // TD_INFORMATION_ICON
-            MessageLevel::Info => -3 as i16 as u16,
+            MessageLevel::Warning => TD_WARNING_ICON,
+            MessageLevel::Error => TD_ERROR_ICON,
+            MessageLevel::Info => TD_INFORMATION_ICON,
         };
 
-        task_dialog_config.Anonymous1.pszMainIcon = PCWSTR(main_icon_ptr as *const u16);
-
-        let (system_buttons, custom_buttons) = match &self.opt.buttons {
+        let (system_buttons, custom_buttons) = match self.opt.buttons {
             MessageButtons::Ok => (TDCBF_OK_BUTTON, vec![]),
-            MessageButtons::OkCancel => (
-                TASKDIALOG_COMMON_BUTTON_FLAGS(TDCBF_OK_BUTTON.0 | TDCBF_CANCEL_BUTTON.0),
-                vec![],
-            ),
-            MessageButtons::YesNo => (
-                TASKDIALOG_COMMON_BUTTON_FLAGS(TDCBF_YES_BUTTON.0 | TDCBF_NO_BUTTON.0),
-                vec![],
-            ),
-            MessageButtons::YesNoCancel => (
-                TASKDIALOG_COMMON_BUTTON_FLAGS(
-                    TDCBF_YES_BUTTON.0 | TDCBF_NO_BUTTON.0 | TDCBF_CANCEL_BUTTON.0,
-                ),
-                vec![],
-            ),
+            MessageButtons::OkCancel => (TDCBF_OK_BUTTON | TDCBF_CANCEL_BUTTON, vec![]),
+            MessageButtons::YesNo => (TDCBF_YES_BUTTON | TDCBF_NO_BUTTON, vec![]),
+            MessageButtons::YesNoCancel => (TDCBF_YES_BUTTON | TDCBF_NO_BUTTON | TDCBF_CANCEL_BUTTON, vec![]),
             MessageButtons::OkCustom(ok_text) => (
                 Default::default(),
                 vec![(ID_CUSTOM_OK, str_to_vec_u16(ok_text))],
@@ -159,12 +126,40 @@ impl WinMessageDialog {
             .iter()
             .map(|(id, text)| TASKDIALOG_BUTTON {
                 nButtonID: *id,
-                pszButtonText: PCWSTR(text.as_ptr()),
+                pszButtonText: text.as_ptr(),
             })
             .collect::<Vec<_>>();
-        task_dialog_config.dwCommonButtons = system_buttons;
-        task_dialog_config.pButtons = p_buttons.as_ptr();
-        task_dialog_config.cButtons = custom_buttons.len() as u32;
+
+        let task_dialog_config = TASKDIALOGCONFIG {
+            cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
+            hwndParent: self.parent.unwrap_or_default(),
+            dwFlags: TDF_ALLOW_DIALOG_CANCELLATION,
+            pszWindowTitle: self.caption.as_ptr(),
+            pszContent: self.text.as_ptr(),
+            Anonymous1: TASKDIALOGCONFIG_0 {
+                pszMainIcon: main_icon_ptr,
+            },
+            Anonymous2: TASKDIALOGCONFIG_1 {
+                pszFooterIcon: std::ptr::null(),
+            },
+            dwCommonButtons: system_buttons,
+            pButtons: p_buttons.as_ptr(),
+            cButtons: custom_buttons.len() as u32,
+            pRadioButtons: std::ptr::null(),
+            cRadioButtons: 0,
+            cxWidth: 0,
+            hInstance: 0,
+            pfCallback: None,
+            lpCallbackData: 0,
+            nDefaultButton: 0,
+            nDefaultRadioButton: 0,
+            pszCollapsedControlText: std::ptr::null(),
+            pszExpandedControlText: std::ptr::null(),
+            pszExpandedInformation: std::ptr::null(),
+            pszMainInstruction: std::ptr::null(),
+            pszVerificationText: std::ptr::null(),
+            pszFooter: std::ptr::null(),
+        };
 
         let ret = unsafe {
             TaskDialogIndirect(
@@ -179,7 +174,6 @@ impl WinMessageDialog {
             return MessageDialogResult::Cancel;
         }
 
-        use windows::Win32::UI::WindowsAndMessaging::MESSAGEBOX_RESULT;
         match MESSAGEBOX_RESULT(pn_button) {
             IDOK => MessageDialogResult::Ok,
             IDYES => MessageDialogResult::Yes,
@@ -210,9 +204,9 @@ impl WinMessageDialog {
     pub fn run(mut self) -> MessageDialogResult {
         let ret = unsafe {
             MessageBoxW(
-                self.parent,
-                PCWSTR(self.text.as_mut_ptr()),
-                PCWSTR(self.caption.as_mut_ptr()),
+                self.parent.unwrap_or_default(),
+                self.text.as_ptr(),
+                self.caption.as_ptr(),
                 self.flags,
             )
         };

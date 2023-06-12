@@ -1,6 +1,6 @@
 [package]
 name = "rfd"
-version = "0.10.0"
+version = "0.11.3"
 edition = "2021"
 
 authors = ["Poly <marynczak.bartlomiej@gmail.com>"]
@@ -15,7 +15,7 @@ default = ["gtk3"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["ashpd", "urlencoding", "pollster"]
-common-controls-v6 = ["windows/Win32_UI_Controls"]
+common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
 
 [dev-dependencies]
 futures = "0.3.12"
@@ -32,7 +32,7 @@ block = "0.1.6"
 objc-foundation = "0.1.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.43", features = [
+windows-sys = { version = "0.48", features = [
   "Win32_Foundation",
   "Win32_System_Com",
   "Win32_UI_Shell_Common",
@@ -41,14 +41,18 @@ windows = { version = "0.43", features = [
 ] }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
+# Make sure that this is in sync with zbus, to avoid duplicated deps
+async-io = "1.3"
+futures-util = { version = "0.3", default-features = false, features = ["io"] }
+
 # XDG Desktop Portal
-ashpd = { version = "0.3", optional = true }
+ashpd = { version = "0.4", optional = true }
 urlencoding = { version = "2.1.0", optional = true }
-pollster = { version = "0.2", optional = true }
+pollster = { version = "0.3", optional = true }
 # GTK
-gtk-sys = { version = "0.15.1", features = ["v3_20"], optional = true }
-glib-sys = { version = "0.15.1", optional = true }
-gobject-sys = { version = "0.15.1", optional = true }
+gtk-sys = { version = "0.16", features = ["v3_24"], optional = true }
+glib-sys = { version = "0.16", optional = true }
+gobject-sys = { version = "0.16", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.69"
@@ -72,4 +76,3 @@ name = "async"
 
 [package.metadata.docs.rs]
 features = ["file-handle-inner"]
-

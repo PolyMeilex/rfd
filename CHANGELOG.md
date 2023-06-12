@@ -1,6 +1,12 @@
 # Change Log
 
-## Unreleased
+## 0.11.3
+- Zenity message dialogs for xdg portal backend 
+
+## 0.10.1
+- Update `gtk-sys` to `0.16` and `windows-rs` to `0.44`
+
+## 0.10.0
 - fix(FileDialog::set_directory): fallback to default if path is empty
 
 ## 0.9.0
