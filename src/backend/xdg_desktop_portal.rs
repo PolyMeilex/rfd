@@ -201,7 +201,7 @@ impl MessageDialogImpl for MessageDialog {
 
 use crate::backend::AsyncMessageDialogImpl;
 impl AsyncMessageDialogImpl for MessageDialog {
-    fn show_async(self) -> DialogFutureType<bool> {
+    fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         Box::pin(async move {
             match &self.buttons {
                 MessageButtons::Ok | MessageButtons::OkCustom(_) => {
@@ -217,13 +217,15 @@ impl AsyncMessageDialogImpl for MessageDialog {
                         Ok(res) => res,
                         Err(err) => {
                             log::error!("Failed to open zenity dialog: {err}");
-                            false
+                            MessageDialogResult::Cancel
                         }
                     }
                 }
                 MessageButtons::OkCancel
                 | MessageButtons::YesNo
-                | MessageButtons::OkCancelCustom(_, _) => {
+                | MessageButtons::OkCancelCustom(..)
+                | MessageButtons::YesNoCancel
+                | MessageButtons::YesNoCancelCustom(..) => {
                     let res = crate::backend::linux::zenity::question(
                         &self.buttons,
                         &self.title,
@@ -235,7 +237,7 @@ impl AsyncMessageDialogImpl for MessageDialog {
                         Ok(res) => res,
                         Err(err) => {
                             log::error!("Failed to open zenity dialog: {err}");
-                            false
+                            MessageDialogResult::Cancel
                         }
                     }
                 }

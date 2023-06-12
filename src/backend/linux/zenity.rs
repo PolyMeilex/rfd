@@ -8,11 +8,7 @@ use std::{
 };
 
 use super::child_stdout::ChildStdout;
-use crate::{
-    file_dialog::Filter,
-    message_dialog::{MessageButtons, MessageLevel},
-    FileDialog,
-};
+use crate::{file_dialog::Filter, message_dialog::{MessageButtons, MessageLevel}, FileDialog, MessageDialogResult};
 
 #[derive(Debug)]
 pub enum ZenityError {
@@ -81,7 +77,7 @@ async fn run(mut command: Command) -> ZenityResult<Option<String>> {
         async_io::Timer::after(Duration::from_millis(1)).await;
     };
 
-    Ok(if status.success() { Some(buffer) } else { None })
+    Ok(if status.success() || !buffer.is_empty() { Some(buffer) } else { None })
 }
 
 #[allow(unused)]
@@ -154,7 +150,7 @@ pub async fn message(
     btns: &MessageButtons,
     title: &str,
     description: &str,
-) -> ZenityResult<bool> {
+) -> ZenityResult<MessageDialogResult> {
     let cmd = match level {
         MessageLevel::Info => "--info",
         MessageLevel::Warning => "--warning",
@@ -174,26 +170,62 @@ pub async fn message(
         command.args(["--ok-label", ok]);
     }
 
-    run(command).await.map(|res| res.is_some())
+    run(command).await.map(|res| match res {
+        Some(_) => MessageDialogResult::Ok,
+        None => MessageDialogResult::Cancel,
+    })
 }
 
-pub async fn question(btns: &MessageButtons, title: &str, description: &str) -> ZenityResult<bool> {
-    let labels = match btns {
-        MessageButtons::OkCancel => Some(("Ok", "Cancel")),
-        MessageButtons::YesNo => None,
-        MessageButtons::OkCancelCustom(ok, cancel) => Some((ok.as_str(), cancel.as_str())),
-        _ => None,
-    };
-
+pub async fn question(btns: &MessageButtons, title: &str, description: &str) -> ZenityResult<MessageDialogResult> {
     let mut command = command();
     command.args(["--question", "--title", title, "--text", description]);
 
-    if let Some((ok, cancel)) = labels {
-        command.args(["--ok-label", ok]);
-        command.args(["--cancel-label", cancel]);
+    match btns {
+        MessageButtons::OkCancel => {
+            command.args(["--ok-label", "Ok"]);
+            command.args(["--cancel-label", "Cancel"]);
+        }
+        MessageButtons::OkCancelCustom(ok, cancel) => {
+            command.args(["--ok-label", ok.as_str()]);
+            command.args(["--cancel-label", cancel.as_str()]);
+        },
+        MessageButtons::YesNoCancel => {
+            command.args(["--extra-button", "No"]);
+            command.args(["--cancel-label", "Cancel"]);
+        },
+        MessageButtons::YesNoCancelCustom(yes, no, cancel) => {
+            command.args(["--ok-label", yes.as_str()]);
+            command.args(["--cancel-label", cancel.as_str()]);
+            command.args(["--extra-button", no.as_str()]);
+        },
+        _ => {}
     }
 
-    run(command).await.map(|res| res.is_some())
+    run(command).await.map(|res| match btns {
+        MessageButtons::OkCancel => match res {
+            Some(_) => MessageDialogResult::Ok,
+            None => MessageDialogResult::Cancel,
+        }
+        MessageButtons::YesNo => match res {
+            Some(_) => MessageDialogResult::Yes,
+            None => MessageDialogResult::No,
+        }
+        MessageButtons::OkCancelCustom(ok, cancel) => match res {
+            Some(_) => MessageDialogResult::Custom(ok.clone()),
+            None => MessageDialogResult::Custom(cancel.clone()),
+        }
+        MessageButtons::YesNoCancel => match res {
+            Some(output) if output.is_empty() => MessageDialogResult::Yes,
+            Some(_) => MessageDialogResult::No,
+            None => MessageDialogResult::Cancel,
+        }
+        MessageButtons::YesNoCancelCustom(yes, no, cancel) => match res {
+            Some(output) if output.is_empty() => MessageDialogResult::Custom(yes.clone()),
+            Some(_) => MessageDialogResult::Custom(no.clone()),
+            None => MessageDialogResult::Custom(cancel.clone()),
+        }
+        _ => MessageDialogResult::Cancel
+    })
 }
 
 #[cfg(test)]
