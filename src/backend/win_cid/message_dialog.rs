@@ -203,7 +203,7 @@ impl WinMessageDialog {
     }
 
     #[cfg(not(feature = "common-controls-v6"))]
-    pub fn run(mut self) -> MessageDialogResult {
+    pub fn run(self) -> MessageDialogResult {
         let ret = unsafe {
             MessageBoxW(
                 self.parent.unwrap_or_default(),
