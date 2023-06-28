@@ -77,7 +77,7 @@ async fn run(mut command: Command) -> ZenityResult<Option<String>> {
         async_io::Timer::after(Duration::from_millis(1)).await;
     };
 
-    Ok(if status.success() || !buffer.is_empty() { Some(buffer) } else { None })
+    Ok((status.success() || !buffer.is_empty()).then_some(buffer))
 }
 
 #[allow(unused)]
