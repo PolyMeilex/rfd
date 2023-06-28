@@ -172,7 +172,7 @@ impl Default for MessageButtons {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum MessageDialogResult {
     Yes,
     No,
