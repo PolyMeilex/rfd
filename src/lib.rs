@@ -137,4 +137,6 @@ pub use file_dialog::FileDialog;
 pub use file_dialog::AsyncFileDialog;
 
 mod message_dialog;
-pub use message_dialog::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageLevel};
+pub use message_dialog::{
+    AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
+};

@@ -60,7 +60,7 @@ impl GtkEventHandler {
         }
 
         self.request_count.fetch_add(1, Ordering::Relaxed);
-        IterationRequest ()
+        IterationRequest()
     }
 
     fn iteration_stop(&self) {
@@ -69,14 +69,14 @@ impl GtkEventHandler {
 
     fn request_iteration_stop(&self) {
         self.request_count.fetch_sub(1, Ordering::Release);
-        
+
         if self.request_count.load(Ordering::Acquire) == 0 {
             self.iteration_stop();
         }
     }
 }
 
-pub struct IterationRequest ();
+pub struct IterationRequest();
 
 impl Drop for IterationRequest {
     fn drop(&mut self) {

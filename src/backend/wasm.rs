@@ -5,7 +5,7 @@ use web_sys::Element;
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 
 use crate::file_dialog::FileDialog;
-use crate::FileHandle;
+use crate::{FileHandle, MessageDialogResult};
 
 pub struct WasmDialog {
     overlay: Element,
@@ -173,16 +173,24 @@ use crate::backend::MessageDialogImpl;
 use crate::message_dialog::{MessageButtons, MessageDialog};
 
 impl MessageDialogImpl for MessageDialog {
-    fn show(self) -> bool {
+    fn show(self) -> MessageDialogResult {
         let text = format!("{}\n{}", self.title, self.description);
         match self.buttons {
             MessageButtons::Ok | MessageButtons::OkCustom(_) => {
                 alert(&text);
-                true
+                MessageDialogResult::Ok
             }
             MessageButtons::OkCancel
+            | MessageButtons::OkCancelCustom(..)
             | MessageButtons::YesNo
-            | MessageButtons::OkCancelCustom(_, _) => confirm(&text),
+            | MessageButtons::YesNoCancel
+            | MessageButtons::YesNoCancelCustom(..) => {
+                if confirm(&text) {
+                    MessageDialogResult::Ok
+                } else {
+                    MessageDialogResult::Cancel
+                }
+            }
         }
     }
 }
@@ -190,7 +198,7 @@ impl MessageDialogImpl for MessageDialog {
 use crate::backend::AsyncMessageDialogImpl;
 
 impl AsyncMessageDialogImpl for MessageDialog {
-    fn show_async(self) -> DialogFutureType<bool> {
+    fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         let val = MessageDialogImpl::show(self);
         Box::pin(std::future::ready(val))
     }
