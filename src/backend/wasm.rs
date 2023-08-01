@@ -12,8 +12,8 @@ pub struct WasmDialog {
     card: Element,
     input: HtmlInputElement,
     button: HtmlButtonElement,
-
     style: Element,
+    no_overlay: bool,
 }
 
 impl WasmDialog {
@@ -75,6 +75,7 @@ impl WasmDialog {
             input,
 
             style,
+            no_overlay: opt.hide_wasm_file_dialog,
         }
     }
 
@@ -85,15 +86,23 @@ impl WasmDialog {
 
         let overlay = self.overlay.clone();
         let button = self.button.clone();
-
+        let input = self.input.clone();
+        let no_overlay = self.no_overlay;
         let promise = js_sys::Promise::new(&mut move |res, _rej| {
             let closure = Closure::wrap(Box::new(move || {
                 res.call0(&JsValue::undefined()).unwrap();
             }) as Box<dyn FnMut()>);
-
-            button.set_onclick(Some(closure.as_ref().unchecked_ref()));
+            if no_overlay {
+                input.set_onclick(Some(closure.as_ref().unchecked_ref()));
+                overlay.set_class_name("hidden");
+            } else {
+                button.set_onclick(Some(closure.as_ref().unchecked_ref()));
+            }
             closure.forget();
             body.append_child(&overlay).ok();
+            if no_overlay {
+                input.click();
+            }
         });
         let future = wasm_bindgen_futures::JsFuture::from(promise);
         future.await.unwrap();

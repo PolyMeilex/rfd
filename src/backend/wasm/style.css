@@ -13,6 +13,13 @@
   justify-content: center;
   align-items: center;
 }
+
+#rfd-overlay.hidden {
+  visibility: hidden;
+  width: 0;
+  height: 0;
+}
+
 #rfd-card {
   padding: 20px;
   background-color: white;

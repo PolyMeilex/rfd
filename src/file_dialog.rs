@@ -23,6 +23,7 @@ pub struct FileDialog {
     pub(crate) file_name: Option<String>,
     pub(crate) title: Option<String>,
     pub(crate) parent: Option<RawWindowHandle>,
+    pub hide_wasm_file_dialog: bool,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
@@ -50,6 +51,13 @@ impl FileDialog {
             name: name.into(),
             extensions: extensions.iter().map(|e| e.to_string()).collect(),
         });
+        self
+    }
+
+    /// Sets if the dialog html overlay should be hidden. Supported platforms:
+    ///   * WASM
+    pub fn set_hide_overlay(mut self, hide: bool) -> Self {
+        self.hide_wasm_file_dialog = hide;
         self
     }
 
@@ -174,6 +182,14 @@ impl AsyncFileDialog {
     ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.file_dialog = self.file_dialog.set_directory(path);
+        self
+    }
+
+
+    /// Sets if the dialog html overlay should be hidden. Supported platforms:
+    ///   * WASM
+    pub fn set_hide_overlay(mut self, hide: bool) -> Self {
+        self.file_dialog = self.file_dialog.set_hide_overlay(hide);
         self
     }
 
