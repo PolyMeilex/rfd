@@ -93,12 +93,19 @@ impl WasmDialog {
                 res.call0(&JsValue::undefined()).unwrap();
             }) as Box<dyn FnMut()>);
 
-            button.set_onclick(Some(closure.as_ref().unchecked_ref()));
+            if no_overlay {
+                overlay.set_class_name("hidden");
+            }else {
+                button.set_onclick(Some(closure.as_ref().unchecked_ref()));
+            }
 
             body.append_child(&overlay).ok();
             if no_overlay {
+                //INFO: When the file picker is closed it will focus the last focused element.
+                input.focus();
                 input.click();
                 input.set_onchange(Some(closure.as_ref().unchecked_ref()));
+                input.set_onfocus(Some(closure.as_ref().unchecked_ref()));
             }
             closure.forget();
         });
