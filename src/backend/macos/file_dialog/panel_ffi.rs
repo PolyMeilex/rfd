@@ -70,6 +70,10 @@ impl Panel {
         let _: () = unsafe { msg_send![self.panel, setCanChooseDirectories: v] };
     }
 
+    pub fn set_can_create_directories(&self, v: BOOL) {
+        let _: () = unsafe { msg_send![self.panel, setCanCreateDirectories: v] };
+    }
+
     pub fn set_can_choose_files(&self, v: BOOL) {
         let _: () = unsafe { msg_send![self.panel, setCanChooseFiles: v] };
     }
@@ -228,6 +232,7 @@ impl Panel {
         }
 
         panel.set_can_choose_directories(YES);
+        panel.set_can_create_directories(YES);
         panel.set_can_choose_files(NO);
 
         panel
@@ -249,6 +254,7 @@ impl Panel {
         }
 
         panel.set_can_choose_directories(YES);
+        panel.set_can_create_directories(YES);
         panel.set_can_choose_files(NO);
         panel.set_allows_multiple_selection(YES);
 
