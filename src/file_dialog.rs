@@ -190,6 +190,7 @@ impl AsyncFileDialog {
     ///  * Windows
     ///  * Linux
     ///  * Mac (Only below version 10.11)
+    ///  * WASM32
     pub fn set_title(mut self, title: impl Into<String>) -> Self {
         self.file_dialog = self.file_dialog.set_title(title);
         self
