@@ -96,7 +96,7 @@ impl WasmDialog {
     async fn show(&self) {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
-        let body = document.body().expect("document should have a body");
+        let body = document.body().expect("Document should have a body");
 
         let overlay = self.overlay.clone();
         let button = self.button.clone();

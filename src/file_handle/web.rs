@@ -59,7 +59,7 @@ impl FileHandle {
     pub async fn write(&self, data: Box<[u8]>) {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
-        let body = document.body().expect("document should have a body");
+        let body = document.body().expect("Document should have a body");
 
         let overlay = document.create_element("div").unwrap();
         overlay.set_id("rfd-overlay");
