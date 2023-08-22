@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::Element;
 
-use web_sys::{HtmlButtonElement, HtmlInputElement};
+use web_sys::{HtmlButtonElement, HtmlElement, HtmlInputElement};
 
 use crate::file_dialog::FileDialog;
 use crate::{FileHandle, MessageDialogResult};
@@ -10,6 +10,7 @@ use crate::{FileHandle, MessageDialogResult};
 pub struct WasmDialog {
     overlay: Element,
     card: Element,
+    title: Option<HtmlElement>,
     input: HtmlInputElement,
     button: HtmlButtonElement,
 
@@ -31,6 +32,17 @@ impl WasmDialog {
 
             card
         };
+
+        let title = opt.title.as_ref().map(|title| {
+            let title_el: web_sys::HtmlElement =
+                document.create_element("div").unwrap().dyn_into().unwrap();
+
+            title_el.set_id("rfd-title");
+            title_el.set_inner_html(title);
+
+            card.append_child(&title_el).unwrap();
+            title_el
+        });
 
         let input = {
             let input_el = document.create_element("input").unwrap();
@@ -71,6 +83,7 @@ impl WasmDialog {
         Self {
             overlay,
             card,
+            title,
             button,
             input,
 
@@ -143,6 +156,7 @@ impl Drop for WasmDialog {
     fn drop(&mut self) {
         self.button.remove();
         self.input.remove();
+        self.title.as_ref().map(|elem| elem.remove());
         self.card.remove();
 
         self.style.remove();
