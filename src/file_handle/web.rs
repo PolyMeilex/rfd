@@ -9,6 +9,14 @@ impl FileHandle {
         Self(file)
     }
 
+    /// Create a dummy file with a given name. Exists primarily for chaining with [`FileHandle::write`].
+    pub fn default_with_name(name: &str) -> Self {
+        FileHandle::wrap(
+            web_sys::File::new_with_u8_array_sequence(&js_sys::Array::default(), name)
+                .expect("Hardcoded file"),
+        )
+    }
+
     pub fn file_name(&self) -> String {
         self.0.name()
     }
@@ -48,104 +56,114 @@ impl FileHandle {
         vec
     }
 
-    pub async fn write(data: Box<[u8]>) {
-        {
-            let window = web_sys::window().expect("Window not found");
-            let document = window.document().expect("Document not found");
-            let body = document.body().expect("document should have a body");
+    pub async fn write(&self, data: Box<[u8]>) {
+        let window = web_sys::window().expect("Window not found");
+        let document = window.document().expect("Document not found");
+        let body = document.body().expect("document should have a body");
 
-            let overlay = document.create_element("div").unwrap();
-            overlay.set_id("rfd-overlay");
+        let overlay = document.create_element("div").unwrap();
+        overlay.set_id("rfd-overlay");
 
-            let card = {
-                let card = document.create_element("div").unwrap();
-                card.set_id("rfd-card");
-                overlay.append_child(&card).unwrap();
+        let card = {
+            let card = document.create_element("div").unwrap();
+            card.set_id("rfd-card");
+            overlay.append_child(&card).unwrap();
 
-                card
+            card
+        };
+
+        /* // TODO move implementation to WasmDialog, create dialog here, and use title in dialog impl
+        let title = self.0..as_ref().map(|title| {
+            let title_el: web_sys::HtmlElement =
+                document.create_element("div").unwrap().dyn_into().unwrap();
+
+            title_el.set_id("rfd-title");
+            title_el.set_inner_html(title);
+
+            card.append_child(&title_el).unwrap();
+            title_el
+        }); */
+
+        let output = {
+            let output_el = document.create_element("a").unwrap();
+            let output: HtmlAnchorElement = wasm_bindgen::JsCast::dyn_into(output_el).unwrap();
+
+            output.set_id("rfd-output");
+            output.set_inner_text("click here to download your file");
+
+            card.append_child(&output).unwrap();
+            output
+        };
+
+        let button = {
+            let btn_el = document.create_element("button").unwrap();
+            let btn: web_sys::HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
+
+            btn.set_id("rfd-button");
+            btn.set_inner_text("Create file");
+
+            card.append_child(&btn).unwrap();
+            btn
+        };
+
+        let style = document.create_element("style").unwrap();
+        style.set_inner_html(include_str!("../backend/wasm/style.css"));
+        overlay.append_child(&style).unwrap();
+
+        body.append_child(&overlay).unwrap();
+
+        let promise = js_sys::Promise::new(&mut |res, _rej| {
+            // Moved to keep closure as FnMut
+            let output2 = output.clone();
+            let data = data.clone();
+            let file_name = self.file_name();
+
+            let set_download_link = move |in_array: &[u8], name: &str| {
+                // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
+                let array = js_sys::Array::new();
+                let uint8arr = js_sys::Uint8Array::new(
+                    // Safety: No wasm allocations happen between creating the view and consuming it in the array.push
+                    &unsafe { js_sys::Uint8Array::view(&in_array) }.into(),
+                );
+                array.push(&uint8arr.buffer());
+                let blob = Blob::new_with_u8_array_sequence_and_options(
+                    &array,
+                    web_sys::BlobPropertyBag::new().type_("application/octet-stream"),
+                )
+                .unwrap();
+                let download_url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+
+                output2.set_href(&download_url);
+                output2.set_download(&name);
             };
 
-            let output = {
-                let output_el = document.create_element("a").unwrap();
-                let output: HtmlAnchorElement = wasm_bindgen::JsCast::dyn_into(output_el).unwrap();
+            let set_download_link = Closure::wrap(Box::new(move || {
+                set_download_link(&*data, &file_name);
+            }) as Box<dyn FnMut()>);
 
-                output.set_id("rfd-output");
-                output.set_inner_text("click here to download your file");
+            let end_promise = Closure::wrap(Box::new(move || {
+                res.call1(&JsValue::undefined(), &JsValue::from(true))
+                    .unwrap(); // End promise
+            }) as Box<dyn FnMut()>);
 
-                card.append_child(&output).unwrap();
-                output
-            };
+            button.set_onclick(Some(set_download_link.as_ref().unchecked_ref()));
+            set_download_link.forget();
 
-            let button = {
-                let btn_el = document.create_element("button").unwrap();
-                let btn: web_sys::HtmlButtonElement =
-                    wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
+            // Resolve the promise once the user clicks the download link.
+            output.set_onclick(Some(end_promise.as_ref().unchecked_ref()));
+            end_promise.forget();
 
-                btn.set_id("rfd-button");
-                btn.set_inner_text("Create file");
+            body.append_child(&overlay).ok();
+        });
+        let future = wasm_bindgen_futures::JsFuture::from(promise);
+        future.await.unwrap();
 
-                card.append_child(&btn).unwrap();
-                btn
-            };
-
-            let style = document.create_element("style").unwrap();
-            style.set_inner_html(include_str!("../backend/wasm/style.css"));
-            overlay.append_child(&style).unwrap();
-
-            body.append_child(&overlay).unwrap();
-
-            let promise = js_sys::Promise::new(&mut |res, _rej| {
-                // Clones to keep closure as FnMut
-                let output2 = output.clone();
-                let data = data.clone();
-
-                let set_download_link = move |in_array: &[u8], name: &str| {
-                    // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
-                    let array = js_sys::Array::new();
-                    let uint8arr = js_sys::Uint8Array::new(
-                        // Safety: No wasm allocations happen between creating the view and consuming it in the array.push
-                        &unsafe { js_sys::Uint8Array::view(&in_array) }.into(),
-                    );
-                    array.push(&uint8arr.buffer());
-                    let blob = Blob::new_with_u8_array_sequence_and_options(
-                        &array,
-                        web_sys::BlobPropertyBag::new().type_("application/octet-stream"),
-                    )
-                    .unwrap();
-                    let download_url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
-
-                    output2.set_href(&download_url);
-                    output2.set_download(&name);
-                };
-
-                let set_download_link = Closure::wrap(Box::new(move || {
-                    set_download_link(&*data, "file.txt");
-                }) as Box<dyn FnMut()>);
-
-                let end_promise = Closure::wrap(Box::new(move || {
-                    res.call1(&JsValue::undefined(), &JsValue::from(true))
-                        .unwrap(); // End promise
-                }) as Box<dyn FnMut()>);
-
-                button.set_onclick(Some(set_download_link.as_ref().unchecked_ref()));
-                set_download_link.forget();
-
-                // Resolve the promise once the user clicks the download link.
-                output.set_onclick(Some(end_promise.as_ref().unchecked_ref()));
-                end_promise.forget();
-
-                body.append_child(&overlay).ok();
-            });
-            let future = wasm_bindgen_futures::JsFuture::from(promise);
-            future.await.unwrap();
-
-            // Drop impl
-            style.remove();
-            button.remove();
-            output.remove();
-            card.remove();
-            overlay.remove();
-        }
+        // Drop impl
+        style.remove();
+        button.remove();
+        output.remove();
+        card.remove();
+        overlay.remove();
     }
 
     #[cfg(feature = "file-handle-inner")]

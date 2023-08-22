@@ -1,3 +1,5 @@
+mod file_dialog;
+
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::Element;

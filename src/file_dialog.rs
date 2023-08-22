@@ -205,8 +205,9 @@ impl AsyncFileDialog {
 }
 
 use crate::backend::AsyncFilePickerDialogImpl;
+use crate::backend::AsyncFileSaveDialogImpl;
 #[cfg(not(target_arch = "wasm32"))]
-use crate::backend::{AsyncFileSaveDialogImpl, AsyncFolderPickerDialogImpl};
+use crate::backend::AsyncFolderPickerDialogImpl;
 
 use std::future::Future;
 
@@ -237,11 +238,7 @@ impl AsyncFileDialog {
         AsyncFolderPickerDialogImpl::pick_folders_async(self.file_dialog)
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
     /// Opens save file dialog
-    ///
-    /// Does not exist in `WASM32`
-    ///
     ///
     /// #### Platform specific notes regarding save dialog filters:
     /// - On MacOs
@@ -256,6 +253,10 @@ impl AsyncFileDialog {
     ///     - If no extension was provided it will just add currently selected one
     ///     - If selected extension was typed in by the user it will just return
     ///     - If unselected extension was provided it will append selected one at the end, example: `test.png.txt`
+    /// - On Wasm32:
+    ///     - No filtering is applied.
+    ///     - `save_file` returns immediately without a dialog prompt.
+    /// Instead the user is prompted by their browser on where to save the file when [`FileHandle::write`] is used.
     pub fn save_file(self) -> impl Future<Output = Option<FileHandle>> {
         AsyncFileSaveDialogImpl::save_file_async(self.file_dialog)
     }
