@@ -88,12 +88,12 @@ impl FileHandle {
     ///
     /// On native platforms it spawns a `std::thread` in the background.
     ///
-    /// `This fn exists souly to keep native api in pair with async only web api.`
+    /// `This fn exists solely to keep native api in pair with async only web api.`
     pub async fn read(&self) -> Vec<u8> {
         Reader::new(&self.0).await
     }
 
-    /// Unwraps a `FileHandle` and returns innet type.
+    /// Unwraps a `FileHandle` and returns inner type.
     ///
     /// It should be used, if user wants to handle file read themselves
     ///
