@@ -10,8 +10,7 @@ use crate::{
 use std::future::ready;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let file = FileHandle::default_with_name(&self.file_name.unwrap_or_default());
-
+        let file = FileHandle::writable(self);
         Box::pin(ready(Some(file)))
     }
 }
