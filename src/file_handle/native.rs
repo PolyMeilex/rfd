@@ -57,6 +57,55 @@ impl Future for Reader {
     }
 }
 
+struct WriterState {
+    bytes: Option<Box<[u8]>>,
+    waker: Option<Waker>,
+}
+
+struct Writer {
+    state: Arc<Mutex<WriterState>>,
+}
+
+impl Writer {
+    fn new(path: &Path, bytes: Box<[u8]>) -> Self {
+        let state = Arc::new(Mutex::new(WriterState {
+            bytes: Some(bytes),
+            waker: None,
+        }));
+
+        {
+            let path = path.to_owned();
+            let state = state.clone();
+            std::thread::Builder::new()
+                .name("rfd_file_write".into())
+                .spawn(move || {
+                    let mut state = state.lock().unwrap();
+                    let _res = std::fs::write(path, state.bytes.take().unwrap());
+                    if let Some(waker) = state.waker.take() {
+                        waker.wake();
+                    }
+                })
+                .unwrap();
+        }
+
+        Self { state }
+    }
+}
+
+impl Future for Writer {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut state = self.state.lock().unwrap();
+        if state.bytes.is_none() {
+            Poll::Ready(())
+        } else {
+            state.waker.replace(ctx.waker().clone());
+            Poll::Pending
+        }
+    }
+}
+
 /// FileHandle is a way of abstracting over a file returned by a dialog
 pub struct FileHandle(PathBuf);
 
@@ -91,6 +140,15 @@ impl FileHandle {
     /// `This fn exists solely to keep native api in pair with async only web api.`
     pub async fn read(&self) -> Vec<u8> {
         Reader::new(&self.0).await
+    }
+
+    /// Writes a file asynchronously.
+    ///
+    /// On native platforms it spawns a `std::thread` in the background.
+    ///
+    /// `This fn exists solely to keep native api in pair with async only web api.`
+    pub async fn write(&self, data: Box<[u8]>) {
+        Writer::new(&self.0, data).await
     }
 
     /// Unwraps a `FileHandle` and returns inner type.
