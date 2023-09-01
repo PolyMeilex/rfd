@@ -12,12 +12,12 @@ pub struct FileHandle(pub(crate) WasmFileHandleKind);
 
 impl FileHandle {
     /// Wrap a [`web_sys::File`] for reading. Use with [`FileHandle::read`]
-    pub fn wrap(file: web_sys::File) -> Self {
+    pub(crate) fn wrap(file: web_sys::File) -> Self {
         Self(WasmFileHandleKind::Readable(file))
     }
 
     /// Create a dummy `FileHandle`. Use with [`FileHandle::write`].
-    pub fn writable(dialog: FileDialog) -> Self {
+    pub(crate) fn writable(dialog: FileDialog) -> Self {
         FileHandle(WasmFileHandleKind::Writable(dialog))
     }
 

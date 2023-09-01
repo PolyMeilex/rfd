@@ -118,7 +118,7 @@ impl FileHandle {
     /// On native platforms it wraps path.
     ///
     /// On `WASM32` it wraps JS `File` object.
-    pub fn wrap(path_buf: PathBuf) -> Self {
+    pub(crate) fn wrap(path_buf: PathBuf) -> Self {
         Self(path_buf)
     }
 
