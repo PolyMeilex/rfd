@@ -47,8 +47,7 @@ impl Future for Reader {
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut state = self.state.lock().unwrap();
-        if state.res.is_some() {
-            let res = state.res.take().unwrap();
+        if let Some(res) = state.res.take() {
             Poll::Ready(res.unwrap())
         } else {
             state.waker.replace(ctx.waker().clone());
@@ -103,8 +102,7 @@ impl Future for Writer {
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut state = self.state.lock().unwrap();
-        if state.res.is_some() {
-            let res = state.res.take().unwrap();
+        if let Some(res) = state.res.take() {
             Poll::Ready(res)
         } else {
             state.waker.replace(ctx.waker().clone());
