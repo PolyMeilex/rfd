@@ -321,12 +321,13 @@ impl crate::backend::AsyncMessageDialogImpl for MessageDialog {
 }
 
 impl FileHandle {
-    pub async fn write(&self, data: Box<[u8]>) {
+    pub async fn write(&self, data: Box<[u8]>) -> std::io::Result<()> {
         let dialog = match &self.0 {
             WasmFileHandleKind::Writable(dialog) => dialog,
             _ => panic!("This File Handle doesn't support writing. Use `save_file` to get a writeable FileHandle in Wasm"),
         };
         let dialog = WasmDialog::new(&FileKind::Out(dialog.clone(), data));
         dialog.show().await;
+        Ok(())
     }
 }

@@ -60,6 +60,7 @@ impl Future for Reader {
 struct WriterState {
     bytes: Option<Box<[u8]>>,
     waker: Option<Waker>,
+    res: Option<std::io::Result<()>>,
 }
 
 struct Writer {
@@ -71,6 +72,7 @@ impl Writer {
         let state = Arc::new(Mutex::new(WriterState {
             bytes: Some(bytes),
             waker: None,
+            res: None,
         }));
 
         {
@@ -79,8 +81,12 @@ impl Writer {
             std::thread::Builder::new()
                 .name("rfd_file_write".into())
                 .spawn(move || {
+                    let bytes = state.lock().unwrap().bytes.take().unwrap();
+                    let res = std::fs::write(path, bytes);
+
                     let mut state = state.lock().unwrap();
-                    let _res = std::fs::write(path, state.bytes.take().unwrap());
+                    state.res.replace(res);
+
                     if let Some(waker) = state.waker.take() {
                         waker.wake();
                     }
@@ -93,12 +99,13 @@ impl Writer {
 }
 
 impl Future for Writer {
-    type Output = ();
+    type Output = std::io::Result<()>;
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut state = self.state.lock().unwrap();
-        if state.bytes.is_none() {
-            Poll::Ready(())
+        if state.res.is_some() {
+            let res = state.res.take().unwrap();
+            Poll::Ready(res)
         } else {
             state.waker.replace(ctx.waker().clone());
             Poll::Pending
@@ -147,7 +154,7 @@ impl FileHandle {
     /// On native platforms it spawns a `std::thread` in the background.
     ///
     /// `This fn exists solely to keep native api in pair with async only web api.`
-    pub async fn write(&self, data: Box<[u8]>) {
+    pub async fn write(&self, data: Box<[u8]>) -> std::io::Result<()> {
         Writer::new(&self.0, data).await
     }
 
