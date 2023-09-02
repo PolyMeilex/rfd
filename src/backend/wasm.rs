@@ -8,33 +8,33 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlButtonElement, HtmlElement, HtmlInputElement};
 
 #[derive(Clone, Debug)]
-pub enum FileKind {
+pub enum FileKind<'a> {
     In(FileDialog),
-    Out(FileDialog, Box<[u8]>),
+    Out(FileDialog, &'a [u8]),
 }
 
 #[derive(Clone, Debug)]
-enum HtmlIoElement {
+enum HtmlIoElement<'a> {
     Input(HtmlInputElement),
     Output {
         element: HtmlAnchorElement,
         name: String,
-        data: Box<[u8]>,
+        data: &'a [u8],
     },
 }
 
-pub struct WasmDialog {
+pub struct WasmDialog<'a> {
     overlay: Element,
     card: Element,
     title: Option<HtmlElement>,
-    io: HtmlIoElement,
+    io: HtmlIoElement<'a>,
     button: HtmlButtonElement,
 
     style: Element,
 }
 
-impl WasmDialog {
-    pub fn new(opt: &FileKind) -> Self {
+impl<'a> WasmDialog<'a> {
+    pub fn new(opt: &FileKind<'a>) -> Self {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
 
@@ -96,7 +96,7 @@ impl WasmDialog {
                 HtmlIoElement::Output {
                     element: output,
                     name: dialog.file_name.clone().unwrap_or_default(),
-                    data: data.clone(),
+                    data,
                 }
             }
         };
@@ -154,7 +154,6 @@ impl WasmDialog {
                     // Moved to keep closure as FnMut
                     let output = element.clone();
                     let file_name = name.clone();
-                    let data = data.clone();
 
                     let resolve_promise = Closure::wrap(Box::new(move || {
                         res.call1(&JsValue::undefined(), &JsValue::from(true))
@@ -256,7 +255,7 @@ impl WasmDialog {
     }
 }
 
-impl Drop for WasmDialog {
+impl<'a> Drop for WasmDialog<'a> {
     fn drop(&mut self) {
         self.button.remove();
         self.io_element().remove();
@@ -321,7 +320,7 @@ impl crate::backend::AsyncMessageDialogImpl for MessageDialog {
 }
 
 impl FileHandle {
-    pub async fn write(&self, data: Box<[u8]>) -> std::io::Result<()> {
+    pub async fn write(&self, data: &[u8]) -> std::io::Result<()> {
         let dialog = match &self.0 {
             WasmFileHandleKind::Writable(dialog) => dialog,
             _ => panic!("This File Handle doesn't support writing. Use `save_file` to get a writeable FileHandle in Wasm"),

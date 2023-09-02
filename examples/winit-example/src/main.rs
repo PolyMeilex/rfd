@@ -61,9 +61,7 @@ fn main() {
                     let file = dialog.await;
 
                     let file = if let Some(file) = file {
-                        file.write(b"Hi! This is a test file".to_vec().into_boxed_slice())
-                            .await
-                            .unwrap();
+                        file.write(b"Hi! This is a test file").await.unwrap();
                         Some(file)
                     } else {
                         None

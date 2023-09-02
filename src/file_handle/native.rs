@@ -57,7 +57,6 @@ impl Future for Reader {
 }
 
 struct WriterState {
-    bytes: Option<Box<[u8]>>,
     waker: Option<Waker>,
     res: Option<std::io::Result<()>>,
 }
@@ -67,20 +66,19 @@ struct Writer {
 }
 
 impl Writer {
-    fn new(path: &Path, bytes: Box<[u8]>) -> Self {
+    fn new(path: &Path, bytes: &[u8]) -> Self {
         let state = Arc::new(Mutex::new(WriterState {
-            bytes: Some(bytes),
             waker: None,
             res: None,
         }));
 
         {
             let path = path.to_owned();
+            let bytes = bytes.to_owned();
             let state = state.clone();
             std::thread::Builder::new()
                 .name("rfd_file_write".into())
                 .spawn(move || {
-                    let bytes = state.lock().unwrap().bytes.take().unwrap();
                     let res = std::fs::write(path, bytes);
 
                     let mut state = state.lock().unwrap();
@@ -152,7 +150,7 @@ impl FileHandle {
     /// On native platforms it spawns a `std::thread` in the background.
     ///
     /// `This fn exists solely to keep native api in pair with async only web api.`
-    pub async fn write(&self, data: Box<[u8]>) -> std::io::Result<()> {
+    pub async fn write(&self, data: &[u8]) -> std::io::Result<()> {
         Writer::new(&self.0, data).await
     }
 
