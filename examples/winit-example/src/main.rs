@@ -41,7 +41,6 @@ fn main() {
         }
         event::Event::WindowEvent { event, .. } => match event {
             WindowEvent::CloseRequested { .. } => *control_flow = ControlFlow::Exit,
-            #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::KeyboardInput {
                 input:
                     event::KeyboardInput {
@@ -60,6 +59,16 @@ fn main() {
                 let event_loop_proxy = event_loop_proxy.clone();
                 executor.execut(async move {
                     let file = dialog.await;
+
+                    let file = if let Some(file) = file {
+                        file.write(b"Hi! This is a test file".to_vec().into_boxed_slice())
+                            .await
+                            .unwrap();
+                        Some(file)
+                    } else {
+                        None
+                    };
+
                     event_loop_proxy
                         .send_event(format!("saved file name: {:#?}", file))
                         .ok();
