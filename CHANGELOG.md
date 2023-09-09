@@ -1,5 +1,7 @@
 # Change Log
 
+## Fake update of changelog
+
 ## 0.12.0
 - Add title support for WASM (#132) 
 - Add Create folder button to `pick_folder` on macOS (#127)
