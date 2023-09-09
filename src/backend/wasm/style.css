@@ -24,7 +24,7 @@
 #rfd-title {
   line-height: 1.6;
 }
-#rfd-input {
+#rfd-input,#rfd-output {
   text-align: center;
 }
 #rfd-button {

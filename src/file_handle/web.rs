@@ -1,15 +1,31 @@
+use crate::file_dialog::FileDialog;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub struct FileHandle(web_sys::File);
+#[derive(Clone, Debug)]
+pub(crate) enum WasmFileHandleKind {
+    Readable(web_sys::File),
+    Writable(FileDialog),
+}
+
+pub struct FileHandle(pub(crate) WasmFileHandleKind);
 
 impl FileHandle {
-    pub fn wrap(file: web_sys::File) -> Self {
-        Self(file)
+    /// Wrap a [`web_sys::File`] for reading. Use with [`FileHandle::read`]
+    pub(crate) fn wrap(file: web_sys::File) -> Self {
+        Self(WasmFileHandleKind::Readable(file))
+    }
+
+    /// Create a dummy `FileHandle`. Use with [`FileHandle::write`].
+    pub(crate) fn writable(dialog: FileDialog) -> Self {
+        FileHandle(WasmFileHandleKind::Writable(dialog))
     }
 
     pub fn file_name(&self) -> String {
-        self.0.name()
+        match &self.0 {
+            WasmFileHandleKind::Readable(x) => x.name(),
+            WasmFileHandleKind::Writable(x) => x.file_name.clone().unwrap_or_default(),
+        }
     }
 
     // Path is not supported in browsers.
@@ -33,7 +49,11 @@ impl FileHandle {
 
             closure.forget();
 
-            file_reader.read_as_array_buffer(&self.0).unwrap();
+            if let WasmFileHandleKind::Readable(reader) = &self.0 {
+                file_reader.read_as_array_buffer(reader).unwrap();
+            } else {
+                panic!("This File Handle doesn't support reading. Use `pick_file` to get a readable FileHandle");
+            }
         });
 
         let future = wasm_bindgen_futures::JsFuture::from(promise);

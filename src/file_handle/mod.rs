@@ -14,6 +14,8 @@ pub use native::FileHandle;
 mod web;
 #[cfg(target_arch = "wasm32")]
 pub use web::FileHandle;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use web::WasmFileHandleKind;
 
 #[cfg(test)]
 mod tests {

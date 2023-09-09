@@ -47,9 +47,61 @@ impl Future for Reader {
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut state = self.state.lock().unwrap();
-        if state.res.is_some() {
-            let res = state.res.take().unwrap();
+        if let Some(res) = state.res.take() {
             Poll::Ready(res.unwrap())
+        } else {
+            state.waker.replace(ctx.waker().clone());
+            Poll::Pending
+        }
+    }
+}
+
+struct WriterState {
+    waker: Option<Waker>,
+    res: Option<std::io::Result<()>>,
+}
+
+struct Writer {
+    state: Arc<Mutex<WriterState>>,
+}
+
+impl Writer {
+    fn new(path: &Path, bytes: &[u8]) -> Self {
+        let state = Arc::new(Mutex::new(WriterState {
+            waker: None,
+            res: None,
+        }));
+
+        {
+            let path = path.to_owned();
+            let bytes = bytes.to_owned();
+            let state = state.clone();
+            std::thread::Builder::new()
+                .name("rfd_file_write".into())
+                .spawn(move || {
+                    let res = std::fs::write(path, bytes);
+
+                    let mut state = state.lock().unwrap();
+                    state.res.replace(res);
+
+                    if let Some(waker) = state.waker.take() {
+                        waker.wake();
+                    }
+                })
+                .unwrap();
+        }
+
+        Self { state }
+    }
+}
+
+impl Future for Writer {
+    type Output = std::io::Result<()>;
+
+    fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut state = self.state.lock().unwrap();
+        if let Some(res) = state.res.take() {
+            Poll::Ready(res)
         } else {
             state.waker.replace(ctx.waker().clone());
             Poll::Pending
@@ -64,7 +116,7 @@ impl FileHandle {
     /// On native platforms it wraps path.
     ///
     /// On `WASM32` it wraps JS `File` object.
-    pub fn wrap(path_buf: PathBuf) -> Self {
+    pub(crate) fn wrap(path_buf: PathBuf) -> Self {
         Self(path_buf)
     }
 
@@ -88,12 +140,21 @@ impl FileHandle {
     ///
     /// On native platforms it spawns a `std::thread` in the background.
     ///
-    /// `This fn exists souly to keep native api in pair with async only web api.`
+    /// `This fn exists solely to keep native api in pair with async only web api.`
     pub async fn read(&self) -> Vec<u8> {
         Reader::new(&self.0).await
     }
 
-    /// Unwraps a `FileHandle` and returns innet type.
+    /// Writes a file asynchronously.
+    ///
+    /// On native platforms it spawns a `std::thread` in the background.
+    ///
+    /// `This fn exists solely to keep native api in pair with async only web api.`
+    pub async fn write(&self, data: &[u8]) -> std::io::Result<()> {
+        Writer::new(&self.0, data).await
+    }
+
+    /// Unwraps a `FileHandle` and returns inner type.
     ///
     /// It should be used, if user wants to handle file read themselves
     ///

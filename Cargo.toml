@@ -62,10 +62,14 @@ web-sys = { version = "0.3.46", features = [
   'Element',
   'HtmlInputElement',
   'HtmlButtonElement',
+  'HtmlAnchorElement',
   'Window',
   'File',
   'FileList',
   'FileReader',
+  'Blob',
+  'BlobPropertyBag',
+  'Url',
 ] }
 wasm-bindgen-futures = "0.4.19"
 
