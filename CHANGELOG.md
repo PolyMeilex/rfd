@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.12.0
+- Add title support for WASM (#132) 
+- Add Create folder button to `pick_folder` on macOS (#127)
+- Add support for Yes/No/Cancel buttons (#123)
+- Change a string method signatures #117 
+- WASM `save_file` (#134)
+- Update `gtk-sys` to `0.18` (#143)
+- Update `ashpd` to `0.6` (#133)
+- Replace windows with `windows-sys` (#118) 
+- Make zenity related deps optional (#141)
+
 ## 0.11.3
 - Zenity message dialogs for xdg portal backend 
 
