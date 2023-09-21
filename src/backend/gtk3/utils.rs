@@ -97,13 +97,11 @@ impl GtkThread {
         let _handle = {
             let running = running.clone();
             std::thread::spawn(move || {
-                while running.load(Ordering::Acquire) {
-                    GTK_MUTEX.run_locked(|| unsafe {
-                        while gtk_sys::gtk_events_pending() == 1 {
-                            gtk_sys::gtk_main_iteration();
-                        }
-                    });
-                }
+                GTK_MUTEX.run_locked(|| unsafe {
+                    while running.load(Ordering::Acquire) {
+                        gtk_sys::gtk_main_iteration();
+                    }
+                });
             })
         };
 
