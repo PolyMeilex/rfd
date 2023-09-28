@@ -4,7 +4,7 @@ use dialog_ffi::GtkFileDialog;
 
 use std::path::PathBuf;
 
-use super::utils::{gtk_init_check, GTK_MUTEX};
+use super::utils::GtkGlobalThread;
 use crate::backend::DialogFutureType;
 use crate::{FileDialog, FileHandle};
 
@@ -17,11 +17,7 @@ use super::gtk_future::GtkDialogFuture;
 use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
-        GTK_MUTEX.run_locked(|| {
-            if !gtk_init_check() {
-                return None;
-            };
-
+        GtkGlobalThread::instance().run_blocking(move || {
             let dialog = GtkFileDialog::build_pick_file(&self);
 
             if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
@@ -33,11 +29,7 @@ impl FilePickerDialogImpl for FileDialog {
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
-        GTK_MUTEX.run_locked(|| {
-            if !gtk_init_check() {
-                return None;
-            };
-
+        GtkGlobalThread::instance().run_blocking(move || {
             let dialog = GtkFileDialog::build_pick_files(&self);
 
             if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
@@ -93,11 +85,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
-        GTK_MUTEX.run_locked(|| {
-            if !gtk_init_check() {
-                return None;
-            };
-
+        GtkGlobalThread::instance().run_blocking(move || {
             let dialog = GtkFileDialog::build_pick_folder(&self);
 
             if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
@@ -109,11 +97,7 @@ impl FolderPickerDialogImpl for FileDialog {
     }
 
     fn pick_folders(self) -> Option<Vec<PathBuf>> {
-        GTK_MUTEX.run_locked(|| {
-            if !gtk_init_check() {
-                return None;
-            };
-
+        GtkGlobalThread::instance().run_blocking(move || {
             let dialog = GtkFileDialog::build_pick_folders(&self);
 
             if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {
@@ -169,11 +153,7 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
-        GTK_MUTEX.run_locked(|| {
-            if !gtk_init_check() {
-                return None;
-            };
-
+        GtkGlobalThread::instance().run_blocking(move || {
             let dialog = GtkFileDialog::build_save_file(&self);
 
             if dialog.run() == gtk_sys::GTK_RESPONSE_ACCEPT {

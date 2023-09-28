@@ -1,129 +1,125 @@
 use std::ptr;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread::spawn;
 
-/// Ensures that gtk is allways called from one thread at the time
-pub struct GtkGlobalMutex {
-    locker: Mutex<()>,
-}
+static GTK_THREAD: OnceLock<GtkGlobalThread> = OnceLock::new();
 
-unsafe impl Send for GtkGlobalMutex {}
-unsafe impl Sync for GtkGlobalMutex {}
-
-impl GtkGlobalMutex {
-    const fn new() -> Self {
-        Self {
-            locker: Mutex::new(()),
-        }
-    }
-
-    pub(super) fn run_locked<T, F: FnOnce() -> T>(&self, cb: F) -> T {
-        let _guard = self.locker.lock().unwrap();
-        cb()
-    }
-}
-
-pub static GTK_MUTEX: GtkGlobalMutex = GtkGlobalMutex::new();
-
-/// # Event Handler
-/// Counts amout of iteration requests
-/// When amount of requests goes above 0 it spawns GtkThread and starts iteration
-/// When amount of requests reqches 0 it stops GtkThread, and goes idle
-pub struct GtkEventHandler {
-    thread: Mutex<Option<GtkThread>>,
-    request_count: AtomicUsize,
-}
-
-unsafe impl Send for GtkEventHandler {}
-unsafe impl Sync for GtkEventHandler {}
-
-pub static GTK_EVENT_HANDLER: GtkEventHandler = GtkEventHandler::new();
-
-impl GtkEventHandler {
-    const fn new() -> Self {
-        let thread = Mutex::new(None);
-        let request_count = AtomicUsize::new(0);
-        Self {
-            thread,
-            request_count,
-        }
-    }
-
-    /// Ask GtkEventHandler to start event iteration
-    /// When iteration is no longer needed, just drop IterationRequest.
-    /// And when numer of requests reaches 0 iteration will be stoped
-    pub fn request_iteration_start(&self) -> IterationRequest {
-        let mut thread = self.thread.lock().unwrap();
-        if thread.is_none() {
-            thread.replace(GtkThread::new());
-        }
-
-        self.request_count.fetch_add(1, Ordering::Relaxed);
-        IterationRequest()
-    }
-
-    fn iteration_stop(&self) {
-        self.thread.lock().unwrap().take();
-    }
-
-    fn request_iteration_stop(&self) {
-        self.request_count.fetch_sub(1, Ordering::Release);
-
-        if self.request_count.load(Ordering::Acquire) == 0 {
-            self.iteration_stop();
-        }
-    }
-}
-
-pub struct IterationRequest();
-
-impl Drop for IterationRequest {
-    fn drop(&mut self) {
-        GTK_EVENT_HANDLER.request_iteration_stop();
-    }
-}
-
-/// Thread that iterates gtk events
-struct GtkThread {
-    _handle: JoinHandle<()>,
+/// GTK functions are not thread-safe, and must all be called from the thread that initialized GTK. To ensure this, we
+/// spawn one thread the first time a GTK dialog is opened and keep it open for the entire lifetime of the application,
+/// as GTK cannot be de-initialized or re-initialized on another thread. You're stuck on the thread on which you first
+/// initialize GTK.
+pub struct GtkGlobalThread {
     running: Arc<AtomicBool>,
 }
 
-impl GtkThread {
-    fn new() -> Self {
-        let running = Arc::new(AtomicBool::new(true));
+impl GtkGlobalThread {
+    /// Return the global, lazily-initialized instance of the global GTK thread.
+    pub(super) fn instance() -> &'static Self {
+        GTK_THREAD.get_or_init(|| Self::new())
+    }
 
-        let _handle = {
-            let running = running.clone();
-            std::thread::spawn(move || {
-                while running.load(Ordering::Acquire) {
-                    GTK_MUTEX.run_locked(|| unsafe {
-                        while gtk_sys::gtk_events_pending() == 1 {
-                            gtk_sys::gtk_main_iteration();
-                        }
-                    });
+    fn new() -> Self {
+        // When the GtkGlobalThread is eventually dropped, we will set `running` to false and wake up the loop so
+        // gtk_main_iteration unblocks and we exit the thread on the next iteration.
+        let running = Arc::new(AtomicBool::new(true));
+        let thread_running = Arc::clone(&running);
+
+        spawn(move || {
+            let initialized =
+                unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) == 1 };
+            if !initialized {
+                return;
+            }
+
+            loop {
+                if !thread_running.load(Ordering::Acquire) {
+                    break;
                 }
-            })
+
+                unsafe {
+                    gtk_sys::gtk_main_iteration();
+                }
+            }
+        });
+
+        Self {
+            running: Arc::new(AtomicBool::new(true)),
+        }
+    }
+
+    /// Run a function on the GTK thread, blocking on the result which is then passed back.
+    pub(super) fn run_blocking<
+        T: Send + Clone + std::fmt::Debug + 'static,
+        F: FnOnce() -> T + Send + 'static,
+    >(
+        &self,
+        cb: F,
+    ) -> T {
+        let data: Arc<(Mutex<Option<T>>, _)> = Arc::new((Mutex::new(None), Condvar::new()));
+        let thread_data = Arc::clone(&data);
+        let mut cb = Some(cb);
+        unsafe {
+            connect_idle(move || {
+                // connect_idle takes a FnMut; convert our FnOnce into that by ensuring we only call it once
+                let res = cb.take().expect("Callback should only be called once")();
+
+                // pass the result back to the main thread
+                let (lock, cvar) = &*thread_data;
+                *lock.lock().unwrap() = Some(res);
+                cvar.notify_all();
+
+                glib_sys::GFALSE
+            });
         };
 
-        Self { _handle, running }
+        // wait for GTK thread to execute the callback and place the result into `data`
+        let lock_res = data
+            .1
+            .wait_while(data.0.lock().unwrap(), |res| res.is_none())
+            .unwrap();
+        lock_res.as_ref().unwrap().clone()
+    }
+
+    /// Launch a function on the GTK thread without blocking.
+    pub(super) fn run<F: FnOnce() + Send + 'static>(&self, cb: F) {
+        let mut cb = Some(cb);
+        unsafe {
+            connect_idle(move || {
+                cb.take().expect("Callback should only be called once")();
+                glib_sys::GFALSE
+            });
+        };
     }
 }
 
-impl Drop for GtkThread {
+impl Drop for GtkGlobalThread {
     fn drop(&mut self) {
         self.running.store(false, Ordering::Release);
+        unsafe { glib_sys::g_main_context_wakeup(std::ptr::null_mut()) };
     }
 }
 
-pub fn gtk_init_check() -> bool {
-    unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) == 1 }
-}
+unsafe fn connect_idle<F: FnMut() -> glib_sys::gboolean + Send + 'static>(f: F) {
+    unsafe extern "C" fn response_trampoline<F: FnMut() -> glib_sys::gboolean + Send + 'static>(
+        f: glib_sys::gpointer,
+    ) -> glib_sys::gboolean {
+        let f: &mut F = &mut *(f as *mut F);
 
-/// gtk_main_iteration()
-pub unsafe fn wait_for_cleanup() {
-    while gtk_sys::gtk_events_pending() == 1 {
-        gtk_sys::gtk_main_iteration();
+        f()
     }
+    let f_box: Box<F> = Box::new(f);
+
+    unsafe extern "C" fn destroy_closure<F>(ptr: *mut std::ffi::c_void) {
+        // destroy
+        let _ = Box::<F>::from_raw(ptr as *mut _);
+    }
+
+    glib_sys::g_idle_add_full(
+        glib_sys::G_PRIORITY_DEFAULT_IDLE,
+        Some(response_trampoline::<F>),
+        Box::into_raw(f_box) as glib_sys::gpointer,
+        Some(destroy_closure::<F>),
+    );
 }

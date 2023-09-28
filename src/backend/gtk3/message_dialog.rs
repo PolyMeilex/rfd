@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::ptr;
 
 use super::gtk_future::GtkDialogFuture;
-use super::utils::wait_for_cleanup;
+use super::utils::GtkGlobalThread;
 use super::AsGtkDialog;
 
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
@@ -15,8 +15,6 @@ pub struct GtkMessageDialog {
 
 impl GtkMessageDialog {
     pub fn new(opt: MessageDialog) -> Self {
-        super::utils::gtk_init_check();
-
         let level = match opt.level {
             MessageLevel::Info => gtk_sys::GTK_MESSAGE_INFO,
             MessageLevel::Warning => gtk_sys::GTK_MESSAGE_WARNING,
@@ -174,9 +172,7 @@ unsafe fn set_child_labels_selectable(dialog: *mut gtk_sys::GtkDialog) {
 impl Drop for GtkMessageDialog {
     fn drop(&mut self) {
         unsafe {
-            wait_for_cleanup();
             gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
-            wait_for_cleanup();
         }
     }
 }
@@ -194,8 +190,10 @@ use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
-        let dialog = GtkMessageDialog::new(self);
-        dialog.run()
+        GtkGlobalThread::instance().run_blocking(move || {
+            let dialog = GtkMessageDialog::new(self);
+            dialog.run()
+        })
     }
 }
 
