@@ -1,14 +1,10 @@
-use super::utils::GTK_EVENT_HANDLER;
-use super::utils::GTK_MUTEX;
+use super::utils::GtkGlobalThread;
 
-use std::cell::RefCell;
 use std::pin::Pin;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use std::task::{Context, Poll, Waker};
 
-use super::utils::gtk_init_check;
 use super::AsGtkDialog;
 
 struct FutureState<R, D> {
@@ -39,49 +35,33 @@ impl<R: Default + 'static, D: AsGtkDialog + 'static> GtkDialogFuture<R, D> {
 
         {
             let state = state.clone();
-            std::thread::spawn(move || {
-                let request = Rc::new(RefCell::new(None));
+            let callback = {
+                let state = state.clone();
 
-                let callback = {
-                    let state = state.clone();
-                    let request = request.clone();
-
-                    // Callbacks are called by GTK_EVENT_HANDLER so the GTK_MUTEX is allready locked, no need to worry about that here
-                    move |res_id| {
-                        let mut state = state.lock().unwrap();
-
-                        if let Some(mut dialog) = state.dialog.take() {
-                            state.data = Some(cb(&mut dialog, res_id));
-                        }
-
-                        // Drop the request
-                        request.borrow_mut().take();
-
-                        if let Some(waker) = state.waker.take() {
-                            waker.wake();
-                        }
-                    }
-                };
-
-                GTK_MUTEX.run_locked(|| {
+                move |res_id| {
                     let mut state = state.lock().unwrap();
-                    if gtk_init_check() {
-                        state.dialog = Some(build());
+
+                    if let Some(mut dialog) = state.dialog.take() {
+                        state.data = Some(cb(&mut dialog, res_id));
                     }
 
-                    if let Some(dialog) = &state.dialog {
-                        unsafe {
-                            dialog.show();
-
-                            let ptr = dialog.gtk_dialog_ptr();
-                            connect_response(ptr as *mut _, callback);
-                        }
-                    } else {
-                        state.data = Some(Default::default());
+                    if let Some(waker) = state.waker.take() {
+                        waker.wake();
                     }
-                });
+                }
+            };
 
-                request.replace(Some(GTK_EVENT_HANDLER.request_iteration_start()));
+            GtkGlobalThread::instance().run(move || {
+                let mut state = state.lock().unwrap();
+                state.dialog = Some(build());
+
+                unsafe {
+                    let dialog = state.dialog.as_ref().unwrap();
+                    dialog.show();
+
+                    let ptr = dialog.gtk_dialog_ptr();
+                    connect_response(ptr as *mut _, callback);
+                }
             });
         }
 
