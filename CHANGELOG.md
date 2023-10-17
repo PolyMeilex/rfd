@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+- Fix `FileHandle::inner` (under feature `file-handle-inner`) on wasm
+
 ## 0.12.0
 - Add title support for WASM (#132) 
 - Add Create folder button to `pick_folder` on macOS (#127)
