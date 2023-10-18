@@ -69,7 +69,11 @@ impl FileHandle {
 
     #[cfg(feature = "file-handle-inner")]
     pub fn inner(&self) -> &web_sys::File {
-        &self.0
+        if let WasmFileHandleKind::Readable(reader) = &self.0 {
+            reader
+        } else {
+            panic!("This File Handle doesn't support reading. Use `pick_file` to get a readable FileHandle");
+        }
     }
 }
 
