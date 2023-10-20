@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## 0.12.1
 - Fix `FileHandle::inner` (under feature `file-handle-inner`) on wasm
 
 ## 0.12.0
