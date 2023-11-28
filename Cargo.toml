@@ -15,6 +15,10 @@ default = ["gtk3"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["ashpd", "urlencoding", "pollster"]
+# Use async-std for xdg-portal
+async-std = ["ashpd?/async-std"]
+# Use tokio for xdg-portal
+tokio = ["ashpd?/tokio"]
 common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
 
 [dev-dependencies]
@@ -42,7 +46,7 @@ windows-sys = { version = "0.48", features = [
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 # XDG Desktop Portal
-ashpd = { version = "0.6", optional = true }
+ashpd = { version = "0.6", optional = true, default-features = false }
 urlencoding = { version = "2.1.0", optional = true }
 pollster = { version = "0.3", optional = true }
 # GTK

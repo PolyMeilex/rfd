@@ -13,6 +13,14 @@ fn main() {
             } else if !gtk && !xdg {
                 panic!("You need to choose at least one backend: `gtk3` or `xdg-portal` features");
             }
+
+            if xdg {
+                let tokio = std::env::var_os("CARGO_FEATURE_TOKIO").is_some();
+                let async_std = std::env::var_os("CARGO_FEATURE_ASYNC_STD").is_some();
+                if !tokio && !async_std {
+                    panic!("One of the `tokio` or `async-std` features must be enabled to use `xdg-portal`");
+                }
+            }
         }
     }
 }
