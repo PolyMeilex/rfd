@@ -1,7 +1,10 @@
+#[cfg(any(not(target_os = "linux"), feature = "zenity"))]
 use crate::backend::AsyncMessageDialogImpl;
+#[cfg(any(not(target_os = "linux"), feature = "zenity"))]
 use crate::backend::MessageDialogImpl;
 use std::fmt::{Display, Formatter};
 
+#[cfg(any(not(target_os = "linux"), feature = "zenity"))]
 use std::future::Future;
 
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
@@ -9,7 +12,7 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 /// Synchronous Message Dialog. Supported platforms:
 ///  * Windows
 ///  * macOS
-///  * Linux (GTK only)
+///  * Linux (GTK or Zenity only)
 ///  * WASM
 #[derive(Default, Debug, Clone)]
 pub struct MessageDialog {
@@ -71,6 +74,7 @@ impl MessageDialog {
     }
 
     /// Shows a message dialog and returns the button that was pressed.
+    #[cfg(any(not(target_os = "linux"), any(feature = "zenity", feature = "gtk3")))]
     pub fn show(self) -> MessageDialogResult {
         MessageDialogImpl::show(self)
     }
@@ -79,7 +83,7 @@ impl MessageDialog {
 /// Asynchronous Message Dialog. Supported platforms:
 ///  * Windows
 ///  * macOS
-///  * Linux (GTK only)
+///  * Linux (GTK or Zenity only)
 ///  * WASM
 #[derive(Default, Debug, Clone)]
 pub struct AsyncMessageDialog(MessageDialog);
@@ -131,6 +135,7 @@ impl AsyncMessageDialog {
     }
 
     /// Shows a message dialog and returns the button that was pressed.
+    #[cfg(any(not(target_os = "linux"), any(feature = "zenity", feature = "gtk3")))]
     pub fn show(self) -> impl Future<Output = MessageDialogResult> {
         AsyncMessageDialogImpl::show_async(self.0)
     }

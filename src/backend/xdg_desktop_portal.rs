@@ -2,8 +2,11 @@ use std::path::PathBuf;
 
 use crate::backend::DialogFutureType;
 use crate::file_dialog::Filter;
+#[cfg(feature = "zenity")]
 use crate::message_dialog::MessageDialog;
-use crate::{FileDialog, FileHandle, MessageButtons, MessageDialogResult};
+use crate::{FileDialog, FileHandle};
+#[cfg(feature = "zenity")]
+use crate::{MessageButtons, MessageDialogResult};
 
 use ashpd::desktop::file_chooser::{FileFilter, OpenFileRequest, SaveFileRequest};
 // TODO: convert raw_window_handle::RawWindowHandle to ashpd::WindowIdentifier
@@ -192,14 +195,18 @@ impl AsyncFileSaveDialogImpl for FileDialog {
     }
 }
 
+#[cfg(feature = "zenity")]
 use crate::backend::MessageDialogImpl;
+#[cfg(feature = "zenity")]
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
         block_on(self.show_async())
     }
 }
 
+#[cfg(feature = "zenity")]
 use crate::backend::AsyncMessageDialogImpl;
+#[cfg(feature = "zenity")]
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         Box::pin(async move {

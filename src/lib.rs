@@ -69,7 +69,9 @@
 //! they can all be installed simultaneously).
 //!
 //! The XDG Desktop Portal has no API for message dialogs, so the [MessageDialog] and
-//! [AsyncMessageDialog] structs will not build with this backend.
+//! [AsyncMessageDialog] structs will not build with this backend unless the `zenity` feature is
+//! enabled. However, `zenity`-based dialogs will silently fail if the end user does not have the
+//! `zenity` binary in `$PATH`.
 //!
 //! # macOS non-windowed applications, async, and threading
 //!
