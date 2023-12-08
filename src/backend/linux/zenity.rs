@@ -1,13 +1,5 @@
-use futures_util::AsyncReadExt;
-use std::{
-    error::Error,
-    fmt::Display,
-    path::PathBuf,
-    process::{Command, Stdio},
-    time::Duration,
-};
+use std::{error::Error, fmt::Display, path::PathBuf, process::Command};
 
-use super::child_stdout::ChildStdout;
 use crate::{
     file_dialog::Filter,
     message_dialog::{MessageButtons, MessageLevel},
@@ -17,7 +9,7 @@ use crate::{
 #[derive(Debug)]
 pub enum ZenityError {
     Io(std::io::Error),
-    StdOutNotFound,
+    FromUtf8Error(std::string::FromUtf8Error),
 }
 
 impl Error for ZenityError {}
@@ -26,7 +18,7 @@ impl Display for ZenityError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ZenityError::Io(io) => write!(f, "{io}"),
-            ZenityError::StdOutNotFound => write!(f, "Stdout not found"),
+            ZenityError::FromUtf8Error(err) => err.fmt(f),
         }
     }
 }
@@ -34,6 +26,12 @@ impl Display for ZenityError {
 impl From<std::io::Error> for ZenityError {
     fn from(value: std::io::Error) -> Self {
         Self::Io(value)
+    }
+}
+
+impl From<std::string::FromUtf8Error> for ZenityError {
+    fn from(value: std::string::FromUtf8Error) -> Self {
+        Self::FromUtf8Error(value)
     }
 }
 
@@ -64,24 +62,11 @@ fn add_filename(command: &mut Command, file_name: &Option<String>) {
     }
 }
 
-async fn run(mut command: Command) -> ZenityResult<Option<String>> {
-    let mut process = command.stdout(Stdio::piped()).spawn()?;
+async fn run(command: Command) -> ZenityResult<Option<String>> {
+    let res = super::async_command::AsyncCommand::spawn(command).await?;
+    let buffer = String::from_utf8(res.stdout)?;
 
-    let stdout = process.stdout.take().ok_or(ZenityError::StdOutNotFound)?;
-    let mut stdout = ChildStdout::new(stdout)?;
-
-    let mut buffer = String::new();
-    stdout.read_to_string(&mut buffer).await?;
-
-    let status = loop {
-        if let Some(status) = process.try_wait()? {
-            break status;
-        }
-
-        async_io::Timer::after(Duration::from_millis(1)).await;
-    };
-
-    Ok((status.success() || !buffer.is_empty()).then_some(buffer))
+    Ok((res.status.success() || !buffer.is_empty()).then_some(buffer))
 }
 
 #[allow(unused)]
@@ -243,21 +228,21 @@ mod tests {
     #[test]
     #[ignore]
     fn message() {
-        async_io::block_on(super::message(
+        pollster::block_on(super::message(
             &crate::message_dialog::MessageLevel::Info,
             &crate::message_dialog::MessageButtons::Ok,
             "hi",
             "me",
         ))
         .unwrap();
-        async_io::block_on(super::message(
+        pollster::block_on(super::message(
             &crate::message_dialog::MessageLevel::Warning,
             &crate::message_dialog::MessageButtons::Ok,
             "hi",
             "me",
         ))
         .unwrap();
-        async_io::block_on(super::message(
+        pollster::block_on(super::message(
             &crate::message_dialog::MessageLevel::Error,
             &crate::message_dialog::MessageButtons::Ok,
             "hi",
@@ -269,13 +254,13 @@ mod tests {
     #[test]
     #[ignore]
     fn question() {
-        async_io::block_on(super::question(
+        pollster::block_on(super::question(
             &crate::message_dialog::MessageButtons::OkCancel,
             "hi",
             "me",
         ))
         .unwrap();
-        async_io::block_on(super::question(
+        pollster::block_on(super::question(
             &crate::message_dialog::MessageButtons::YesNo,
             "hi",
             "me",
@@ -286,28 +271,28 @@ mod tests {
     #[test]
     #[ignore]
     fn pick_file() {
-        let path = async_io::block_on(super::pick_file(&FileDialog::default())).unwrap();
+        let path = pollster::block_on(super::pick_file(&FileDialog::default())).unwrap();
         dbg!(path);
     }
 
     #[test]
     #[ignore]
     fn pick_files() {
-        let path = async_io::block_on(super::pick_files(&FileDialog::default())).unwrap();
+        let path = pollster::block_on(super::pick_files(&FileDialog::default())).unwrap();
         dbg!(path);
     }
 
     #[test]
     #[ignore]
     fn pick_folder() {
-        let path = async_io::block_on(super::pick_folder(&FileDialog::default())).unwrap();
+        let path = pollster::block_on(super::pick_folder(&FileDialog::default())).unwrap();
         dbg!(path);
     }
 
     #[test]
     #[ignore]
     fn save_file() {
-        let path = async_io::block_on(super::save_file(&FileDialog::default())).unwrap();
+        let path = pollster::block_on(super::save_file(&FileDialog::default())).unwrap();
         dbg!(path);
     }
 }
