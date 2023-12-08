@@ -1,2 +1,2 @@
-mod child_stdout;
+mod async_command;
 pub(crate) mod zenity;

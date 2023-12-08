@@ -1033,11 +1033,9 @@ name = "rfd"
 version = "0.12.1"
 dependencies = [
  "ashpd",
- "async-io",
  "block",
  "dispatch",
  "futures",
- "futures-util",
  "glib-sys",
  "gobject-sys",
  "gtk-sys",
