@@ -79,7 +79,7 @@ impl FileDialog {
     /// Set the title of the dialog. Supported platforms:
     ///  * Windows
     ///  * Linux
-    ///  * Mac (Only below version 10.11)
+    ///  * Mac
     pub fn set_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
         self
@@ -189,7 +189,7 @@ impl AsyncFileDialog {
     /// Set the title of the dialog. Supported platforms:
     ///  * Windows
     ///  * Linux
-    ///  * Mac (Only below version 10.11)
+    ///  * Mac
     ///  * WASM32
     pub fn set_title(mut self, title: impl Into<String>) -> Self {
         self.file_dialog = self.file_dialog.set_title(title);

@@ -126,7 +126,7 @@ impl Panel {
     pub fn set_title(&self, title: &str) {
         unsafe {
             let title = make_nsstring(title);
-            let () = msg_send![self.panel, setTitle: title];
+            let () = msg_send![self.panel, setMessage: title];
         }
     }
 
