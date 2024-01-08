@@ -55,7 +55,7 @@
 //!
 //! ## XDG Desktop Portal backend
 //! The XDG Desktop Portal backend is used when the `gtk3` feature is disabled with
-//! [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `xdg-portal` is enabled instead. This backend will use either the GTK or KDE file dialog depending on the desktop environment
+//! [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `xdg-portal` is enabled instead. Either the `tokio` or `async-std` feature must be enabled. This backend will use either the GTK or KDE file dialog depending on the desktop environment
 //! in use at runtime. It does not have any non-Rust
 //! build dependencies, however it requires the user to have either the
 //! [GTK](https://github.com/flatpak/xdg-desktop-portal-gtk),
