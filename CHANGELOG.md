@@ -1,8 +1,11 @@
 # Change Log
 
+## [Unreleased]
+
 ## 0.13.0
-- Users of the `xdg-portal` feature must now also select the `tokio`
+- **[Breaking]** Users of the `xdg-portal` feature must now also select the `tokio`
   or `async-std` feature
+- [macOS] Use NSOpenPanel.message instead of title #166
 
 ## 0.12.1
 - Fix `FileHandle::inner` (under feature `file-handle-inner`) on wasm
