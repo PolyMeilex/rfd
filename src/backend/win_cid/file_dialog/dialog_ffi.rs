@@ -152,7 +152,7 @@ impl IDialog {
         let dialog = unsafe { DialogInner::open()? };
 
         let parent = match opt.parent {
-            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd as _),
+            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd.get() as _),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
@@ -164,7 +164,7 @@ impl IDialog {
         let dialog = unsafe { DialogInner::save()? };
 
         let parent = match opt.parent {
-            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd as _),
+            Some(RawWindowHandle::Win32(handle)) => Some(handle.hwnd.get() as _),
             None => None,
             _ => unreachable!("unsupported window handle, expected: Windows"),
         };
@@ -174,7 +174,9 @@ impl IDialog {
 
     fn add_filters(&self, filters: &[crate::file_dialog::Filter]) -> Result<()> {
         {
-            let Some(first_filter) = filters.first() else { return Ok(()) };
+            let Some(first_filter) = filters.first() else {
+                return Ok(());
+            };
             if let Some(first_extension) = first_filter.extensions.first() {
                 let extension = str_to_vec_u16(first_extension);
                 unsafe { self.0.set_default_extension(&extension)? }
@@ -220,7 +222,9 @@ impl IDialog {
     fn set_path(&self, path: &Option<PathBuf>) -> Result<()> {
         const SHELL_ITEM_IID: GUID = GUID::from_u128(0x43826d1e_e718_42ee_bc55_a1e261c37bfe);
 
-        let Some(path) = path.as_ref().and_then(|p| p.to_str()) else { return Ok(()) };
+        let Some(path) = path.as_ref().and_then(|p| p.to_str()) else {
+            return Ok(());
+        };
 
         // Strip Win32 namespace prefix from the path
         let path = path.strip_prefix(r"\\?\").unwrap_or(path);
