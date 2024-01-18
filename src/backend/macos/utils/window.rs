@@ -10,8 +10,12 @@ pub trait INSWindow: INSObject {
     fn from_raw_window_handle(h: &RawWindowHandle) -> Id<Self> {
         match h {
             RawWindowHandle::AppKit(h) => {
-                let id = h.ns_window as *mut Self;
-                unsafe { Id::from_ptr(id) }
+                let id = h.ns_view.as_ptr() as *mut Self;
+                let id: Id<Self> = unsafe { Id::from_ptr(id) };
+
+                let window: *mut NSWindow = unsafe { msg_send![id, window] };
+
+                unsafe { Id::from_ptr(window as *mut Self) }
             }
             _ => unreachable!("unsupported window handle, expected: MacOS"),
         }
