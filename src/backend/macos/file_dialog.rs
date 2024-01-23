@@ -6,8 +6,6 @@ use crate::{FileDialog, FileHandle};
 
 use std::path::PathBuf;
 
-pub use objc::runtime::{BOOL, NO};
-
 use super::modal_future::ModalFuture;
 use super::utils::{run_on_main, INSWindow, NSWindow};
 

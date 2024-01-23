@@ -4,7 +4,8 @@ use std::fmt::{Display, Formatter};
 
 use std::future::Future;
 
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::HasWindowHandle;
+use raw_window_handle::RawWindowHandle;
 
 /// Synchronous Message Dialog. Supported platforms:
 ///  * Windows
@@ -65,8 +66,8 @@ impl MessageDialog {
 
     /// Set parent windows explicitly (optional)
     /// Suported in: `macos` and `windows`
-    pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
-        self.parent = Some(parent.raw_window_handle());
+    pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
+        self.parent = parent.window_handle().ok().map(|x| x.as_raw());
         self
     }
 
@@ -125,7 +126,7 @@ impl AsyncMessageDialog {
 
     /// Set parent windows explicitly (optional)
     /// Suported in: `macos` and `windows`
-    pub fn set_parent<W: HasRawWindowHandle>(mut self, parent: &W) -> Self {
+    pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
         self.0 = self.0.set_parent(parent);
         self
     }

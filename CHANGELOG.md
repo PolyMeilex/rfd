@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+- Update `raw-window-handle` to 0.6.
+- Update `winit` in example to 0.29.
 
 ## 0.13.0
 - **[Breaking]** Users of the `xdg-portal` feature must now also select the `tokio`
