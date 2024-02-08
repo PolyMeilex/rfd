@@ -1,11 +1,10 @@
 use crate::FileDialog;
 
-use std::ops::Deref;
 use std::path::Path;
 use std::{ops::DerefMut, path::PathBuf};
 
 use objc::{class, msg_send, sel, sel_impl};
-use objc_id::Id;
+use objc_id::{Id, Shared};
 
 use super::super::utils::{INSURL, NSURL};
 
@@ -32,6 +31,7 @@ pub struct Panel {
     pub(crate) panel: Id<Object>,
     _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
+    parent: Option<Id<NSWindow, Shared>>,
 }
 
 impl AsModal for Panel {
@@ -51,6 +51,7 @@ impl Panel {
             panel: unsafe { Id::from_ptr(panel) },
             _focus_manager,
             _policy_manager,
+            parent: None,
         }
     }
 
@@ -63,6 +64,14 @@ impl Panel {
     }
 
     pub fn run_modal(&self) -> i32 {
+        if let Some(parent) = self.parent.clone() {
+            let completion: *const () = std::ptr::null();
+
+            unsafe {
+                msg_send![self.panel, beginSheetModalForWindow: parent completionHandler: &completion]
+            }
+        }
+
         unsafe { msg_send![self.panel, runModal] }
     }
 
@@ -130,11 +139,8 @@ impl Panel {
         }
     }
 
-    pub fn set_parent(&self, parent: &RawWindowHandle) {
-        let id = NSWindow::from_raw_window_handle(parent);
-        unsafe {
-            let () = msg_send![id, addChildWindow: self.panel.deref() ordered: 1];
-        }
+    pub fn set_parent(&mut self, parent: &RawWindowHandle) {
+        self.parent = Some(NSWindow::from_raw_window_handle(parent).share());
     }
 
     pub fn get_result(&self) -> PathBuf {
@@ -162,7 +168,7 @@ impl Panel {
 
 impl Panel {
     pub fn build_pick_file(opt: &FileDialog) -> Self {
-        let panel = Panel::open_panel();
+        let mut panel = Panel::open_panel();
 
         if !opt.filters.is_empty() {
             panel.add_filters(&opt);
@@ -191,7 +197,7 @@ impl Panel {
     }
 
     pub fn build_save_file(opt: &FileDialog) -> Self {
-        let panel = Panel::save_panel();
+        let mut panel = Panel::save_panel();
 
         if !opt.filters.is_empty() {
             panel.add_filters(&opt);
@@ -217,7 +223,7 @@ impl Panel {
     }
 
     pub fn build_pick_folder(opt: &FileDialog) -> Self {
-        let panel = Panel::open_panel();
+        let mut panel = Panel::open_panel();
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path, opt.file_name.as_deref());
@@ -239,7 +245,7 @@ impl Panel {
     }
 
     pub fn build_pick_folders(opt: &FileDialog) -> Self {
-        let panel = Panel::open_panel();
+        let mut panel = Panel::open_panel();
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path, opt.file_name.as_deref());
@@ -262,7 +268,7 @@ impl Panel {
     }
 
     pub fn build_pick_files(opt: &FileDialog) -> Self {
-        let panel = Panel::open_panel();
+        let mut panel = Panel::open_panel();
 
         if !opt.filters.is_empty() {
             panel.add_filters(&opt);
