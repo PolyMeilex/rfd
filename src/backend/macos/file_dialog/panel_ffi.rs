@@ -1,5 +1,6 @@
 use crate::FileDialog;
 
+use std::mem;
 use std::path::Path;
 use std::{ops::DerefMut, path::PathBuf};
 
@@ -29,9 +30,9 @@ fn make_nsstring(s: &str) -> Id<NSString> {
 
 pub struct Panel {
     pub(crate) panel: Id<Object>,
+    parent: Option<Id<NSWindow, Shared>>,
     _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
-    parent: Option<Id<NSWindow, Shared>>,
 }
 
 impl AsModal for Panel {
@@ -65,11 +66,13 @@ impl Panel {
 
     pub fn run_modal(&self) -> i32 {
         if let Some(parent) = self.parent.clone() {
-            let completion: *const () = std::ptr::null();
+            let completion = { block::ConcreteBlock::new(|_: isize| {}) };
 
             unsafe {
                 msg_send![self.panel, beginSheetModalForWindow: parent completionHandler: &completion]
             }
+
+            mem::forget(completion);
         }
 
         unsafe { msg_send![self.panel, runModal] }

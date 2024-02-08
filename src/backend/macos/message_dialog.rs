@@ -1,3 +1,4 @@
+use std::mem;
 use std::ops::DerefMut;
 
 use crate::backend::DialogFutureType;
@@ -9,7 +10,7 @@ use super::{
     AsModal,
 };
 
-use super::utils::{INSWindow, NSWindow};
+use super::utils::{INSApplication, INSWindow, NSApplication, NSWindow};
 use objc::runtime::Object;
 use objc::{class, msg_send, sel, sel_impl};
 use objc_foundation::{INSString, NSString};
@@ -35,6 +36,7 @@ enum NSAlertReturn {
 pub struct NSAlert {
     buttons: MessageButtons,
     alert: Id<Object>,
+    parent: Option<Id<NSWindow>>,
     _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
 }
@@ -93,13 +95,30 @@ impl NSAlert {
 
         Self {
             alert: unsafe { Id::from_retained_ptr(alert) },
+            parent: opt.parent.map(|x| NSWindow::from_raw_window_handle(&x)),
             buttons: opt.buttons,
             _focus_manager,
             _policy_manager,
         }
     }
 
-    pub fn run(self) -> MessageDialogResult {
+    pub fn run(mut self) -> MessageDialogResult {
+        if let Some(parent) = self.parent.take() {
+            let completion = {
+                block::ConcreteBlock::new(|result: isize| {
+                    let _: () = unsafe {
+                        msg_send![NSApplication::shared_application(), stopModalWithCode: result]
+                    };
+                })
+            };
+
+            unsafe {
+                msg_send![self.alert, beginSheetModalForWindow: parent completionHandler: &completion]
+            }
+
+            mem::forget(completion);
+        }
+
         let ret: i64 = unsafe { msg_send![self.alert, runModal] };
         dialog_result(&self.buttons, ret)
     }
