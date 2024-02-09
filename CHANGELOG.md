@@ -4,6 +4,7 @@
 - Update `raw-window-handle` to 0.6.
 - Update `winit` in example to 0.29.
 - Update wasm CSS to respect the color scheme (including dark mode)
+- Fix macOS sync backend incorrectly setting the parent window
 
 ## 0.13.0
 - **[Breaking]** Users of the `xdg-portal` feature must now also select the `tokio`
