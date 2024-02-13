@@ -24,6 +24,7 @@ pub struct FileDialog {
     pub(crate) file_name: Option<String>,
     pub(crate) title: Option<String>,
     pub(crate) parent: Option<RawWindowHandle>,
+    pub(crate) can_create_directories: Option<bool>,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
@@ -90,6 +91,13 @@ impl FileDialog {
     /// Suported in: `macos` and `windows`
     pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
         self.parent = parent.window_handle().ok().map(|x| x.as_raw());
+        self
+    }
+
+    /// Set can create directories in the dialog.
+    /// Suported in: `macos`.
+    pub fn set_can_create_directories(mut self, can: bool) -> Self {
+        self.can_create_directories.replace(can);
         self
     }
 }
@@ -201,6 +209,13 @@ impl AsyncFileDialog {
     /// Suported in: `macos` and `windows`
     pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
         self.file_dialog = self.file_dialog.set_parent(parent);
+        self
+    }
+
+    /// Set can create directories in the dialog.
+    /// Suported in: `macos`.
+    pub fn set_can_create_directories(mut self, can: bool) -> Self {
+        self.file_dialog = self.file_dialog.set_can_create_directories(can);
         self
     }
 }

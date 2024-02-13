@@ -193,6 +193,13 @@ impl Panel {
             panel.set_parent(parent);
         }
 
+        if let Some(can) = opt.can_create_directories {
+            panel.set_can_create_directories(match can {
+                true => YES,
+                false => NO,
+            });
+        }
+
         panel.set_can_choose_directories(NO);
         panel.set_can_choose_files(YES);
 
@@ -222,6 +229,13 @@ impl Panel {
             panel.set_parent(parent);
         }
 
+        if let Some(can) = opt.can_create_directories {
+            panel.set_can_create_directories(match can {
+                true => YES,
+                false => NO,
+            });
+        }
+
         panel
     }
 
@@ -240,8 +254,13 @@ impl Panel {
             panel.set_parent(parent);
         }
 
+        let can_create_directories = opt.can_create_directories.unwrap_or(true);
+        panel.set_can_create_directories(match can_create_directories {
+            true => YES,
+            false => NO,
+        });
+
         panel.set_can_choose_directories(YES);
-        panel.set_can_create_directories(YES);
         panel.set_can_choose_files(NO);
 
         panel
@@ -262,8 +281,13 @@ impl Panel {
             panel.set_parent(parent);
         }
 
+        let can = opt.can_create_directories.unwrap_or(true);
+        panel.set_can_create_directories(match can {
+            true => YES,
+            false => NO,
+        });
+
         panel.set_can_choose_directories(YES);
-        panel.set_can_create_directories(YES);
         panel.set_can_choose_files(NO);
         panel.set_allows_multiple_selection(YES);
 
@@ -287,6 +311,13 @@ impl Panel {
 
         if let Some(parent) = &opt.parent {
             panel.set_parent(parent);
+        }
+
+        if let Some(can) = opt.can_create_directories {
+            panel.set_can_create_directories(match can {
+                true => YES,
+                false => NO,
+            });
         }
 
         panel.set_can_choose_directories(NO);
