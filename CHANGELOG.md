@@ -3,6 +3,7 @@
 ## [Unreleased]
 - Update `raw-window-handle` to 0.6.
 - Update `winit` in example to 0.29.
+- Update `ashpd` to 0.8.
 - Update wasm CSS to respect the color scheme (including dark mode)
 - Fix macOS sync backend incorrectly setting the parent window
 - Add `FileDialog/AsyncFileDialog::set_can_create_directories`, supported on macOS only.
