@@ -147,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "async-process"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c1cd5d253ecac3d3cf15e390fd96bd92a13b1d14497d81abf077304794fb04"
+checksum = "451e3cf68011bd56771c79db04a9e333095ab6349f7e47592b788e9b98720cc8"
 dependencies = [
  "async-channel",
  "async-io",
@@ -157,7 +157,7 @@ dependencies = [
  "async-signal",
  "blocking",
  "cfg-if",
- "event-listener 4.0.3",
+ "event-listener 5.1.0",
  "futures-lite",
  "rustix",
  "windows-sys 0.52.0",
@@ -1059,7 +1059,7 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "rfd"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "ashpd",
  "block",

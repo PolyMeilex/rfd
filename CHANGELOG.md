@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## 0.14.0
 - i18n for GTK and XDG Portal
 - Use XDG Portal as default
 - Use zenity as a fallback for XDG Portal
