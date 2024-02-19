@@ -1,8 +1,9 @@
 # Change Log
 
 ## [Unreleased]
+- i18n for GTK and XDG Portal
 - Use XDG Portal as default
-- Use zenity as a fallback for xdgp
+- Use zenity as a fallback for XDG Portal
 - Update `raw-window-handle` to 0.6.
 - Update `winit` in example to 0.29.
 - Update `ashpd` to 0.8.

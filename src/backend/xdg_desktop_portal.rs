@@ -44,9 +44,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
-                .accept_label("Pick file")
                 .multiple(false)
-                .title(self.title.as_deref().unwrap_or("Pick a file"))
+                .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
                 .send()
                 .await;
@@ -76,9 +75,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
-                .accept_label("Pick file(s)")
                 .multiple(true)
-                .title(self.title.as_deref().unwrap_or("Pick one or more files"))
+                .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
                 .send()
                 .await;
@@ -128,10 +126,9 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
-                .accept_label("Pick folder")
                 .multiple(false)
                 .directory(true)
-                .title(self.title.as_deref().unwrap_or("Pick a folder"))
+                .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
                 .send()
                 .await;
@@ -161,10 +158,9 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
-                .accept_label("Pick folders")
                 .multiple(true)
                 .directory(true)
-                .title(self.title.as_deref().unwrap_or("Pick one or more folders"))
+                .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
                 .send()
                 .await;
@@ -209,8 +205,7 @@ impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
             let res = SaveFileRequest::default()
-                .accept_label("Save")
-                .title(self.title.as_deref().unwrap_or("Save file"))
+                .title(self.title.as_deref().or(None))
                 .current_name(self.file_name.as_deref())
                 .filters(self.filters.iter().map(From::from))
                 .current_folder::<&PathBuf>(&self.starting_directory)
