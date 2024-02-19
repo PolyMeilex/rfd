@@ -1,6 +1,7 @@
 # Change Log
 
 ## [Unreleased]
+- Use zenity as a fallback for xdgp
 - Update `raw-window-handle` to 0.6.
 - Update `winit` in example to 0.29.
 - Update `ashpd` to 0.8.
