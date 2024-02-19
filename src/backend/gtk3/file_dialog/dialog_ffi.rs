@@ -22,18 +22,17 @@ pub struct GtkFileDialog {
 }
 
 impl GtkFileDialog {
-    fn new(title: &str, action: GtkFileChooserAction, btn1: &str, btn2: &str) -> Self {
+    fn new(title: &str, action: GtkFileChooserAction) -> Self {
         let title = CString::new(title).unwrap();
-        let btn1 = CString::new(btn1).unwrap();
-        let btn2 = CString::new(btn2).unwrap();
 
         let ptr = unsafe {
             let dialog = gtk_sys::gtk_file_chooser_native_new(
                 title.as_ptr(),
                 ptr::null_mut(),
                 action as i32,
-                btn2.as_ptr(),
-                btn1.as_ptr(),
+                // passing null for the texts will use the default text, which has full support for i18n
+                std::ptr::null(),
+                std::ptr::null(),
             );
             dialog as _
         };
@@ -159,8 +158,6 @@ impl GtkFileDialog {
         let mut dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Open File"),
             GtkFileChooserAction::Open,
-            "Cancel",
-            "Open",
         );
 
         dialog.add_filters(&opt.filters);
@@ -182,8 +179,6 @@ impl GtkFileDialog {
         let mut dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Save File"),
             GtkFileChooserAction::Save,
-            "Cancel",
-            "Save",
         );
 
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr as _, 1) };
@@ -214,8 +209,6 @@ impl GtkFileDialog {
         let dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Select Folder"),
             GtkFileChooserAction::SelectFolder,
-            "Cancel",
-            "Select",
         );
         dialog.set_path(opt.starting_directory.as_deref());
 
@@ -235,8 +228,6 @@ impl GtkFileDialog {
         let dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Select Folder"),
             GtkFileChooserAction::SelectFolder,
-            "Cancel",
-            "Select",
         );
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.set_path(opt.starting_directory.as_deref());
@@ -257,8 +248,6 @@ impl GtkFileDialog {
         let mut dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Open File"),
             GtkFileChooserAction::Open,
-            "Cancel",
-            "Open",
         );
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
