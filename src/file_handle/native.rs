@@ -177,7 +177,7 @@ impl std::fmt::Debug for FileHandle {
 
 impl From<PathBuf> for FileHandle {
     fn from(path: PathBuf) -> Self {
-        Self(path)
+        Self::wrap(path)
     }
 }
 

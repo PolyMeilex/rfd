@@ -30,6 +30,7 @@ pub struct FileDialog {
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
 // fingers crossed
 unsafe impl Send for FileDialog {}
+unsafe impl Sync for FileDialog {}
 
 impl FileDialog {
     /// New file dialog builder

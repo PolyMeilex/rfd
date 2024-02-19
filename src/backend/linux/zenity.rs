@@ -69,7 +69,6 @@ async fn run(command: Command) -> ZenityResult<Option<String>> {
     Ok((res.status.success() || !buffer.is_empty()).then_some(buffer))
 }
 
-#[allow(unused)]
 pub async fn pick_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     let mut command = command();
     command.arg("--file-selection");
@@ -85,7 +84,6 @@ pub async fn pick_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     })
 }
 
-#[allow(unused)]
 pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
     let mut command = command();
     command.args(["--file-selection", "--multiple"]);
@@ -98,11 +96,10 @@ pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
             let list = buffer.trim().split('|').map(PathBuf::from).collect();
             list
         })
-        .unwrap_or(Vec::new())
+        .unwrap_or_default()
     })
 }
 
-#[allow(unused)]
 pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     let mut command = command();
     command.args(["--file-selection", "--directory"]);
@@ -118,7 +115,22 @@ pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     })
 }
 
-#[allow(unused)]
+pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
+    let mut command = command();
+    command.args(["--file-selection", "--directory", "--multiple"]);
+
+    add_filters(&mut command, &dialog.filters);
+    add_filename(&mut command, &dialog.file_name);
+
+    run(command).await.map(|res| {
+        res.map(|buffer| {
+            let list = buffer.trim().split('|').map(PathBuf::from).collect();
+            list
+        })
+        .unwrap_or_default()
+    })
+}
+
 pub async fn save_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     let mut command = command();
     command.args(["--file-selection", "--save", "--confirm-overwrite"]);
