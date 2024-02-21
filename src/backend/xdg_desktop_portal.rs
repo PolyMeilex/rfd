@@ -47,6 +47,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
                 .multiple(false)
                 .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
+                .current_folder::<&PathBuf>(&self.starting_directory)
+                .expect("File path should not be nul-terminated")
                 .send()
                 .await;
 
@@ -78,6 +80,8 @@ impl AsyncFilePickerDialogImpl for FileDialog {
                 .multiple(true)
                 .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
+                .current_folder::<&PathBuf>(&self.starting_directory)
+                .expect("File path should not be nul-terminated")
                 .send()
                 .await;
 
@@ -130,6 +134,8 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
                 .directory(true)
                 .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
+                .current_folder::<&PathBuf>(dbg!(&self.starting_directory))
+                .expect("File path should not be nul-terminated")
                 .send()
                 .await;
 
@@ -162,6 +168,8 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
                 .directory(true)
                 .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
+                .current_folder::<&PathBuf>(&self.starting_directory)
+                .expect("File path should not be nul-terminated")
                 .send()
                 .await;
 
