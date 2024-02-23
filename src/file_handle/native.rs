@@ -183,7 +183,7 @@ impl From<PathBuf> for FileHandle {
 
 impl From<FileHandle> for PathBuf {
     fn from(file_handle: FileHandle) -> Self {
-        PathBuf::from(file_handle.path())
+        file_handle.0
     }
 }
 
