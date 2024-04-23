@@ -1,15 +1,16 @@
-use objc_id::Id;
+use objc2::rc::Id;
 
-use super::{INSApplication, INSWindow, NSApplication, NSWindow};
+use objc2_app_kit::{NSApplication, NSWindow};
+use objc2_foundation::MainThreadMarker;
 
 pub struct FocusManager {
     key_window: Option<Id<NSWindow>>,
 }
 
 impl FocusManager {
-    pub fn new() -> Self {
-        let app = NSApplication::shared_application();
-        let key_window = app.key_window();
+    pub fn new(mtm: MainThreadMarker) -> Self {
+        let app = NSApplication::sharedApplication(mtm);
+        let key_window = app.keyWindow();
 
         Self { key_window }
     }
@@ -18,7 +19,7 @@ impl FocusManager {
 impl Drop for FocusManager {
     fn drop(&mut self) {
         if let Some(win) = &self.key_window {
-            win.make_key_and_order_front();
+            win.makeKeyAndOrderFront(None);
         }
     }
 }

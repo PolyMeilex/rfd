@@ -1,16 +1,25 @@
-use objc::{msg_send, sel, sel_impl};
-use objc_id::Id;
+use block2::Block;
+use objc2::mutability::MainThreadOnly;
+use objc2::rc::Id;
+use objc2::ClassType;
+use objc2_app_kit::{NSApplication, NSModalResponse, NSWindow};
+use objc2_foundation::{run_on_main, MainThreadMarker};
 
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
-use std::{mem, pin::Pin};
 
 use std::task::{Context, Poll, Waker};
 
-use super::AsModal;
+use super::utils::activate_cocoa_multithreading;
 
-use super::utils::{
-    activate_cocoa_multithreading, is_main_thread, INSApplication, NSApplication, NSWindow,
-};
+pub(super) trait AsModal {
+    fn inner_modal(&self) -> &(impl InnerModal + 'static);
+}
+
+pub(super) trait InnerModal: ClassType<Mutability = MainThreadOnly> {
+    fn begin_modal(&self, window: &NSWindow, handler: &Block<dyn Fn(NSModalResponse)>);
+    fn run_modal(&self) -> NSModalResponse;
+}
 
 struct FutureState<R, D> {
     waker: Option<Waker>,
@@ -27,13 +36,13 @@ pub(super) struct ModalFuture<R, D> {
 unsafe impl<R, D> Send for ModalFuture<R, D> {}
 
 impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
-    pub fn new<F, DBULD: FnOnce() -> D + Send>(
+    pub fn new<F, DBULD: FnOnce(MainThreadMarker) -> D + Send>(
         win: Option<Id<NSWindow>>,
         build_modal: DBULD,
         cb: F,
     ) -> Self
     where
-        F: Fn(&mut D, i64) -> R + Send + 'static,
+        F: Fn(&mut D, isize) -> R + Send + 'static,
     {
         activate_cocoa_multithreading();
 
@@ -43,7 +52,8 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             modal: None,
         }));
 
-        let dialog_callback = move |state: Arc<Mutex<FutureState<R, D>>>, result: i64| {
+        let dialog_callback = move |state: Arc<Mutex<FutureState<R, D>>>,
+                                    result: NSModalResponse| {
             let mut state = state.lock().unwrap();
             // take() to drop it when it's safe to do so
             state.data = if let Some(mut modal) = state.modal.take() {
@@ -56,59 +66,52 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             }
         };
 
-        let app = NSApplication::shared_application();
+        let mtm = unsafe { MainThreadMarker::new_unchecked() };
+        let app = NSApplication::sharedApplication(mtm);
 
         let win = if let Some(win) = win {
-            Some(win.share())
+            Some(win)
         } else {
-            app.get_window()
+            unsafe { app.mainWindow() }.or_else(|| app.windows().first_retained())
         };
 
         // if async exec is possible start sheet modal
         // otherwise fallback to sync
-        if app.is_running() && win.is_some() {
+        if unsafe { app.isRunning() } && win.is_some() {
             let state = state.clone();
-            let main_runner = move || {
+
+            // Hack to work around us getting the window above
+            struct WindowWrapper(Id<NSWindow>);
+            unsafe impl Send for WindowWrapper {}
+            let window = WindowWrapper(win.unwrap());
+
+            run_on_main(move |mtm| {
+                let window = window;
+
                 let completion = {
                     let state = state.clone();
-                    block::ConcreteBlock::new(move |result: i64| {
+                    block2::RcBlock::new(move |result| {
                         dialog_callback(state.clone(), result);
                     })
                 };
 
-                let window = win.unwrap();
-
-                let mut modal = build_modal();
-                let modal_ptr = modal.modal_ptr();
+                let modal = build_modal(mtm);
+                let inner = modal.inner_modal().retain();
 
                 state.lock().unwrap().modal = Some(modal);
 
-                let _: () = unsafe {
-                    msg_send![
-                        modal_ptr,
-                        beginSheetModalForWindow: window completionHandler: &completion
-                    ]
-                };
-
-                mem::forget(completion);
-            };
-
-            if !is_main_thread() {
-                let main = dispatch::Queue::main();
-                main.exec_sync(main_runner);
-            } else {
-                main_runner();
-            }
+                inner.begin_modal(&window.0, &completion);
+            });
         } else {
             eprintln!("\n Hi! It looks like you are running async dialog in unsupported environment, I will fallback to sync dialog for you. \n");
 
-            if is_main_thread() {
-                let mut modal = build_modal();
-                let modal_ptr = modal.modal_ptr();
+            if let Some(mtm) = MainThreadMarker::new() {
+                let modal = build_modal(mtm);
+                let inner = modal.inner_modal().retain();
 
                 state.lock().unwrap().modal = Some(modal);
 
-                let ret: i64 = unsafe { msg_send![modal_ptr, runModal] };
+                let ret = inner.run_modal();
 
                 dialog_callback(state.clone(), ret);
             } else {

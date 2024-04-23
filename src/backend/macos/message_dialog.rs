@@ -1,51 +1,35 @@
-use std::mem;
-use std::ops::DerefMut;
-
 use crate::backend::DialogFutureType;
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
+use super::modal_future::AsModal;
 use super::{
-    modal_future::ModalFuture,
+    modal_future::{InnerModal, ModalFuture},
     utils::{run_on_main, FocusManager, PolicyManager},
-    AsModal,
 };
 
-use super::utils::{INSApplication, INSWindow, NSApplication, NSWindow};
-use objc::runtime::Object;
-use objc::{class, msg_send, sel, sel_impl};
-use objc_foundation::{INSString, NSString};
+use super::utils::window_from_raw_window_handle;
+use block2::Block;
+use objc2_app_kit::{
+    NSAlert, NSAlertFirstButtonReturn, NSAlertSecondButtonReturn, NSAlertStyle,
+    NSAlertThirdButtonReturn, NSApplication, NSModalResponse, NSWindow,
+};
+use objc2_foundation::{MainThreadMarker, NSString};
 
-use objc_id::Id;
+use objc2::rc::{autoreleasepool, Id};
 
-#[repr(i64)]
-#[derive(Debug, PartialEq)]
-enum NSAlertStyle {
-    Warning = 0,
-    Informational = 1,
-    Critical = 2,
-}
-
-#[repr(i64)]
-#[derive(Debug, PartialEq)]
-enum NSAlertReturn {
-    FirstButton = 1000,
-    SecondButton = 1001,
-    ThirdButton = 1002,
-}
-
-pub struct NSAlert {
+pub struct Alert {
     buttons: MessageButtons,
-    alert: Id<Object>,
+    alert: Id<NSAlert>,
     parent: Option<Id<NSWindow>>,
     _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
 }
 
-impl NSAlert {
-    pub fn new(opt: MessageDialog) -> Self {
-        let _policy_manager = PolicyManager::new();
+impl Alert {
+    pub fn new(opt: MessageDialog, mtm: MainThreadMarker) -> Self {
+        let _policy_manager = PolicyManager::new(mtm);
 
-        let alert: *mut Object = unsafe { msg_send![class!(NSAlert), new] };
+        let alert = unsafe { NSAlert::new(mtm) };
 
         let level = match opt.level {
             MessageLevel::Info => NSAlertStyle::Informational,
@@ -53,9 +37,7 @@ impl NSAlert {
             MessageLevel::Error => NSAlertStyle::Critical,
         };
 
-        unsafe {
-            let _: () = msg_send![alert, setAlertStyle: level as i64];
-        }
+        unsafe { alert.setAlertStyle(level) };
 
         let buttons = match &opt.buttons {
             MessageButtons::Ok => vec!["OK".to_owned()],
@@ -78,24 +60,22 @@ impl NSAlert {
         };
 
         for button in buttons {
-            unsafe {
-                let label = NSString::from_str(&button);
-                let _: () = msg_send![alert, addButtonWithTitle: label];
-            }
+            let label = NSString::from_str(&button);
+            unsafe { alert.addButtonWithTitle(&label) };
         }
 
         unsafe {
             let text = NSString::from_str(&opt.title);
-            let _: () = msg_send![alert, setMessageText: text];
+            alert.setMessageText(&text);
             let text = NSString::from_str(&opt.description);
-            let _: () = msg_send![alert, setInformativeText: text];
+            alert.setInformativeText(&text);
         }
 
-        let _focus_manager = FocusManager::new();
+        let _focus_manager = FocusManager::new(mtm);
 
         Self {
-            alert: unsafe { Id::from_retained_ptr(alert) },
-            parent: opt.parent.map(|x| NSWindow::from_raw_window_handle(&x)),
+            alert,
+            parent: opt.parent.map(|x| window_from_raw_window_handle(&x)),
             buttons: opt.buttons,
             _focus_manager,
             _policy_manager,
@@ -103,89 +83,79 @@ impl NSAlert {
     }
 
     pub fn run(mut self) -> MessageDialogResult {
+        let mtm = MainThreadMarker::from(&*self.alert);
+
         if let Some(parent) = self.parent.take() {
             let completion = {
-                block::ConcreteBlock::new(|result: isize| {
-                    let _: () = unsafe {
-                        msg_send![NSApplication::shared_application(), stopModalWithCode: result]
-                    };
+                block2::StackBlock::new(move |result| unsafe {
+                    NSApplication::sharedApplication(mtm).stopModalWithCode(result);
                 })
             };
 
             unsafe {
-                msg_send![self.alert, beginSheetModalForWindow: parent completionHandler: &completion]
+                self.alert
+                    .beginSheetModalForWindow_completionHandler(&parent, Some(&completion))
             }
-
-            mem::forget(completion);
         }
 
-        let ret: i64 = unsafe { msg_send![self.alert, runModal] };
-        dialog_result(&self.buttons, ret)
+        dialog_result(&self.buttons, unsafe { self.alert.runModal() })
     }
 }
 
-fn dialog_result(buttons: &MessageButtons, ret: i64) -> MessageDialogResult {
+fn dialog_result(buttons: &MessageButtons, ret: NSModalResponse) -> MessageDialogResult {
     match buttons {
-        MessageButtons::Ok if ret == NSAlertReturn::FirstButton as i64 => MessageDialogResult::Ok,
-        MessageButtons::OkCancel if ret == NSAlertReturn::FirstButton as i64 => {
-            MessageDialogResult::Ok
-        }
-        MessageButtons::OkCancel if ret == NSAlertReturn::SecondButton as i64 => {
+        MessageButtons::Ok if ret == NSAlertFirstButtonReturn => MessageDialogResult::Ok,
+        MessageButtons::OkCancel if ret == NSAlertFirstButtonReturn => MessageDialogResult::Ok,
+        MessageButtons::OkCancel if ret == NSAlertSecondButtonReturn => MessageDialogResult::Cancel,
+        MessageButtons::YesNo if ret == NSAlertFirstButtonReturn => MessageDialogResult::Yes,
+        MessageButtons::YesNo if ret == NSAlertSecondButtonReturn => MessageDialogResult::No,
+        MessageButtons::YesNoCancel if ret == NSAlertFirstButtonReturn => MessageDialogResult::Yes,
+        MessageButtons::YesNoCancel if ret == NSAlertSecondButtonReturn => MessageDialogResult::No,
+        MessageButtons::YesNoCancel if ret == NSAlertThirdButtonReturn => {
             MessageDialogResult::Cancel
         }
-        MessageButtons::YesNo if ret == NSAlertReturn::FirstButton as i64 => {
-            MessageDialogResult::Yes
-        }
-        MessageButtons::YesNo if ret == NSAlertReturn::SecondButton as i64 => {
-            MessageDialogResult::No
-        }
-        MessageButtons::YesNoCancel if ret == NSAlertReturn::FirstButton as i64 => {
-            MessageDialogResult::Yes
-        }
-        MessageButtons::YesNoCancel if ret == NSAlertReturn::SecondButton as i64 => {
-            MessageDialogResult::No
-        }
-        MessageButtons::YesNoCancel if ret == NSAlertReturn::ThirdButton as i64 => {
-            MessageDialogResult::Cancel
-        }
-        MessageButtons::OkCustom(custom) if ret == NSAlertReturn::FirstButton as i64 => {
+        MessageButtons::OkCustom(custom) if ret == NSAlertFirstButtonReturn => {
             MessageDialogResult::Custom(custom.to_owned())
         }
-        MessageButtons::OkCancelCustom(custom, _) if ret == NSAlertReturn::FirstButton as i64 => {
+        MessageButtons::OkCancelCustom(custom, _) if ret == NSAlertFirstButtonReturn => {
             MessageDialogResult::Custom(custom.to_owned())
         }
-        MessageButtons::OkCancelCustom(_, custom) if ret == NSAlertReturn::SecondButton as i64 => {
+        MessageButtons::OkCancelCustom(_, custom) if ret == NSAlertSecondButtonReturn => {
             MessageDialogResult::Custom(custom.to_owned())
         }
-        MessageButtons::YesNoCancelCustom(custom, _, _)
-            if ret == NSAlertReturn::FirstButton as i64 =>
-        {
+        MessageButtons::YesNoCancelCustom(custom, _, _) if ret == NSAlertFirstButtonReturn => {
             MessageDialogResult::Custom(custom.to_owned())
         }
-        MessageButtons::YesNoCancelCustom(_, custom, _)
-            if ret == NSAlertReturn::SecondButton as i64 =>
-        {
+        MessageButtons::YesNoCancelCustom(_, custom, _) if ret == NSAlertSecondButtonReturn => {
             MessageDialogResult::Custom(custom.to_owned())
         }
-        MessageButtons::YesNoCancelCustom(_, _, custom)
-            if ret == NSAlertReturn::ThirdButton as i64 =>
-        {
+        MessageButtons::YesNoCancelCustom(_, _, custom) if ret == NSAlertThirdButtonReturn => {
             MessageDialogResult::Custom(custom.to_owned())
         }
         _ => MessageDialogResult::Cancel,
     }
 }
 
-impl AsModal for NSAlert {
-    fn modal_ptr(&mut self) -> *mut Object {
-        self.alert.deref_mut()
+impl AsModal for Alert {
+    fn inner_modal(&self) -> &NSAlert {
+        &*self.alert
+    }
+}
+
+impl InnerModal for NSAlert {
+    fn begin_modal(&self, window: &NSWindow, handler: &Block<dyn Fn(NSModalResponse)>) {
+        unsafe { self.beginSheetModalForWindow_completionHandler(window, Some(handler)) }
+    }
+
+    fn run_modal(&self) -> NSModalResponse {
+        unsafe { self.runModal() }
     }
 }
 
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
-        objc::rc::autoreleasepool(move || run_on_main(move || NSAlert::new(self).run()))
+        autoreleasepool(move |_| run_on_main(move |mtm| Alert::new(self, mtm).run()))
     }
 }
 
@@ -193,11 +163,11 @@ use crate::backend::AsyncMessageDialogImpl;
 
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
-        let win = self.parent.as_ref().map(NSWindow::from_raw_window_handle);
+        let win = self.parent.as_ref().map(window_from_raw_window_handle);
 
         let future = ModalFuture::new(
             win,
-            move || NSAlert::new(self),
+            move |mtm| Alert::new(self, mtm),
             |dialog, ret| dialog_result(&dialog.buttons, ret),
         );
         Box::pin(future)

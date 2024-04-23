@@ -29,11 +29,30 @@ raw-window-handle = "0.6"
 log = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc = "0.2.7"
-objc_id = "0.1.1"
-dispatch = "0.2.0"
-block = "0.1.6"
-objc-foundation = "0.1.1"
+block2 = "0.5.0"
+objc2 = "0.5.1"
+objc2-foundation = { version = "0.2.0", features = [
+  "dispatch",
+  "NSArray",
+  "NSEnumerator",
+  "NSString",
+  "NSThread",
+  "NSURL",
+] }
+objc2-app-kit = { version = "0.2.0", features = [
+  "block2",
+  "NSAlert",
+  "NSApplication",
+  "NSButton",
+  "NSControl",
+  "NSOpenPanel",
+  "NSPanel",
+  "NSResponder",
+  "NSRunningApplication",
+  "NSSavePanel",
+  "NSView",
+  "NSWindow",
+] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.48", features = [
