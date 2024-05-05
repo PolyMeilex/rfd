@@ -2,6 +2,7 @@
 
 ## Unreleased
 - Move from `objc` crates to `objc2` crates.
+- Fix `AsyncFileDialog` blocking the executor on Windows (#191)
 
 ## 0.14.0
 - i18n for GTK and XDG Portal
