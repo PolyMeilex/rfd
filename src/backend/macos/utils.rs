@@ -1,42 +1,42 @@
-use objc::runtime::Object;
-use objc::{class, msg_send, sel, sel_impl};
-
-mod application;
 mod focus_manager;
 mod policy_manager;
-mod url;
-mod window;
 
-pub use application::{INSApplication, NSApplication};
-pub use focus_manager::FocusManager;
-pub use policy_manager::PolicyManager;
-pub use url::{INSURL, NSURL};
-pub use window::{INSWindow, NSWindow};
+pub use self::focus_manager::FocusManager;
+pub use self::policy_manager::PolicyManager;
 
-#[allow(non_upper_case_globals)]
-pub const nil: *mut Object = 0 as *mut _;
-
-pub fn is_main_thread() -> bool {
-    unsafe { msg_send![class!(NSThread), isMainThread] }
-}
+use objc2::rc::Id;
+use objc2_app_kit::{NSApplication, NSView, NSWindow};
+use objc2_foundation::{MainThreadMarker, NSThread};
+use raw_window_handle::RawWindowHandle;
 
 pub fn activate_cocoa_multithreading() {
-    unsafe {
-        let thread: *mut Object = msg_send![class!(NSThread), new];
-        let _: () = msg_send![thread, start];
-    }
+    let thread = NSThread::new();
+    unsafe { thread.start() };
 }
 
-pub fn run_on_main<R: Send, F: FnOnce() -> R + Send>(run: F) -> R {
-    if is_main_thread() {
-        run()
+pub fn run_on_main<R: Send, F: FnOnce(MainThreadMarker) -> R + Send>(run: F) -> R {
+    if let Some(mtm) = MainThreadMarker::new() {
+        run(mtm)
     } else {
-        let app = NSApplication::shared_application();
-        if app.is_running() {
-            let main = dispatch::Queue::main();
-            main.exec_sync(run)
+        let mtm = unsafe { MainThreadMarker::new_unchecked() };
+        let app = NSApplication::sharedApplication(mtm);
+        if unsafe { app.isRunning() } {
+            objc2_foundation::run_on_main(|mtm| run(mtm))
         } else {
             panic!("You are running RFD in NonWindowed environment, it is impossible to spawn dialog from thread different than main in this env.");
         }
+    }
+}
+
+pub fn window_from_raw_window_handle(h: &RawWindowHandle) -> Id<NSWindow> {
+    // TODO: Move this requirement up
+    let _mtm = unsafe { MainThreadMarker::new_unchecked() };
+    match h {
+        RawWindowHandle::AppKit(h) => {
+            let view = h.ns_view.as_ptr() as *mut NSView;
+            let view = unsafe { Id::retain(view).unwrap() };
+            view.window().expect("NSView to be inside a NSWindow")
+        }
+        _ => unreachable!("unsupported window handle, expected: MacOS"),
     }
 }

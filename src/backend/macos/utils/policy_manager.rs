@@ -1,41 +1,32 @@
-use objc::runtime::Object;
-use objc::{class, msg_send, sel, sel_impl};
-
-#[repr(i32)]
-#[derive(Debug, PartialEq)]
-enum ApplicationActivationPolicy {
-    //Regular = 0,
-    Accessory = 1,
-    Prohibited = 2,
-    //Error = -1,
-}
+use objc2::rc::Id;
+use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
+use objc2_foundation::MainThreadMarker;
 
 pub struct PolicyManager {
-    initial_policy: i32,
+    app: Id<NSApplication>,
+    initial_policy: NSApplicationActivationPolicy,
 }
 
 impl PolicyManager {
-    pub fn new() -> Self {
-        unsafe {
-            let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
-            let initial_policy: i32 = msg_send![app, activationPolicy];
+    pub fn new(mtm: MainThreadMarker) -> Self {
+        let app = NSApplication::sharedApplication(mtm);
+        let initial_policy = unsafe { app.activationPolicy() };
 
-            if initial_policy == ApplicationActivationPolicy::Prohibited as i32 {
-                let new_pol = ApplicationActivationPolicy::Accessory as i32;
-                let _: () = msg_send![app, setActivationPolicy: new_pol];
-            }
+        if initial_policy == NSApplicationActivationPolicy::Prohibited {
+            let new_pol = NSApplicationActivationPolicy::Accessory;
+            app.setActivationPolicy(new_pol);
+        }
 
-            Self { initial_policy }
+        Self {
+            app,
+            initial_policy,
         }
     }
 }
 
 impl Drop for PolicyManager {
     fn drop(&mut self) {
-        unsafe {
-            let app: *mut Object = msg_send![class!(NSApplication), sharedApplication];
-            // Restore initial pol
-            let _: () = msg_send![app, setActivationPolicy: self.initial_policy];
-        }
+        // Restore initial policy
+        self.app.setActivationPolicy(self.initial_policy);
     }
 }
