@@ -1,3 +1,4 @@
+use crate::backend::DialogFutureType;
 use crate::FileHandle;
 
 use std::path::Path;
@@ -230,12 +231,12 @@ use std::future::Future;
 
 impl AsyncFileDialog {
     /// Pick one file
-    pub fn pick_file(self) -> impl Future<Output = Option<FileHandle>> {
+    pub fn pick_file(self) -> DialogFutureType<Option<FileHandle>> {
         AsyncFilePickerDialogImpl::pick_file_async(self.file_dialog)
     }
 
     /// Pick multiple files
-    pub fn pick_files(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
+    pub fn pick_files(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         AsyncFilePickerDialogImpl::pick_files_async(self.file_dialog)
     }
 
@@ -243,7 +244,7 @@ impl AsyncFileDialog {
     /// Pick one folder
     ///
     /// Does not exist in `WASM32`
-    pub fn pick_folder(self) -> impl Future<Output = Option<FileHandle>> {
+    pub fn pick_folder(self) -> DialogFutureType<Option<FileHandle>> {
         AsyncFolderPickerDialogImpl::pick_folder_async(self.file_dialog)
     }
 
@@ -251,7 +252,7 @@ impl AsyncFileDialog {
     /// Pick multiple folders
     ///
     /// Does not exist in `WASM32`
-    pub fn pick_folders(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
+    pub fn pick_folders(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         AsyncFolderPickerDialogImpl::pick_folders_async(self.file_dialog)
     }
 
@@ -274,7 +275,7 @@ impl AsyncFileDialog {
     ///     - No filtering is applied.
     ///     - `save_file` returns immediately without a dialog prompt.
     /// Instead the user is prompted by their browser on where to save the file when [`FileHandle::write`] is used.
-    pub fn save_file(self) -> impl Future<Output = Option<FileHandle>> {
+    pub fn save_file(self) -> DialogFutureType<Option<FileHandle>> {
         AsyncFileSaveDialogImpl::save_file_async(self.file_dialog)
     }
 }
