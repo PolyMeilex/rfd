@@ -76,7 +76,7 @@ pub trait MessageDialogImpl {
 
 // Return type of async dialogs:
 #[cfg(not(target_arch = "wasm32"))]
-pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send + Sync>>;
 #[cfg(target_arch = "wasm32")]
 pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T>>>;
 
