@@ -227,8 +227,6 @@ use crate::backend::AsyncFileSaveDialogImpl;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::backend::AsyncFolderPickerDialogImpl;
 
-use std::future::Future;
-
 impl AsyncFileDialog {
     /// Pick one file
     pub fn pick_file(self) -> DialogFutureType<Option<FileHandle>> {
