@@ -75,8 +75,8 @@ impl WinMessageDialog {
             UI::Controls::{
                 TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOGCONFIG_0, TASKDIALOGCONFIG_1,
                 TASKDIALOG_BUTTON, TDCBF_CANCEL_BUTTON, TDCBF_NO_BUTTON, TDCBF_OK_BUTTON,
-                TDCBF_YES_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION, TD_ERROR_ICON,
-                TD_INFORMATION_ICON, TD_WARNING_ICON,
+                TDCBF_YES_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION, TDF_SIZE_TO_CONTENT,
+                TD_ERROR_ICON, TD_INFORMATION_ICON, TD_WARNING_ICON,
             },
         };
 
@@ -135,7 +135,7 @@ impl WinMessageDialog {
         let task_dialog_config = TASKDIALOGCONFIG {
             cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
             hwndParent: self.parent.unwrap_or_default(),
-            dwFlags: TDF_ALLOW_DIALOG_CANCELLATION,
+            dwFlags: TDF_ALLOW_DIALOG_CANCELLATION | TDF_SIZE_TO_CONTENT,
             pszWindowTitle: self.caption.as_ptr(),
             pszContent: self.text.as_ptr(),
             Anonymous1: TASKDIALOGCONFIG_0 {
