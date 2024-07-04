@@ -38,7 +38,9 @@ impl From<std::string::FromUtf8Error> for ZenityError {
 pub type ZenityResult<T> = Result<T, ZenityError>;
 
 fn command() -> Command {
-    Command::new("zenity")
+    let mut cmd = Command::new("zenity");
+    cmd.arg("--no-markup");
+    cmd
 }
 
 fn add_filters(command: &mut Command, filters: &[Filter]) {
