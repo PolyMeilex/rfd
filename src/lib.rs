@@ -43,7 +43,7 @@
 //! [zbus](https://gitlab.freedesktop.org/dbus/zbus/).
 //!
 //! ## GTK backend
-//! The GTK backend is used with the `gtk3` Cargo feature which is enabled by default. The GTK3
+//! The GTK backend is used when the `xdg-portal` feature is disabled with the [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `gtk3` is enabled instead. The GTK3
 //! backend requires the C library and development headers to be installed to build RFD. The package
 //! names on various distributions are:
 //!
@@ -54,8 +54,7 @@
 //! | Debian & Ubuntu | apt install libgtk-3-dev |
 //!
 //! ## XDG Desktop Portal backend
-//! The XDG Desktop Portal backend is used when the `gtk3` feature is disabled with
-//! [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `xdg-portal` is enabled instead. Either the `tokio` or `async-std` feature must be enabled. This backend will use either the GTK or KDE file dialog depending on the desktop environment
+//! The XDG Desktop Portal backend is used with the `xdg-portal` Cargo feature which is enabled by default. Either the `tokio` or `async-std` feature must be enabled. This backend will use either the GTK or KDE file dialog depending on the desktop environment
 //! in use at runtime. It does not have any non-Rust
 //! build dependencies, however it requires the user to have either the
 //! [GTK](https://github.com/flatpak/xdg-desktop-portal-gtk),
