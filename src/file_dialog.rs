@@ -88,8 +88,11 @@ impl FileDialog {
         self
     }
 
-    /// Set parent windows explicitly (optional)
-    /// Suported in: `macos` and `windows`
+    /// Set parent windows explicitly (optional).
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (XDG only)
     pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.parent = parent.window_handle().ok().map(|x| x.as_raw());
         self.parent_display = parent.display_handle().ok().map(|x| x.as_raw());
@@ -207,8 +210,11 @@ impl AsyncFileDialog {
         self
     }
 
-    /// Set parent windows explicitly (optional)
-    /// Suported in: `macos` and `windows`
+    /// Set parent windows explicitly (optional).
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (XDG only)
     pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.file_dialog = self.file_dialog.set_parent(parent);
         self

@@ -64,8 +64,11 @@ impl MessageDialog {
         self
     }
 
-    /// Set parent windows explicitly (optional)
-    /// Suported in: `macos` and `windows`
+    /// Set parent windows explicitly (optional).
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (XDG only)
     pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.parent = parent.window_handle().ok().map(|x| x.as_raw());
         self.parent_display = parent.display_handle().ok().map(|x| x.as_raw());
@@ -125,8 +128,11 @@ impl AsyncMessageDialog {
         self
     }
 
-    /// Set parent windows explicitly (optional)
-    /// Suported in: `macos` and `windows`
+    /// Set parent windows explicitly (optional).
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (XDG only)
     pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.0 = self.0.set_parent(parent);
         self
