@@ -5,6 +5,7 @@
 - Fix `AsyncFileDialog` blocking the executor on Windows (#191)
 - Add `TDF_SIZE_TO_CONTENT` to `TaskDialogIndirect` config so that it can display longer text without truncating/wrapping (80 characters instead of 55) (#202)
 - Fix `xdg-portal` backend not accepting special characters in message dialogs
+- Make `set_parent` require `HasWindowHandle + HasDisplayHandle`
 
 ## 0.14.0
 - i18n for GTK and XDG Portal

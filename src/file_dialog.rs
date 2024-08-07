@@ -3,8 +3,7 @@ use crate::FileHandle;
 use std::path::Path;
 use std::path::PathBuf;
 
-use raw_window_handle::HasWindowHandle;
-use raw_window_handle::RawWindowHandle;
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Filter {
@@ -24,6 +23,7 @@ pub struct FileDialog {
     pub(crate) file_name: Option<String>,
     pub(crate) title: Option<String>,
     pub(crate) parent: Option<RawWindowHandle>,
+    pub(crate) parent_display: Option<RawDisplayHandle>,
     pub(crate) can_create_directories: Option<bool>,
 }
 
@@ -90,8 +90,9 @@ impl FileDialog {
 
     /// Set parent windows explicitly (optional)
     /// Suported in: `macos` and `windows`
-    pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
+    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.parent = parent.window_handle().ok().map(|x| x.as_raw());
+        self.parent_display = parent.display_handle().ok().map(|x| x.as_raw());
         self
     }
 
@@ -208,7 +209,7 @@ impl AsyncFileDialog {
 
     /// Set parent windows explicitly (optional)
     /// Suported in: `macos` and `windows`
-    pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
+    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.file_dialog = self.file_dialog.set_parent(parent);
         self
     }
