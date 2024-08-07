@@ -4,8 +4,7 @@ use std::fmt::{Display, Formatter};
 
 use std::future::Future;
 
-use raw_window_handle::HasWindowHandle;
-use raw_window_handle::RawWindowHandle;
+use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 
 /// Synchronous Message Dialog. Supported platforms:
 ///  * Windows
@@ -19,6 +18,7 @@ pub struct MessageDialog {
     pub(crate) level: MessageLevel,
     pub(crate) buttons: MessageButtons,
     pub(crate) parent: Option<RawWindowHandle>,
+    pub(crate) parent_display: Option<RawDisplayHandle>,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
@@ -64,10 +64,14 @@ impl MessageDialog {
         self
     }
 
-    /// Set parent windows explicitly (optional)
-    /// Suported in: `macos` and `windows`
-    pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
+    /// Set parent windows explicitly (optional).
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (XDG only)
+    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.parent = parent.window_handle().ok().map(|x| x.as_raw());
+        self.parent_display = parent.display_handle().ok().map(|x| x.as_raw());
         self
     }
 
@@ -124,9 +128,12 @@ impl AsyncMessageDialog {
         self
     }
 
-    /// Set parent windows explicitly (optional)
-    /// Suported in: `macos` and `windows`
-    pub fn set_parent<W: HasWindowHandle>(mut self, parent: &W) -> Self {
+    /// Set parent windows explicitly (optional).
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (XDG only)
+    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
         self.0 = self.0.set_parent(parent);
         self
     }

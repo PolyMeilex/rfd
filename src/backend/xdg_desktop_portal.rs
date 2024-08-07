@@ -7,11 +7,22 @@ use crate::message_dialog::MessageDialog;
 use crate::{FileDialog, FileHandle, MessageButtons, MessageDialogResult};
 
 use ashpd::desktop::file_chooser::{FileFilter, OpenFileRequest, SaveFileRequest};
-// TODO: convert raw_window_handle::RawWindowHandle to ashpd::WindowIdentifier
-// https://github.com/bilelmoussaoui/ashpd/issues/40
+use ashpd::WindowIdentifier;
 
 use log::error;
 use pollster::block_on;
+use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
+
+fn to_window_identifier(
+    window: Option<RawWindowHandle>,
+    display: Option<RawDisplayHandle>,
+) -> Option<WindowIdentifier> {
+    window.map(|window| {
+        block_on(Box::pin(async move {
+            WindowIdentifier::from_raw_handle(&window, display.as_ref()).await
+        }))
+    })
+}
 
 impl From<&Filter> for FileFilter {
     fn from(filter: &Filter) -> Self {
@@ -44,6 +55,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
+                .identifier(to_window_identifier(self.parent, self.parent_display))
                 .multiple(false)
                 .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
@@ -77,6 +89,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
+                .identifier(to_window_identifier(self.parent, self.parent_display))
                 .multiple(true)
                 .title(self.title.as_deref().or(None))
                 .filters(self.filters.iter().map(From::from))
@@ -130,6 +143,7 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
+                .identifier(to_window_identifier(self.parent, self.parent_display))
                 .multiple(false)
                 .directory(true)
                 .title(self.title.as_deref().or(None))
@@ -164,6 +178,7 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async move {
             let res = OpenFileRequest::default()
+                .identifier(to_window_identifier(self.parent, self.parent_display))
                 .multiple(true)
                 .directory(true)
                 .title(self.title.as_deref().or(None))
@@ -213,6 +228,7 @@ impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
             let res = SaveFileRequest::default()
+                .identifier(to_window_identifier(self.parent, self.parent_display))
                 .title(self.title.as_deref().or(None))
                 .current_name(self.file_name.as_deref())
                 .filters(self.filters.iter().map(From::from))
