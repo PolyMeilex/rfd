@@ -65,7 +65,7 @@ windows-sys = { version = "0.48", features = [
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 # XDG Desktop Portal
-ashpd = { version = "0.8", optional = true, default-features = false, features = ["raw_handle"] }
+ashpd = { version = "0.9", optional = true, default-features = false, features = ["raw_handle"] }
 urlencoding = { version = "2.1.0", optional = true }
 pollster = { version = "0.3", optional = true }
 # GTK
