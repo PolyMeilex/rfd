@@ -7,6 +7,7 @@
 - Fix `xdg-portal` backend not accepting special characters in message dialogs
 - Make `set_parent` require `HasWindowHandle + HasDisplayHandle`
 - Add support for `set_parent` in XDG Portals
+- Update `ashpd` to 0.9.
 
 ## 0.14.0
 - i18n for GTK and XDG Portal
