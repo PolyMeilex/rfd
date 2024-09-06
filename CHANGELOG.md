@@ -8,6 +8,7 @@
 - Make `set_parent` require `HasWindowHandle + HasDisplayHandle`
 - Add support for `set_parent` in XDG Portals
 - Update `ashpd` to 0.9.
+- Add support for files without an extension in XDG Portal filters
 
 ## 0.14.0
 - i18n for GTK and XDG Portal
@@ -29,18 +30,18 @@
 - Fix `FileHandle::inner` (under feature `file-handle-inner`) on wasm
 
 ## 0.12.0
-- Add title support for WASM (#132) 
+- Add title support for WASM (#132)
 - Add Create folder button to `pick_folder` on macOS (#127)
 - Add support for Yes/No/Cancel buttons (#123)
-- Change a string method signatures #117 
+- Change a string method signatures #117
 - WASM `save_file` (#134)
 - Update `gtk-sys` to `0.18` (#143)
 - Update `ashpd` to `0.6` (#133)
-- Replace windows with `windows-sys` (#118) 
+- Replace windows with `windows-sys` (#118)
 - Make zenity related deps optional (#141)
 
 ## 0.11.3
-- Zenity message dialogs for xdg portal backend 
+- Zenity message dialogs for xdg portal backend
 
 ## 0.10.1
 - Update `gtk-sys` to `0.16` and `windows-rs` to `0.44`
@@ -53,8 +54,8 @@
 - feat: Add support for selecting multiple folders, fixes #73
 
 ## 0.8.4
-- XDG: decode URI before converting to PathBuf #70 
-  
+- XDG: decode URI before converting to PathBuf #70
+
 ## 0.8.3
 - Windows-rs update 0.37
 
@@ -67,7 +68,7 @@
 
 ## 0.8.0
 - `parent` feature was removed, it is always on now
-- New feature `xdg-portal` 
+- New feature `xdg-portal`
 - Now you have to choose one of the features `gtk3` or `xdg-portal`, gtk is on by default
 - `window` crate got updated to 0.32
 
@@ -79,7 +80,7 @@
 - Update `windows` crate to 0.30.
 
 ## 0.6.2
-- Strip Win32 namespaces from directory paths 
+- Strip Win32 namespaces from directory paths
 
 ## 0.6.0
 - FreeBSD support
