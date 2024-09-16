@@ -110,6 +110,7 @@ impl Future for Writer {
 }
 
 /// FileHandle is a way of abstracting over a file returned by a dialog
+#[derive(Clone, Debug)]
 pub struct FileHandle(PathBuf);
 
 impl FileHandle {
