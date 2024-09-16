@@ -8,6 +8,7 @@ pub(crate) enum WasmFileHandleKind {
     Writable(FileDialog),
 }
 
+#[derive(Clone)]
 pub struct FileHandle(pub(crate) WasmFileHandleKind);
 
 impl FileHandle {
