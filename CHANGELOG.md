@@ -9,6 +9,7 @@
 - Add support for `set_parent` in XDG Portals
 - Update `ashpd` to 0.9.
 - Add support for files without an extension in XDG Portal filters
+- Derive `Clone` for `FileHandle`
 
 ## 0.14.0
 - i18n for GTK and XDG Portal
