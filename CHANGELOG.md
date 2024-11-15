@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+- Update `ashpd` to 0.10.
+
 ## 0.15.0
 - Move from `objc` crates to `objc2` crates.
 - Fix `AsyncFileDialog` blocking the executor on Windows (#191)

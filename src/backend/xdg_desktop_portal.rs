@@ -21,7 +21,7 @@ fn to_window_identifier(
         block_on(Box::pin(async move {
             WindowIdentifier::from_raw_handle(&window, display.as_ref()).await
         }))
-    })
+    })?
 }
 
 impl From<&Filter> for FileFilter {
