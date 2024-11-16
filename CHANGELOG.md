@@ -1,6 +1,8 @@
 # Change Log
 
 ## Unreleased
+
+## 0.15.1
 - Update `ashpd` to 0.10.
 
 ## 0.15.0
