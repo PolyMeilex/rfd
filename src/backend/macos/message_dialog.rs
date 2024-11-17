@@ -4,7 +4,7 @@ use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, 
 use super::modal_future::AsModal;
 use super::{
     modal_future::{InnerModal, ModalFuture},
-    utils::{run_on_main, FocusManager, PolicyManager},
+    utils::{run_on_main, FocusManager, PolicyManager, self},
 };
 
 use super::utils::window_from_raw_window_handle;
@@ -155,7 +155,13 @@ impl InnerModal for NSAlert {
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
-        autoreleasepool(move |_| run_on_main(move |mtm| Alert::new(self, mtm).run()))
+        autoreleasepool(move |_| run_on_main(move |mtm| {
+            if self.parent.is_none() {
+                utils::sync_pop_dialog(self, mtm)
+            } else {
+                Alert::new(self, mtm).run()
+            }
+        }))
     }
 }
 
@@ -164,12 +170,14 @@ use crate::backend::AsyncMessageDialogImpl;
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
-        let future = ModalFuture::new(
-            win,
-            move |mtm| Alert::new(self, mtm),
-            |dialog, ret| dialog_result(&dialog.buttons, ret),
-        );
-        Box::pin(future)
+        if self.parent.is_none() {
+            utils::async_pop_dialog(self)
+        } else {
+            Box::pin(ModalFuture::new(
+                win,
+                move |mtm| Alert::new(self, mtm),
+                |dialog, ret| dialog_result(&dialog.buttons, ret),
+            ))
+        }
     }
 }
