@@ -1,13 +1,11 @@
-use ::objc2::rc::autoreleasepool;
 use ::objc2_foundation::MainThreadMarker;
 use ::deferred_future::ThreadDeferredFuture;
-use ::std::{ mem::MaybeUninit, ptr, sync::PoisonError };
+use ::std::{ mem::MaybeUninit, ptr, sync::PoisonError, thread };
 use ::core_foundation::{ base::TCFType, string::CFString };
-use ::futures::{ future, executor::ThreadPool, task::SpawnExt };
 use ::core_foundation_sys::{ base::CFOptionFlags, date::CFTimeInterval, url::CFURLRef, user_notification::{ CFUserNotificationDisplayAlert, kCFUserNotificationStopAlertLevel, kCFUserNotificationCautionAlertLevel, kCFUserNotificationNoteAlertLevel,  kCFUserNotificationDefaultResponse, kCFUserNotificationAlternateResponse, kCFUserNotificationOtherResponse } };
 use crate::{
     message_dialog::{ MessageButtons, MessageDialog, MessageDialogResult, MessageLevel },
-    backend::{ DialogFutureType, macos::utils::{ FocusManager, PolicyManager, run_on_main } }
+    backend::{ DialogFutureType, macos::utils::{ FocusManager, PolicyManager } }
 };
 struct UserAlert {
     timeout: CFTimeInterval,
@@ -104,17 +102,10 @@ pub fn sync_pop_dialog(opt: MessageDialog, mtm: MainThreadMarker) -> MessageDial
 pub fn async_pop_dialog(opt: MessageDialog) -> DialogFutureType<MessageDialogResult> {
     let deferred_future = ThreadDeferredFuture::default();
     let defer = deferred_future.defer();
-    let opt2 = opt.clone();
-    let result: Result<(), String> = ThreadPool::new().map_err(|err| err.to_string()).and_then(|thread_pool| thread_pool.spawn(async move {
+    thread::spawn(move || {
         let mut defer = defer.lock().unwrap_or_else(PoisonError::into_inner);
-        let message_dialog_result = UserAlert::new(opt2.clone(), None).run();
+        let message_dialog_result = UserAlert::new(opt.clone(), None).run();
         defer.complete(message_dialog_result);
-    }).map_err(|err| err.to_string()));
-    match result {
-        Ok(_) => Box::pin(deferred_future),
-        Err(err) => {
-            eprintln!("\n Hi! It looks like you are running async dialog in unsupported environment, I will fallback to sync dialog for you. Reason is as below:\n {}", err);
-            Box::pin(future::ready(autoreleasepool(move |_| run_on_main(move |mtm| UserAlert::new(opt, Some(mtm)).run()))))
-        }
-    }
+    });
+    Box::pin(deferred_future)
 }

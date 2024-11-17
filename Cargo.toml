@@ -53,9 +53,6 @@ objc2-app-kit = { version = "0.2.0", features = [
   "NSView",
   "NSWindow",
 ] }
-futures = { version = "0.3.12", features = [
-    "thread-pool"
-]}
 deferred-future = "0.1.5"
 core-foundation = "0.10.0"
 core-foundation-sys = "0.8.7"
