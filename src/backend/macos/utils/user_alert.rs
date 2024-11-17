@@ -25,7 +25,7 @@ struct UserAlert {
     _policy_manager: Option<PolicyManager>,
 }
 impl UserAlert {
-    pub fn new(opt: MessageDialog, mtm: Option<MainThreadMarker>) -> Self {
+    fn new(opt: MessageDialog, mtm: Option<MainThreadMarker>) -> Self {
         let mut buttons: [Option<String>; 3] = match &opt.buttons {
             MessageButtons::Ok => [None, None, None],
             MessageButtons::OkCancel => [None, Some("Cancel".to_string()), None],
@@ -55,7 +55,7 @@ impl UserAlert {
             _focus_manager: mtm.map(|mtm| FocusManager::new(mtm))
         }
     }
-    pub fn run(self) -> MessageDialogResult {
+    fn run(self) -> MessageDialogResult {
         let alert_header =  CFString::new(&self.alert_header[..]);
         let alert_message = CFString::new(&self.alert_message[..]);
         let default_button_title = self.default_button_title.map(|string| CFString::new(&string[..]));
