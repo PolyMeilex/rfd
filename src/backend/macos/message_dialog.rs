@@ -169,12 +169,11 @@ use crate::backend::AsyncMessageDialogImpl;
 
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
         if self.parent.is_none() {
             utils::async_pop_dialog(self)
         } else {
             Box::pin(ModalFuture::new(
-                win,
+                self.parent.as_ref().map(window_from_raw_window_handle),
                 move |mtm| Alert::new(self, mtm),
                 |dialog, ret| dialog_result(&dialog.buttons, ret),
             ))
