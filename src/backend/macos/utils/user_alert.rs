@@ -2,7 +2,7 @@ use ::objc2_foundation::MainThreadMarker;
 use ::deferred_future::ThreadDeferredFuture;
 use ::std::{ mem::MaybeUninit, ptr, sync::PoisonError, thread };
 use ::core_foundation::{ base::TCFType, string::CFString };
-use ::core_foundation_sys::{ base::CFOptionFlags, date::CFTimeInterval, url::CFURLRef, user_notification::{ CFUserNotificationDisplayAlert, kCFUserNotificationStopAlertLevel, kCFUserNotificationCautionAlertLevel, kCFUserNotificationNoteAlertLevel,  kCFUserNotificationDefaultResponse, kCFUserNotificationAlternateResponse, kCFUserNotificationOtherResponse } };
+use ::core_foundation_sys::{ base::CFOptionFlags, date::CFTimeInterval, url::CFURLRef, user_notification::{ CFUserNotificationDisplayAlert, kCFUserNotificationStopAlertLevel, kCFUserNotificationCautionAlertLevel, kCFUserNotificationNoteAlertLevel,  kCFUserNotificationDefaultResponse, kCFUserNotificationAlternateResponse, kCFUserNotificationOtherResponse, kCFUserNotificationCancelResponse } };
 use crate::{
     message_dialog::{ MessageButtons, MessageDialog, MessageDialogResult, MessageLevel },
     backend::{ DialogFutureType, macos::utils::{ FocusManager, PolicyManager } }
@@ -60,7 +60,7 @@ impl UserAlert {
         let alternate_button_title = self.alternate_button_title.map(|value| CFString::new(&value[..]));
         let other_button_title = self.other_button_title.map(|value| CFString::new(&value[..]));
         let mut response_flags = MaybeUninit::<CFOptionFlags>::uninit();
-        let is_canel = unsafe { CFUserNotificationDisplayAlert(
+        let is_cancel = unsafe { CFUserNotificationDisplayAlert(
             self.timeout,
             self.flags,
             self.icon_url,
@@ -73,10 +73,13 @@ impl UserAlert {
             other_button_title.map_or(ptr::null(), |value| value.as_concrete_TypeRef()),
             response_flags.as_mut_ptr()
         ) };
-        if is_canel != 0 {
+        if is_cancel != 0 {
             return MessageDialogResult::Cancel;
         }
         let response = unsafe { response_flags.assume_init() };
+        if response == kCFUserNotificationCancelResponse {
+            return MessageDialogResult::Cancel;
+        }
         match self.buttons {
             MessageButtons::Ok if response == kCFUserNotificationDefaultResponse => MessageDialogResult::Ok,
             MessageButtons::OkCancel if response == kCFUserNotificationDefaultResponse => MessageDialogResult::Ok,
