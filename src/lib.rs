@@ -129,6 +129,8 @@ mod file_handle;
 pub use file_handle::FileHandle;
 
 mod file_dialog;
+#[cfg(target_os = "macos")]
+mod oneshot;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_dialog::FileDialog;

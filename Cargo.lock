@@ -353,15 +353,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "248e3bacc7dc6baa3b21e405ee045c3047101a49145e7e9eca583ab4c2ca5345"
 
 [[package]]
-name = "deferred-future"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5131db302b3cb350203ec927491d6e7dc34da02ac14978c923444a42e34f33b"
-dependencies = [
- "futures",
-]
-
-[[package]]
 name = "dispatch"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1038,7 +1029,6 @@ dependencies = [
  "block2",
  "core-foundation",
  "core-foundation-sys",
- "deferred-future",
  "futures",
  "glib-sys",
  "gobject-sys",
