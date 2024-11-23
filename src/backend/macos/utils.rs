@@ -1,8 +1,10 @@
 mod focus_manager;
 mod policy_manager;
+mod user_alert;
 
-pub use self::focus_manager::FocusManager;
-pub use self::policy_manager::PolicyManager;
+pub use focus_manager::FocusManager;
+pub use policy_manager::PolicyManager;
+pub use user_alert::{ async_pop_dialog, sync_pop_dialog };
 
 use objc2::rc::Id;
 use objc2_app_kit::{NSApplication, NSView, NSWindow};
