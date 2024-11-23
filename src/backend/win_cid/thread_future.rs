@@ -44,15 +44,13 @@ impl<R> std::future::Future for ThreadFuture<R> {
         let data = state.data.try_lock();
 
         match data {
-            Ok(mut data) => {
-                match data.take() {
-                    Some(data) => Poll::Ready(data),
-                    None => {
-                        *state.waker.lock().unwrap() = Some(cx.waker().clone());
-                        Poll::Pending
-                    }
+            Ok(mut data) => match data.take() {
+                Some(data) => Poll::Ready(data),
+                None => {
+                    *state.waker.lock().unwrap() = Some(cx.waker().clone());
+                    Poll::Pending
                 }
-            }
+            },
             Err(TryLockError::Poisoned(err)) => {
                 panic!("{}", err);
             }

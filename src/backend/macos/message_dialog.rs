@@ -4,7 +4,7 @@ use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, 
 use super::modal_future::AsModal;
 use super::{
     modal_future::{InnerModal, ModalFuture},
-    utils::{run_on_main, FocusManager, PolicyManager, self},
+    utils::{self, run_on_main, FocusManager, PolicyManager},
 };
 
 use super::utils::window_from_raw_window_handle;
@@ -155,13 +155,15 @@ impl InnerModal for NSAlert {
 use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
-        autoreleasepool(move |_| run_on_main(move |mtm| {
-            if self.parent.is_none() {
-                utils::sync_pop_dialog(self, mtm)
-            } else {
-                Alert::new(self, mtm).run()
-            }
-        }))
+        autoreleasepool(move |_| {
+            run_on_main(move |mtm| {
+                if self.parent.is_none() {
+                    utils::sync_pop_dialog(self, mtm)
+                } else {
+                    Alert::new(self, mtm).run()
+                }
+            })
+        })
     }
 }
 

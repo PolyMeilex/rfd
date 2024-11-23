@@ -199,4 +199,3 @@ pub fn async_pop_dialog(opt: MessageDialog) -> DialogFutureType<MessageDialogRes
         }
     })
 }
-

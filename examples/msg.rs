@@ -59,4 +59,3 @@ fn main() {
     stdin.read_to_end(&mut buffer).unwrap();
     println!();
 }
-

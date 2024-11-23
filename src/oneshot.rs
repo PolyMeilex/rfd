@@ -1,7 +1,10 @@
 use std::fmt;
-use std::pin::Pin;
 use std::future::Future;
-use std::sync::{Mutex, Arc, atomic::{AtomicBool, Ordering::SeqCst}};
+use std::pin::Pin;
+use std::sync::{
+    atomic::{AtomicBool, Ordering::SeqCst},
+    Arc, Mutex,
+};
 use std::task::{Context, Poll, Waker};
 
 #[must_use = "futures do nothing unless you `.await` or poll them"]
