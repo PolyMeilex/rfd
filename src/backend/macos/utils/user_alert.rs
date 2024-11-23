@@ -77,8 +77,8 @@ impl UserAlert {
             alternate_button_title: buttons[1].take(),
             other_button_title: buttons[2].take(),
             buttons: opt.buttons,
-            _policy_manager: mtm.map(|mtm| PolicyManager::new(mtm)),
-            _focus_manager: mtm.map(|mtm| FocusManager::new(mtm)),
+            _policy_manager: mtm.map(PolicyManager::new),
+            _focus_manager: mtm.map(FocusManager::new),
         }
     }
 

@@ -57,7 +57,7 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             let mut state = state.lock().unwrap();
             // take() to drop it when it's safe to do so
             state.data = if let Some(mut modal) = state.modal.take() {
-                Some((&cb)(&mut modal, result))
+                Some((cb)(&mut modal, result))
             } else {
                 Some(Default::default())
             };

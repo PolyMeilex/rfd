@@ -118,7 +118,7 @@ trait PanelExt {
             exts.append(&mut filter.extensions.to_vec());
         }
 
-        let f_raw: Vec<_> = exts.iter().map(|ext| NSString::from_str(&ext)).collect();
+        let f_raw: Vec<_> = exts.iter().map(|ext| NSString::from_str(ext)).collect();
         let array = NSArray::from_vec(f_raw);
 
         unsafe {
@@ -175,7 +175,7 @@ impl Panel {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
         if !opt.filters.is_empty() {
-            panel.add_filters(&opt);
+            panel.add_filters(opt);
         }
 
         if let Some(path) = &opt.starting_directory {
@@ -204,7 +204,7 @@ impl Panel {
         let panel = unsafe { NSSavePanel::savePanel(mtm) };
 
         if !opt.filters.is_empty() {
-            panel.add_filters(&opt);
+            panel.add_filters(opt);
         }
 
         if let Some(path) = &opt.starting_directory {
@@ -271,7 +271,7 @@ impl Panel {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
         if !opt.filters.is_empty() {
-            panel.add_filters(&opt);
+            panel.add_filters(opt);
         }
 
         if let Some(path) = &opt.starting_directory {

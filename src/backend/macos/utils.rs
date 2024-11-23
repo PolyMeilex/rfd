@@ -23,7 +23,7 @@ pub fn run_on_main<R: Send, F: FnOnce(MainThreadMarker) -> R + Send>(run: F) -> 
         let mtm = unsafe { MainThreadMarker::new_unchecked() };
         let app = NSApplication::sharedApplication(mtm);
         if unsafe { app.isRunning() } {
-            objc2_foundation::run_on_main(|mtm| run(mtm))
+            objc2_foundation::run_on_main(run)
         } else {
             panic!("You are running RFD in NonWindowed environment, it is impossible to spawn dialog from thread different than main in this env.");
         }
