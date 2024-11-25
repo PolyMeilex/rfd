@@ -173,17 +173,14 @@ impl IDialog {
     }
 
     fn add_filters(&self, filters: &[crate::file_dialog::Filter]) -> Result<()> {
-        {
-            let Some(first_filter) = filters.first() else {
-                return Ok(());
-            };
+        if let Some(first_filter) = filters.first() {
             if let Some(first_extension) = first_filter.extensions.first() {
                 let extension = str_to_vec_u16(first_extension);
                 unsafe { self.0.set_default_extension(&extension)? }
             }
         }
 
-        let f_list = {
+        let mut f_list = {
             let mut f_list = Vec::new();
             let mut ext_string = String::new();
 
@@ -204,6 +201,10 @@ impl IDialog {
             }
             f_list
         };
+
+        if f_list.is_empty() {
+            f_list.push((str_to_vec_u16("All Files"), str_to_vec_u16("*.*")));
+        }
 
         let spec: Vec<_> = f_list
             .iter()
