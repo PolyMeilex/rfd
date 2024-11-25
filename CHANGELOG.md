@@ -4,6 +4,7 @@
 
 ## 0.15.1
 - Update `ashpd` to 0.10.
+- Fix issue where with no filter added no files are selectable on Windows (#211).
 
 ## 0.15.0
 - Move from `objc` crates to `objc2` crates.
