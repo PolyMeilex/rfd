@@ -209,6 +209,7 @@ impl AsyncMessageDialogImpl for MessageDialog {
             gtk_sys::GTK_RESPONSE_CANCEL => MessageDialogResult::Cancel,
             gtk_sys::GTK_RESPONSE_YES => MessageDialogResult::Yes,
             gtk_sys::GTK_RESPONSE_NO => MessageDialogResult::No,
+            gtk_sys::GTK_RESPONSE_DELETE_EVENT => MessageDialogResult::Cancel,
             _ => unreachable!(),
         });
         Box::pin(future)
