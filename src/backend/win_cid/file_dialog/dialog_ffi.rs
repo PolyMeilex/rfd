@@ -114,7 +114,7 @@ impl DialogInner {
     #[inline]
     unsafe fn show(&self, parent: Option<HWND>) -> Result<()> {
         let (d, v) = self.fd();
-        wrap_err((v.base.Show)(d, parent.unwrap_or_default()))
+        wrap_err((v.base.Show)(d, parent.unwrap_or(std::ptr::null_mut())))
     }
 
     #[inline]

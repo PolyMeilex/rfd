@@ -134,7 +134,7 @@ impl WinMessageDialog {
 
         let task_dialog_config = TASKDIALOGCONFIG {
             cbSize: core::mem::size_of::<TASKDIALOGCONFIG>() as u32,
-            hwndParent: self.parent.unwrap_or_default(),
+            hwndParent: self.parent.unwrap_or(std::ptr::null_mut()),
             dwFlags: TDF_ALLOW_DIALOG_CANCELLATION | TDF_SIZE_TO_CONTENT,
             pszWindowTitle: self.caption.as_ptr(),
             pszContent: self.text.as_ptr(),
@@ -150,7 +150,7 @@ impl WinMessageDialog {
             pRadioButtons: std::ptr::null(),
             cRadioButtons: 0,
             cxWidth: 0,
-            hInstance: 0,
+            hInstance: std::ptr::null_mut(),
             pfCallback: None,
             lpCallbackData: 0,
             nDefaultButton: 0,
@@ -206,7 +206,7 @@ impl WinMessageDialog {
     pub fn run(self) -> MessageDialogResult {
         let ret = unsafe {
             MessageBoxW(
-                self.parent.unwrap_or_default(),
+                self.parent.unwrap_or(std::ptr::null_mut()),
                 self.text.as_ptr(),
                 self.caption.as_ptr(),
                 self.flags,
