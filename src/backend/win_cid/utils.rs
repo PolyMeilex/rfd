@@ -17,7 +17,7 @@ pub fn init_com<T, F: FnOnce() -> T>(f: F) -> Result<T, HRESULT> {
     let res = unsafe {
         CoInitializeEx(
             std::ptr::null(),
-            COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE,
+            (COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE) as u32,
         )
     };
 

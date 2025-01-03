@@ -57,7 +57,7 @@ core-foundation = "0.10.0"
 core-foundation-sys = "0.8.7"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.48", features = [
+windows-sys = { version = "0.59", features = [
   "Win32_Foundation",
   "Win32_System_Com",
   "Win32_UI_Shell_Common",
