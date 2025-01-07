@@ -1,22 +1,21 @@
 # https://embarkstudios.github.io/cargo-deny/
 
+[graph]
 targets = [
-    { triple = "aarch64-apple-darwin" },
-    { triple = "aarch64-linux-android" },
-    { triple = "wasm32-unknown-unknown" },
-    { triple = "x86_64-apple-darwin" },
-    { triple = "x86_64-pc-windows-msvc" },
-    { triple = "x86_64-unknown-linux-gnu" },
-    { triple = "x86_64-unknown-linux-musl" },
+  { triple = "aarch64-apple-darwin" },
+  { triple = "aarch64-linux-android" },
+  { triple = "wasm32-unknown-unknown" },
+  { triple = "x86_64-apple-darwin" },
+  { triple = "x86_64-pc-windows-msvc" },
+  { triple = "x86_64-unknown-linux-gnu" },
+  { triple = "x86_64-unknown-linux-musl" },
 ]
-
+exclude = ["gtk-sys"]
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "warn"
+version = 2
 yanked = "deny"
 ignore = []
-
 
 [bans]
 multiple-versions = "deny"
@@ -25,8 +24,13 @@ deny = []
 skip = []
 skip-tree = []
 
-
 [licenses]
-unlicensed = "allow"
-allow-osi-fsf-free = "either"
-copyleft = "allow"
+version = 2
+unused-allowed-license = "allow"
+allow = [
+  "MIT",
+  "Unicode-3.0",
+  "ISC",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+]
