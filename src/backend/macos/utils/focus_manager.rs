@@ -1,10 +1,9 @@
-use objc2::rc::Id;
-
+use objc2::rc::Retained;
+use objc2::MainThreadMarker;
 use objc2_app_kit::{NSApplication, NSWindow};
-use objc2_foundation::MainThreadMarker;
 
 pub struct FocusManager {
-    key_window: Option<Id<NSWindow>>,
+    key_window: Option<Retained<NSWindow>>,
 }
 
 impl FocusManager {

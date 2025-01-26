@@ -1,9 +1,9 @@
-use objc2::rc::Id;
+use objc2::rc::Retained;
+use objc2::MainThreadMarker;
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
-use objc2_foundation::MainThreadMarker;
 
 pub struct PolicyManager {
-    app: Id<NSApplication>,
+    app: Retained<NSApplication>,
     initial_policy: NSApplicationActivationPolicy,
 }
 

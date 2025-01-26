@@ -18,7 +18,7 @@ use core_foundation_sys::{
         kCFUserNotificationStopAlertLevel, CFUserNotificationDisplayAlert,
     },
 };
-use objc2_foundation::MainThreadMarker;
+use objc2::MainThreadMarker;
 
 use std::{mem::MaybeUninit, ptr, thread};
 
