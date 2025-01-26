@@ -55,8 +55,14 @@ objc2-app-kit = { version = "0.3.0", default-features = false, features = [
   "NSView",
   "NSWindow",
 ] }
-core-foundation = "0.10.0"
-core-foundation-sys = "0.8.7"
+objc2-core-foundation = { version = "0.3.0", default-features = false, features = [
+  "std",
+  "CFBase",
+  "CFDate",
+  "CFString",
+  "CFURL",
+  "CFUserNotification",
+] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = [
