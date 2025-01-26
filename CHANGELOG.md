@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+- Update `objc2` to v0.6.
 
 ## 0.15.1
 - Update `ashpd` to 0.10.

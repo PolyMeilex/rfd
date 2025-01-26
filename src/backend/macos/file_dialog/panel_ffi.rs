@@ -3,10 +3,10 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use block2::Block;
-use objc2::rc::Id;
-
+use objc2::rc::Retained;
+use objc2::MainThreadMarker;
 use objc2_app_kit::{NSModalResponse, NSOpenPanel, NSSavePanel, NSWindow, NSWindowLevel};
-use objc2_foundation::{MainThreadMarker, NSArray, NSObjectProtocol, NSString, NSURL};
+use objc2_foundation::{NSArray, NSString, NSURL};
 use raw_window_handle::RawWindowHandle;
 
 use super::super::{
@@ -22,14 +22,14 @@ extern "C" {
 
 pub struct Panel {
     // Either `NSSavePanel` or the subclass `NSOpenPanel`
-    pub(crate) panel: Id<NSSavePanel>,
-    parent: Option<Id<NSWindow>>,
+    pub(crate) panel: Retained<NSSavePanel>,
+    parent: Option<Retained<NSWindow>>,
     _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
 }
 
 impl AsModal for Panel {
-    fn inner_modal(&self) -> &NSSavePanel {
+    fn inner_modal(&self) -> &(impl InnerModal + 'static) {
         &*self.panel
     }
 }
@@ -46,17 +46,10 @@ impl InnerModal for NSSavePanel {
 
 impl Panel {
     fn as_open_panel(&self) -> Option<&NSOpenPanel> {
-        if self.panel.is_kind_of::<NSOpenPanel>() {
-            let ptr: *const NSSavePanel = &*self.panel;
-            let ptr: *const NSOpenPanel = ptr.cast();
-            // SAFETY: Just checked that the panel is an `NSOpenPanel`
-            Some(unsafe { &*ptr })
-        } else {
-            None
-        }
+        self.panel.downcast_ref::<NSOpenPanel>()
     }
 
-    pub fn new(panel: Id<NSSavePanel>, parent: Option<&RawWindowHandle>) -> Self {
+    pub fn new(panel: Retained<NSSavePanel>, parent: Option<&RawWindowHandle>) -> Self {
         let _policy_manager = PolicyManager::new(MainThreadMarker::from(&*panel));
 
         let _focus_manager = FocusManager::new(MainThreadMarker::from(&*panel));
@@ -119,7 +112,7 @@ trait PanelExt {
         }
 
         let f_raw: Vec<_> = exts.iter().map(|ext| NSString::from_str(ext)).collect();
-        let array = NSArray::from_vec(f_raw);
+        let array = NSArray::from_retained_slice(&f_raw);
 
         unsafe {
             #[allow(deprecated)]
@@ -158,13 +151,13 @@ trait PanelExt {
     }
 }
 
-impl PanelExt for Id<NSSavePanel> {
+impl PanelExt for Retained<NSSavePanel> {
     fn panel(&self) -> &NSSavePanel {
         &self
     }
 }
 
-impl PanelExt for Id<NSOpenPanel> {
+impl PanelExt for Retained<NSOpenPanel> {
     fn panel(&self) -> &NSSavePanel {
         &self
     }
@@ -197,7 +190,7 @@ impl Panel {
         unsafe { panel.setCanChooseDirectories(false) };
         unsafe { panel.setCanChooseFiles(true) };
 
-        Self::new(Id::into_super(panel), opt.parent.as_ref())
+        Self::new(Retained::into_super(panel), opt.parent.as_ref())
     }
 
     pub fn build_save_file(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
@@ -243,7 +236,7 @@ impl Panel {
         unsafe { panel.setCanChooseDirectories(true) };
         unsafe { panel.setCanChooseFiles(false) };
 
-        Self::new(Id::into_super(panel), opt.parent.as_ref())
+        Self::new(Retained::into_super(panel), opt.parent.as_ref())
     }
 
     pub fn build_pick_folders(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
@@ -264,7 +257,7 @@ impl Panel {
         unsafe { panel.setCanChooseFiles(false) };
         unsafe { panel.setAllowsMultipleSelection(true) };
 
-        Self::new(Id::into_super(panel), opt.parent.as_ref())
+        Self::new(Retained::into_super(panel), opt.parent.as_ref())
     }
 
     pub fn build_pick_files(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
@@ -290,6 +283,6 @@ impl Panel {
         unsafe { panel.setCanChooseFiles(true) };
         unsafe { panel.setAllowsMultipleSelection(true) };
 
-        Self::new(Id::into_super(panel), opt.parent.as_ref())
+        Self::new(Retained::into_super(panel), opt.parent.as_ref())
     }
 }

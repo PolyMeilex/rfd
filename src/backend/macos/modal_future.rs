@@ -1,9 +1,8 @@
 use block2::Block;
-use objc2::mutability::MainThreadOnly;
-use objc2::rc::Id;
-use objc2::ClassType;
+use dispatch2::run_on_main;
+use objc2::rc::Retained;
+use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message};
 use objc2_app_kit::{NSApplication, NSModalResponse, NSWindow};
-use objc2_foundation::{run_on_main, MainThreadMarker};
 
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -16,7 +15,7 @@ pub(super) trait AsModal {
     fn inner_modal(&self) -> &(impl InnerModal + 'static);
 }
 
-pub(super) trait InnerModal: ClassType<Mutability = MainThreadOnly> {
+pub(super) trait InnerModal: ClassType + MainThreadOnly {
     fn begin_modal(&self, window: &NSWindow, handler: &Block<dyn Fn(NSModalResponse)>);
     fn run_modal(&self) -> NSModalResponse;
 }
@@ -37,7 +36,7 @@ unsafe impl<R, D> Send for ModalFuture<R, D> {}
 
 impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
     pub fn new<F, DBULD: FnOnce(MainThreadMarker) -> D + Send>(
-        win: Option<Id<NSWindow>>,
+        win: Option<Retained<NSWindow>>,
         build_modal: DBULD,
         cb: F,
     ) -> Self
@@ -72,7 +71,7 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
         let win = if let Some(win) = win {
             Some(win)
         } else {
-            unsafe { app.mainWindow() }.or_else(|| app.windows().first_retained())
+            unsafe { app.mainWindow() }.or_else(|| app.windows().firstObject())
         };
 
         // if async exec is possible start sheet modal
@@ -81,7 +80,7 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             let state = state.clone();
 
             // Hack to work around us getting the window above
-            struct WindowWrapper(Id<NSWindow>);
+            struct WindowWrapper(Retained<NSWindow>);
             unsafe impl Send for WindowWrapper {}
             let window = WindowWrapper(win.unwrap());
 
