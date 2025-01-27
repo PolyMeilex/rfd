@@ -68,11 +68,12 @@ impl AsyncFilePickerDialogImpl for FileDialog {
                 .send()
                 .await;
 
-            if res.is_err() {
+            if let Err(err) = res {
+                error!("Failed to pick file: {err}");
                 match zenity::pick_file(&self).await {
                     Ok(res) => res,
                     Err(err) => {
-                        error!("pick_file error {err}");
+                        error!("Failed to pick file with zenity: {err}");
                         return None;
                     }
                 }
@@ -102,11 +103,12 @@ impl AsyncFilePickerDialogImpl for FileDialog {
                 .send()
                 .await;
 
-            if res.is_err() {
+            if let Err(err) = res {
+                error!("Failed to pick files: {err}");
                 match zenity::pick_files(&self).await {
                     Ok(res) => Some(res.into_iter().map(FileHandle::from).collect::<Vec<_>>()),
                     Err(err) => {
-                        error!("pick_files error {err}");
+                        error!("Failed to pick files with zenity: {err}");
                         None
                     }
                 }
@@ -157,11 +159,12 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
                 .send()
                 .await;
 
-            if res.is_err() {
+            if let Err(err) = res {
+                error!("Failed to pick folder: {err}");
                 match zenity::pick_folder(&self).await {
                     Ok(res) => res,
                     Err(err) => {
-                        error!("pick_folder error {err}");
+                        error!("Failed to pick folder with zenity: {err}");
                         return None;
                     }
                 }
@@ -192,11 +195,12 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
                 .send()
                 .await;
 
-            if res.is_err() {
+            if let Err(err) = res {
+                error!("Failed to pick folders: {err}");
                 match zenity::pick_folders(&self).await {
                     Ok(res) => Some(res.into_iter().map(FileHandle::from).collect::<Vec<_>>()),
                     Err(err) => {
-                        error!("pick_files error {err}");
+                        error!("Failed to pick folders with zenity: {err}");
                         None
                     }
                 }
@@ -241,11 +245,12 @@ impl AsyncFileSaveDialogImpl for FileDialog {
                 .send()
                 .await;
 
-            if res.is_err() {
+            if let Err(err) = res {
+                error!("Failed to save file: {err}");
                 match zenity::save_file(&self).await {
                     Ok(res) => res,
                     Err(err) => {
-                        error!("pick_folder error {err}");
+                        error!("Failed to save file with zenity: {err}");
                         return None;
                     }
                 }
@@ -288,7 +293,7 @@ impl AsyncMessageDialogImpl for MessageDialog {
                     match res {
                         Ok(res) => res,
                         Err(err) => {
-                            log::error!("Failed to open zenity dialog: {err}");
+                            error!("Failed to open zenity dialog: {err}");
                             MessageDialogResult::Cancel
                         }
                     }
@@ -308,7 +313,7 @@ impl AsyncMessageDialogImpl for MessageDialog {
                     match res {
                         Ok(res) => res,
                         Err(err) => {
-                            log::error!("Failed to open zenity dialog: {err}");
+                            error!("Failed to open zenity dialog: {err}");
                             MessageDialogResult::Cancel
                         }
                     }
