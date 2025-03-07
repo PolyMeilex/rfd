@@ -6,28 +6,23 @@ use crate::{
     message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel},
 };
 
-use core_foundation::{base::TCFType, string::CFString};
-use core_foundation_sys::{
-    base::CFOptionFlags,
-    date::CFTimeInterval,
-    url::CFURLRef,
-    user_notification::{
-        kCFUserNotificationAlternateResponse, kCFUserNotificationCancelResponse,
-        kCFUserNotificationCautionAlertLevel, kCFUserNotificationDefaultResponse,
-        kCFUserNotificationNoteAlertLevel, kCFUserNotificationOtherResponse,
-        kCFUserNotificationStopAlertLevel, CFUserNotificationDisplayAlert,
-    },
+use objc2::MainThreadMarker;
+use objc2_core_foundation::{
+    kCFUserNotificationAlternateResponse, kCFUserNotificationCancelResponse,
+    kCFUserNotificationCautionAlertLevel, kCFUserNotificationDefaultResponse,
+    kCFUserNotificationNoteAlertLevel, kCFUserNotificationOtherResponse,
+    kCFUserNotificationStopAlertLevel, CFOptionFlags, CFRetained, CFString, CFTimeInterval,
+    CFUserNotificationDisplayAlert, CFURL,
 };
-use objc2_foundation::MainThreadMarker;
 
-use std::{mem::MaybeUninit, ptr, thread};
+use std::{mem::MaybeUninit, thread};
 
 struct UserAlert {
     timeout: CFTimeInterval,
     flags: CFOptionFlags,
-    icon_url: CFURLRef,
-    sound_url: CFURLRef,
-    localization_url: CFURLRef,
+    icon_url: Option<CFRetained<CFURL>>,
+    sound_url: Option<CFRetained<CFURL>>,
+    localization_url: Option<CFRetained<CFURL>>,
     alert_header: String,
     alert_message: String,
     default_button_title: Option<String>,
@@ -63,9 +58,9 @@ impl UserAlert {
         };
         UserAlert {
             timeout: 0_f64,
-            icon_url: ptr::null(),
-            sound_url: ptr::null(),
-            localization_url: ptr::null(),
+            icon_url: None,
+            sound_url: None,
+            localization_url: None,
             flags: match opt.level {
                 MessageLevel::Info => kCFUserNotificationNoteAlertLevel,
                 MessageLevel::Warning => kCFUserNotificationCautionAlertLevel,
@@ -83,30 +78,30 @@ impl UserAlert {
     }
 
     fn run(self) -> MessageDialogResult {
-        let alert_header = CFString::new(&self.alert_header[..]);
-        let alert_message = CFString::new(&self.alert_message[..]);
+        let alert_header = CFString::from_str(&self.alert_header[..]);
+        let alert_message = CFString::from_str(&self.alert_message[..]);
         let default_button_title = self
             .default_button_title
-            .map(|string| CFString::new(&string[..]));
+            .map(|string| CFString::from_str(&string[..]));
         let alternate_button_title = self
             .alternate_button_title
-            .map(|value| CFString::new(&value[..]));
+            .map(|value| CFString::from_str(&value[..]));
         let other_button_title = self
             .other_button_title
-            .map(|value| CFString::new(&value[..]));
+            .map(|value| CFString::from_str(&value[..]));
         let mut response_flags = MaybeUninit::<CFOptionFlags>::uninit();
         let is_cancel = unsafe {
             CFUserNotificationDisplayAlert(
                 self.timeout,
                 self.flags,
-                self.icon_url,
-                self.sound_url,
-                self.localization_url,
-                alert_header.as_concrete_TypeRef(),
-                alert_message.as_concrete_TypeRef(),
-                default_button_title.map_or(ptr::null(), |value| value.as_concrete_TypeRef()),
-                alternate_button_title.map_or(ptr::null(), |value| value.as_concrete_TypeRef()),
-                other_button_title.map_or(ptr::null(), |value| value.as_concrete_TypeRef()),
+                self.icon_url.as_deref(),
+                self.sound_url.as_deref(),
+                self.localization_url.as_deref(),
+                Some(&alert_header),
+                Some(&alert_message),
+                default_button_title.as_deref(),
+                alternate_button_title.as_deref(),
+                other_button_title.as_deref(),
                 response_flags.as_mut_ptr(),
             )
         };
