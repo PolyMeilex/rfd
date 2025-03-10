@@ -2,6 +2,7 @@
 
 ## Unreleased
 - Update `objc2` to v0.6.
+- Update `ashpd` to 0.11.
 
 ## 0.15.1
 - Update `ashpd` to 0.10.
