@@ -134,6 +134,7 @@ impl<'a> WasmDialog<'a> {
 
         let overlay = self.overlay.clone();
         let button = self.button.clone();
+        let io = self.io.clone();
 
         let promise = match &self.io {
             HtmlIoElement::Input(_) => js_sys::Promise::new(&mut move |res, _rej| {
@@ -144,6 +145,13 @@ impl<'a> WasmDialog<'a> {
                 button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                 resolve_promise.forget();
                 body.append_child(&overlay).ok();
+                match &io {
+                    HtmlIoElement::Input(input) => {
+                        // click on the input element to open the file picker
+                        input.click();
+                    }
+                    HtmlIoElement::Output { .. } => {}
+                }
             }),
             HtmlIoElement::Output {
                 element,
