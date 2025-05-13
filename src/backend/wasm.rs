@@ -154,8 +154,8 @@ impl<'a> WasmDialog<'a> {
         let overlay_for_cancel = overlay.clone();
 
         let cancel_closure = Closure::wrap(Box::new(move || {
-                body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
-            }) as Box<dyn FnMut()>);
+            body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+        }) as Box<dyn FnMut()>);
 
         cancel_button.set_onclick(Some(cancel_closure.as_ref().unchecked_ref()));
         cancel_closure.forget();
@@ -198,9 +198,13 @@ impl<'a> WasmDialog<'a> {
                             &unsafe { js_sys::Uint8Array::view(&in_array) }.into(),
                         );
                         array.push(&uint8arr.buffer());
+
+                        let blob_property = web_sys::BlobPropertyBag::new();
+                        blob_property.set_type("application/octet-stream");
+
                         let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
                             &array,
-                            web_sys::BlobPropertyBag::new().type_("application/octet-stream"),
+                            &blob_property, // 改用 set_type()
                         )
                         .unwrap();
                         let download_url =
