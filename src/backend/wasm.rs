@@ -149,6 +149,7 @@ impl<'a> WasmDialog<'a> {
         let overlay = Rc::new(self.overlay.clone());
         let ok_button = self.ok_button.clone();
         let cancel_button = self.cancel_button.clone();
+        let io = self.io.clone();
 
         let body_for_cancel = body.clone();
         let overlay_for_cancel = overlay.clone();
@@ -169,6 +170,13 @@ impl<'a> WasmDialog<'a> {
                 ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                 resolve_promise.forget();
                 body.append_child(&overlay).ok();
+                match &io {
+                    HtmlIoElement::Input(input) => {
+                        // click on the input element to open the file picker
+                        input.click();
+                    }
+                    HtmlIoElement::Output { .. } => {}
+                }
             }),
             HtmlIoElement::Output {
                 element,
@@ -204,7 +212,7 @@ impl<'a> WasmDialog<'a> {
 
                         let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
                             &array,
-                            &blob_property, // 改用 set_type()
+                            &blob_property,
                         )
                         .unwrap();
                         let download_url =
