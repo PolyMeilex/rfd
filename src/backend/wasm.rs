@@ -3,6 +3,7 @@ mod file_dialog;
 use crate::{
     file_dialog::FileDialog, file_handle::WasmFileHandleKind, FileHandle, MessageDialogResult,
 };
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlButtonElement, HtmlElement, HtmlInputElement};
@@ -28,7 +29,8 @@ pub struct WasmDialog<'a> {
     card: Element,
     title: Option<HtmlElement>,
     io: HtmlIoElement<'a>,
-    button: HtmlButtonElement,
+    ok_button: HtmlButtonElement,
+    cancel_button: HtmlButtonElement,
 
     style: Element,
 }
@@ -101,12 +103,23 @@ impl<'a> WasmDialog<'a> {
             }
         };
 
-        let button = {
+        let ok_button = {
             let btn_el = document.create_element("button").unwrap();
             let btn: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
 
-            btn.set_id("rfd-button");
+            btn.set_class_name("rfd-buttons");
             btn.set_inner_text("Ok");
+
+            card.append_child(&btn).unwrap();
+            btn
+        };
+
+        let cancel_button = {
+            let btn_el = document.create_element("button").unwrap();
+            let btn: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
+
+            btn.set_class_name("rfd-buttons");
+            btn.set_inner_text("Cancel");
 
             card.append_child(&btn).unwrap();
             btn
@@ -120,7 +133,8 @@ impl<'a> WasmDialog<'a> {
             overlay,
             card,
             title,
-            button,
+            ok_button,
+            cancel_button,
             io,
 
             style,
@@ -130,10 +144,21 @@ impl<'a> WasmDialog<'a> {
     async fn show(&self) {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
-        let body = document.body().expect("Document should have a body");
+        let body = Rc::new(document.body().expect("Document should have a body"));
 
-        let overlay = self.overlay.clone();
-        let button = self.button.clone();
+        let overlay = Rc::new(self.overlay.clone());
+        let ok_button = self.ok_button.clone();
+        let cancel_button = self.cancel_button.clone();
+
+        let body_for_cancel = body.clone();
+        let overlay_for_cancel = overlay.clone();
+
+        let cancel_closure = Closure::wrap(Box::new(move || {
+                body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+            }) as Box<dyn FnMut()>);
+
+        cancel_button.set_onclick(Some(cancel_closure.as_ref().unchecked_ref()));
+        cancel_closure.forget();
 
         let promise = match &self.io {
             HtmlIoElement::Input(_) => js_sys::Promise::new(&mut move |res, _rej| {
@@ -141,7 +166,7 @@ impl<'a> WasmDialog<'a> {
                     res.call0(&JsValue::undefined()).unwrap();
                 }) as Box<dyn FnMut()>);
 
-                button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                 resolve_promise.forget();
                 body.append_child(&overlay).ok();
             }),
@@ -162,7 +187,7 @@ impl<'a> WasmDialog<'a> {
 
                     // Resolve the promise once the user clicks the download link or the button.
                     output.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
-                    button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                    ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                     resolve_promise.forget();
 
                     let set_download_link = move |in_array: &[u8], name: &str| {
@@ -257,7 +282,8 @@ impl<'a> WasmDialog<'a> {
 
 impl<'a> Drop for WasmDialog<'a> {
     fn drop(&mut self) {
-        self.button.remove();
+        self.ok_button.remove();
+        self.cancel_button.remove();
         self.io_element().remove();
         self.title.as_ref().map(|elem| elem.remove());
         self.card.remove();

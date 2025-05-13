@@ -1,4 +1,0 @@
-target
-dist/*.wasm
-dist/*.ts
-dist/*.js
