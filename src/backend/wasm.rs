@@ -107,7 +107,7 @@ impl<'a> WasmDialog<'a> {
             let btn_el = document.create_element("button").unwrap();
             let btn: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
 
-            btn.set_class_name("rfd-buttons");
+            btn.set_class_name("rfd-button");
             btn.set_inner_text("Ok");
 
             card.append_child(&btn).unwrap();
@@ -118,7 +118,7 @@ impl<'a> WasmDialog<'a> {
             let btn_el = document.create_element("button").unwrap();
             let btn: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
 
-            btn.set_class_name("rfd-buttons");
+            btn.set_class_name("rfd-button");
             btn.set_inner_text("Cancel");
 
             card.append_child(&btn).unwrap();

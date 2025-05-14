@@ -30,7 +30,7 @@
 #rfd-input,#rfd-output {
   text-align: center;
 }
-.rfd-buttons {
+.rfd-button {
   display: block;
   margin-top: 5px;
   width: 100%;
