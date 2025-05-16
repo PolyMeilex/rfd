@@ -28,7 +28,7 @@ impl From<&Filter> for FileFilter {
     fn from(filter: &Filter) -> Self {
         let mut ashpd_filter = FileFilter::new(&filter.name);
         for file_extension in &filter.extensions {
-            if file_extension == "*" || file_extension == "" {
+            if file_extension == "*" || file_extension.is_empty() {
                 ashpd_filter = ashpd_filter.glob("*");
             } else {
                 ashpd_filter = ashpd_filter.glob(&format!("*.{file_extension}"));
