@@ -27,8 +27,11 @@ fn main() {
             .and_then(|win| win.document())
             .and_then(|doc| doc.body())
             .and_then(|body| {
-                body.append_child(&web_sys::Element::from(window.canvas()))
-                    .ok()
+                if let Some(canvas) = window.canvas() {
+                    body.append_child(&canvas.into()).ok()
+                } else {
+                    None
+                }
             })
             .expect("couldn't append canvas to document body");
     }
