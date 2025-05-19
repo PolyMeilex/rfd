@@ -28,8 +28,7 @@ fn main() {
             .and_then(|doc| doc.body())
             .and_then(|body| {
                 if let Some(canvas) = window.canvas() {
-                    body.append_child(&canvas.into())
-                        .ok()
+                    body.append_child(&canvas.into()).ok()
                 } else {
                     None
                 }

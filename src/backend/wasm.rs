@@ -3,7 +3,6 @@ mod file_dialog;
 use crate::{
     file_dialog::FileDialog, file_handle::WasmFileHandleKind, FileHandle, MessageDialogResult,
 };
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlButtonElement, HtmlElement, HtmlInputElement};
@@ -144,9 +143,9 @@ impl<'a> WasmDialog<'a> {
     async fn show(&self) {
         let window = web_sys::window().expect("Window not found");
         let document = window.document().expect("Document not found");
-        let body = Rc::new(document.body().expect("Document should have a body"));
+        let body = document.body().expect("Document should have a body");
 
-        let overlay = Rc::new(self.overlay.clone());
+        let overlay = self.overlay.clone();
         let ok_button = self.ok_button.clone();
         let cancel_button = self.cancel_button.clone();
         let io = self.io.clone();

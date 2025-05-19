@@ -1846,18 +1846,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-example"
-version = "0.1.0"
-dependencies = [
- "futures",
- "rfd",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "winit",
-]
-
-[[package]]
 name = "wayland-backend"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2332,6 +2320,18 @@ dependencies = [
  "x11-dl",
  "x11rb",
  "xkbcommon-dl",
+]
+
+[[package]]
+name = "winit-example"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "rfd",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "winit",
 ]
 
 [[package]]
