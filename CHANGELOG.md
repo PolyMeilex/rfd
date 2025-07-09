@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+- Fix regressions on Wayland due to `ashpd` upgrade (#255).
 
 ## 0.15.3
 - Update `objc2` to v0.6.
