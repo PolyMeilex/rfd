@@ -1,2 +1,2 @@
 [watch]
-watch = ["../../src"]
+watch = ["../../src", "src"]
