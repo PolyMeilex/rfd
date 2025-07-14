@@ -1,6 +1,7 @@
 use crate::message_dialog::MessageDialogResult;
 use crate::FileHandle;
 use std::future::Future;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 use std::pin::Pin;
 
@@ -90,6 +91,7 @@ pub trait AsyncFilePickerDialogImpl {
 }
 
 /// Dialog used to pick folder
+#[cfg(not(target_arch = "wasm32"))]
 pub trait AsyncFolderPickerDialogImpl {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>>;
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;
