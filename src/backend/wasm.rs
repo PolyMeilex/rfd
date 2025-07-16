@@ -150,24 +150,26 @@ impl<'a> WasmDialog<'a> {
         let cancel_button = self.cancel_button.clone();
         let io = self.io.clone();
 
-        let body_for_cancel = body.clone();
-        let overlay_for_cancel = overlay.clone();
-
-        let cancel_closure = Closure::wrap(Box::new(move || {
-            body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
-        }) as Box<dyn FnMut()>);
-
-        cancel_button.set_onclick(Some(cancel_closure.as_ref().unchecked_ref()));
-        cancel_closure.forget();
-
         let promise = match &self.io {
-            HtmlIoElement::Input(_) => js_sys::Promise::new(&mut move |res, _rej| {
+            HtmlIoElement::Input(_) => js_sys::Promise::new(&mut move |res, rej| {
                 let resolve_promise = Closure::wrap(Box::new(move || {
                     res.call0(&JsValue::undefined()).unwrap();
                 }) as Box<dyn FnMut()>);
 
+                let body_for_cancel = body.clone();
+                let overlay_for_cancel = overlay.clone();
+
+                let reject_promise = Closure::wrap(Box::new(move || {
+                    rej.call0(&JsValue::undefined()).unwrap();
+                    body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+                }) as Box<dyn FnMut()>);
+
                 ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
+
                 resolve_promise.forget();
+                reject_promise.forget();
+
                 body.append_child(&overlay).ok();
                 match &io {
                     HtmlIoElement::Input(input) => {
@@ -229,7 +231,7 @@ impl<'a> WasmDialog<'a> {
         };
 
         let future = wasm_bindgen_futures::JsFuture::from(promise);
-        future.await.unwrap();
+        future.await.ok();
     }
 
     fn get_results(&self) -> Option<Vec<FileHandle>> {
