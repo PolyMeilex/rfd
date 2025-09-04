@@ -151,7 +151,7 @@ impl<'a> WasmDialog<'a> {
         let io = self.io.clone();
 
         let promise = match &self.io {
-            HtmlIoElement::Input(_) => js_sys::Promise::new(&mut move |res, rej| {
+            HtmlIoElement::Input(input) => js_sys::Promise::new(&mut move |res, rej| {
                 let resolve_promise = Closure::wrap(Box::new(move || {
                     res.call0(&JsValue::undefined()).unwrap();
                 }) as Box<dyn FnMut()>);
@@ -159,9 +159,13 @@ impl<'a> WasmDialog<'a> {
                 let body_for_cancel = body.clone();
                 let overlay_for_cancel = overlay.clone();
 
-                let reject_promise = Closure::wrap(Box::new(move || {
-                    rej.call0(&JsValue::undefined()).unwrap();
-                    body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+                let reject_promise = Closure::wrap(Box::new({
+                    let input = input.clone();
+                    move || {
+                        rej.call0(&JsValue::undefined()).unwrap();
+                        input.set_value("");
+                        body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+                    }
                 }) as Box<dyn FnMut()>);
 
                 ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
