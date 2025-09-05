@@ -65,7 +65,7 @@ objc2-core-foundation = { version = "0.3.0", default-features = false, features 
 ] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.59", features = [
+windows-sys = { version = "0.60", features = [
   "Win32_Foundation",
   "Win32_System_Com",
   "Win32_UI_Shell_Common",

@@ -1,7 +1,16 @@
 use std::io::{self, Read};
 
 fn main() {
-    #[cfg(not(feature = "gtk3"))]
+    #[cfg(all(
+        any(
+            target_os = "linux",
+            target_os = "freebsd",
+            target_os = "dragonfly",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ),
+        not(feature = "gtk3")
+    ))]
     let res = "";
     #[cfg(any(
         target_os = "windows",
@@ -23,7 +32,12 @@ fn main() {
         .set_buttons(rfd::MessageButtons::OkCancel)
         .set_level(rfd::MessageLevel::Error)
         .show();
-    println!("res: {}, Ctrl+D", res);
+    println!("res: {res}");
+
+    #[cfg(windows)]
+    println!("Ctrl+Z");
+    #[cfg(not(windows))]
+    println!("Ctrl+D");
 
     let mut stdin = io::stdin();
     let mut buffer: Vec<u8> = vec![];
@@ -50,9 +64,12 @@ fn main() {
             .set_buttons(rfd::MessageButtons::OkCancel)
             .show()
             .await;
-        println!("res: {}", res);
+        println!("res: {res}");
     });
 
+    #[cfg(windows)]
+    println!("Ctrl+Z");
+    #[cfg(not(windows))]
     println!("Ctrl+D");
     let mut stdin = io::stdin();
     let mut buffer: Vec<u8> = vec![];
