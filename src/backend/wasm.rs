@@ -188,7 +188,7 @@ impl<'a> WasmDialog<'a> {
                 name,
                 data,
             } => {
-                js_sys::Promise::new(&mut |res, _rej| {
+                js_sys::Promise::new(&mut |res, rej| {
                     // Moved to keep closure as FnMut
                     let output = element.clone();
                     let file_name = name.clone();
@@ -198,10 +198,18 @@ impl<'a> WasmDialog<'a> {
                             .unwrap();
                     }) as Box<dyn FnMut()>);
 
+                    let reject_promise = Closure::wrap(Box::new(move || {
+                            rej.call1(&JsValue::undefined(), &JsValue::from(true))
+                                .unwrap();
+                    }) as Box<dyn FnMut()>);
+
                     // Resolve the promise once the user clicks the download link or the button.
                     output.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                     ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                    cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
+
                     resolve_promise.forget();
+                    reject_promise.forget();
 
                     let set_download_link = move |in_array: &[u8], name: &str| {
                         // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
