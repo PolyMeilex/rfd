@@ -5,6 +5,7 @@
 - Fix regressions on Wayland due to `ashpd` upgrade (#255).
 - The `pick_file()` method of file dialog targeted WASM now can return `None` correctly when cancelled (#258)
 - Update `windows-sys` to 0.60.
+- Make `ashpd` Wayland APIs optional. These are now gated behind the `wayland` feature, which is enabled by default.
 
 ## 0.15.3
 
