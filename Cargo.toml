@@ -11,7 +11,7 @@ repository = "https://github.com/PolyMeilex/rfd"
 documentation = "https://docs.rs/rfd"
 
 [features]
-default = ["xdg-portal", "async-std"]
+default = ["xdg-portal", "wayland", "async-std"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["ashpd", "urlencoding", "pollster"]
@@ -19,6 +19,8 @@ xdg-portal = ["ashpd", "urlencoding", "pollster"]
 async-std = ["ashpd?/async-std"]
 # Use tokio for xdg-portal
 tokio = ["ashpd?/tokio"]
+# Enable wayland support for xdg-portal
+wayland = ["ashpd?/wayland"]
 common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
 
 [dev-dependencies]
@@ -77,7 +79,6 @@ windows-sys = { version = "0.60", features = [
 # XDG Desktop Portal
 ashpd = { version = "0.11", optional = true, default-features = false, features = [
   "raw_handle",
-  "wayland",
 ] }
 urlencoding = { version = "2.1.0", optional = true }
 pollster = { version = "0.4", optional = true }
