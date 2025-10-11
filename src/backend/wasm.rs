@@ -211,12 +211,13 @@ impl<'a> WasmDialog<'a> {
                     resolve_promise.forget();
                     reject_promise.forget();
 
-                    let set_download_link = move |in_array: &[u8], name: &str| {
+                    let _ = js_sys::eval(include_str!("wasm/FileSaver.js"));
+                    if let Ok(f) = js_sys::eval("saveAs") {
                         // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
                         let array = js_sys::Array::new();
                         let uint8arr = js_sys::Uint8Array::new(
                             // Safety: No wasm allocations happen between creating the view and consuming it in the array.push
-                            &unsafe { js_sys::Uint8Array::view(&in_array) }.into(),
+                            &unsafe { js_sys::Uint8Array::view(&*data) }.into(),
                         );
                         array.push(&uint8arr.buffer());
 
@@ -228,14 +229,15 @@ impl<'a> WasmDialog<'a> {
                             &blob_property,
                         )
                         .unwrap();
-                        let download_url =
-                            web_sys::Url::create_object_url_with_blob(&blob).unwrap();
-
-                        output.set_href(&download_url);
-                        output.set_download(&name);
-                    };
-
-                    set_download_link(&*data, &file_name);
+                        
+                        if let Some(f) = wasm_bindgen::JsCast::dyn_ref::<js_sys::Function>(&f) {
+                            f.call2(
+                                &js_sys::global(),
+                                &blob,
+                                &wasm_bindgen::JsValue::from_str(name),
+                            );
+                        }
+                    }
 
                     body.append_child(&overlay).ok();
                 })
