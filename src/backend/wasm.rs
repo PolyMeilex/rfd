@@ -5,7 +5,7 @@ use crate::{
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, HtmlAnchorElement, HtmlButtonElement, HtmlElement, HtmlInputElement};
+use web_sys::{Element, HtmlButtonElement, HtmlElement, HtmlInputElement};
 
 #[derive(Clone, Debug)]
 pub enum FileKind<'a> {
@@ -17,7 +17,7 @@ pub enum FileKind<'a> {
 enum HtmlIoElement<'a> {
     Input(HtmlInputElement),
     Output {
-        element: HtmlAnchorElement,
+        element: HtmlButtonElement,
         name: String,
         data: &'a [u8],
     },
@@ -87,11 +87,11 @@ impl<'a> WasmDialog<'a> {
                 HtmlIoElement::Input(input)
             }
             FileKind::Out(dialog, data) => {
-                let output_el = document.create_element("a").unwrap();
-                let output: HtmlAnchorElement = wasm_bindgen::JsCast::dyn_into(output_el).unwrap();
+                let output_el = document.create_element("button").unwrap();
+                let output: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(output_el).unwrap();
 
-                output.set_id("rfd-output");
-                output.set_inner_text("click here to download your file");
+                output.set_id("rfd-button");
+                output.set_inner_text("Download");
 
                 card.append_child(&output).unwrap();
                 HtmlIoElement::Output {
@@ -190,8 +190,9 @@ impl<'a> WasmDialog<'a> {
             } => {
                 js_sys::Promise::new(&mut |res, rej| {
                     // Moved to keep closure as FnMut
-                    let output = element.clone();
+                    let download_button = element.clone();
                     let file_name = name.clone();
+                    let file_data: Vec<_> = data.iter().cloned().collect();
 
                     let resolve_promise = Closure::wrap(Box::new(move || {
                         res.call1(&JsValue::undefined(), &JsValue::from(true))
@@ -204,40 +205,43 @@ impl<'a> WasmDialog<'a> {
                     }) as Box<dyn FnMut()>);
 
                     // Resolve the promise once the user clicks the download link or the button.
-                    output.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                     ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                     cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
 
                     resolve_promise.forget();
                     reject_promise.forget();
 
-                    let _ = js_sys::eval(include_str!("wasm/FileSaver.js"));
-                    if let Ok(f) = js_sys::eval("saveAs") {
-                        // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
-                        let array = js_sys::Array::new();
-                        let uint8arr = js_sys::Uint8Array::new(
-                            // Safety: No wasm allocations happen between creating the view and consuming it in the array.push
-                            &unsafe { js_sys::Uint8Array::view(&*data) }.into(),
-                        );
-                        array.push(&uint8arr.buffer());
-
-                        let blob_property = web_sys::BlobPropertyBag::new();
-                        blob_property.set_type("application/octet-stream");
-
-                        let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
-                            &array,
-                            &blob_property,
-                        )
-                        .unwrap();
-                        
-                        if let Some(f) = wasm_bindgen::JsCast::dyn_ref::<js_sys::Function>(&f) {
-                            f.call2(
-                                &js_sys::global(),
-                                &blob,
-                                &wasm_bindgen::JsValue::from_str(name),
+                    let download_file = Closure::wrap(Box::new(move || {
+                        let _ = js_sys::eval(include_str!("wasm/FileSaver.js"));
+                        if let Ok(f) = js_sys::eval("saveAs") {
+                            // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
+                            let array = js_sys::Array::new();
+                            let uint8arr = js_sys::Uint8Array::new(
+                                // Safety: No wasm allocations happen between creating the view and consuming it in the array.push
+                                &unsafe { js_sys::Uint8Array::view(&*file_data) }.into(),
                             );
+                            array.push(&uint8arr.buffer());
+
+                            let blob_property = web_sys::BlobPropertyBag::new();
+                            blob_property.set_type("application/octet-stream");
+
+                            let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
+                                &array,
+                                &blob_property,
+                            )
+                            .unwrap();
+                            
+                            if let Some(f) = wasm_bindgen::JsCast::dyn_ref::<js_sys::Function>(&f) {
+                                f.call2(
+                                    &js_sys::global(),
+                                    &blob,
+                                    &wasm_bindgen::JsValue::from_str(&file_name),
+                                );
+                            }
                         }
-                    }
+                    }) as Box<dyn FnMut()>);
+                    download_button.set_onclick(Some(download_file.as_ref().unchecked_ref()));
+                    download_file.forget();
 
                     body.append_child(&overlay).ok();
                 })
