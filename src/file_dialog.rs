@@ -280,7 +280,7 @@ impl AsyncFileDialog {
     /// - On Wasm32:
     ///     - No filtering is applied.
     ///     - `save_file` returns immediately without a dialog prompt.
-    /// Instead the user is prompted by their browser on where to save the file when [`FileHandle::write`] is used.
+    ///       Instead the user is prompted by their browser on where to save the file when [`FileHandle::write`] is used.
     pub fn save_file(self) -> impl Future<Output = Option<FileHandle>> {
         AsyncFileSaveDialogImpl::save_file_async(self.file_dialog)
     }

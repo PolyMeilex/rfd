@@ -1,8 +1,8 @@
 [package]
-name = "wasm-example"
+name = "winit-example"
 version = "0.1.0"
 authors = ["Poly <marynczak.bartlomiej@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 rfd={path="../../"}

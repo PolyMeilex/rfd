@@ -28,7 +28,8 @@ pub struct WasmDialog<'a> {
     card: Element,
     title: Option<HtmlElement>,
     io: HtmlIoElement<'a>,
-    button: HtmlButtonElement,
+    ok_button: HtmlButtonElement,
+    cancel_button: HtmlButtonElement,
 
     style: Element,
 }
@@ -101,12 +102,23 @@ impl<'a> WasmDialog<'a> {
             }
         };
 
-        let button = {
+        let ok_button = {
             let btn_el = document.create_element("button").unwrap();
             let btn: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
 
-            btn.set_id("rfd-button");
+            btn.set_class_name("rfd-button");
             btn.set_inner_text("Ok");
+
+            card.append_child(&btn).unwrap();
+            btn
+        };
+
+        let cancel_button = {
+            let btn_el = document.create_element("button").unwrap();
+            let btn: HtmlButtonElement = wasm_bindgen::JsCast::dyn_into(btn_el).unwrap();
+
+            btn.set_class_name("rfd-button");
+            btn.set_inner_text("Cancel");
 
             card.append_child(&btn).unwrap();
             btn
@@ -120,7 +132,8 @@ impl<'a> WasmDialog<'a> {
             overlay,
             card,
             title,
-            button,
+            ok_button,
+            cancel_button,
             io,
 
             style,
@@ -133,24 +146,49 @@ impl<'a> WasmDialog<'a> {
         let body = document.body().expect("Document should have a body");
 
         let overlay = self.overlay.clone();
-        let button = self.button.clone();
+        let ok_button = self.ok_button.clone();
+        let cancel_button = self.cancel_button.clone();
+        let io = self.io.clone();
 
         let promise = match &self.io {
-            HtmlIoElement::Input(_) => js_sys::Promise::new(&mut move |res, _rej| {
+            HtmlIoElement::Input(input) => js_sys::Promise::new(&mut move |res, rej| {
                 let resolve_promise = Closure::wrap(Box::new(move || {
                     res.call0(&JsValue::undefined()).unwrap();
                 }) as Box<dyn FnMut()>);
 
-                button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                let body_for_cancel = body.clone();
+                let overlay_for_cancel = overlay.clone();
+
+                let reject_promise = Closure::wrap(Box::new({
+                    let input = input.clone();
+                    move || {
+                        rej.call0(&JsValue::undefined()).unwrap();
+                        input.set_value("");
+                        body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+                    }
+                }) as Box<dyn FnMut()>);
+
+                ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
+
                 resolve_promise.forget();
+                reject_promise.forget();
+
                 body.append_child(&overlay).ok();
+                match &io {
+                    HtmlIoElement::Input(input) => {
+                        // click on the input element to open the file picker
+                        input.click();
+                    }
+                    HtmlIoElement::Output { .. } => {}
+                }
             }),
             HtmlIoElement::Output {
                 element,
                 name,
                 data,
             } => {
-                js_sys::Promise::new(&mut |res, _rej| {
+                js_sys::Promise::new(&mut |res, rej| {
                     // Moved to keep closure as FnMut
                     let output = element.clone();
                     let file_name = name.clone();
@@ -160,10 +198,18 @@ impl<'a> WasmDialog<'a> {
                             .unwrap();
                     }) as Box<dyn FnMut()>);
 
+                    let reject_promise = Closure::wrap(Box::new(move || {
+                            rej.call1(&JsValue::undefined(), &JsValue::from(true))
+                                .unwrap();
+                    }) as Box<dyn FnMut()>);
+
                     // Resolve the promise once the user clicks the download link or the button.
                     output.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
-                    button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                    ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                    cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
+
                     resolve_promise.forget();
+                    reject_promise.forget();
 
                     let set_download_link = move |in_array: &[u8], name: &str| {
                         // See <https://stackoverflow.com/questions/69556755/web-sysurlcreate-object-url-with-blobblob-not-formatting-binary-data-co>
@@ -173,9 +219,13 @@ impl<'a> WasmDialog<'a> {
                             &unsafe { js_sys::Uint8Array::view(&in_array) }.into(),
                         );
                         array.push(&uint8arr.buffer());
+
+                        let blob_property = web_sys::BlobPropertyBag::new();
+                        blob_property.set_type("application/octet-stream");
+
                         let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(
                             &array,
-                            web_sys::BlobPropertyBag::new().type_("application/octet-stream"),
+                            &blob_property,
                         )
                         .unwrap();
                         let download_url =
@@ -193,7 +243,7 @@ impl<'a> WasmDialog<'a> {
         };
 
         let future = wasm_bindgen_futures::JsFuture::from(promise);
-        future.await.unwrap();
+        future.await.ok();
     }
 
     fn get_results(&self) -> Option<Vec<FileHandle>> {
@@ -257,7 +307,8 @@ impl<'a> WasmDialog<'a> {
 
 impl<'a> Drop for WasmDialog<'a> {
     fn drop(&mut self) {
-        self.button.remove();
+        self.ok_button.remove();
+        self.cancel_button.remove();
         self.io_element().remove();
         self.title.as_ref().map(|elem| elem.remove());
         self.card.remove();

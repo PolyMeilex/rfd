@@ -2,15 +2,23 @@
 
 ## Unreleased
 
+- Fix regressions on Wayland due to `ashpd` upgrade (#255).
+- The `pick_file()` method of file dialog targeted WASM now can return `None` correctly when cancelled (#258)
+- Update `windows-sys` to 0.60.
+- Make `ashpd` Wayland APIs optional. These are now gated behind the `wayland` feature, which is enabled by default.
+
 ## 0.15.3
+
 - Update `objc2` to v0.6.
 - Update `ashpd` to 0.11.
 
 ## 0.15.1
+
 - Update `ashpd` to 0.10.
 - Fix issue where with no filter added no files are selectable on Windows (#211).
 
 ## 0.15.0
+
 - Move from `objc` crates to `objc2` crates.
 - Fix `AsyncFileDialog` blocking the executor on Windows (#191)
 - Add `TDF_SIZE_TO_CONTENT` to `TaskDialogIndirect` config so that it can display longer text without truncating/wrapping (80 characters instead of 55) (#202)
@@ -22,6 +30,7 @@
 - Derive `Clone` for `FileHandle`
 
 ## 0.14.0
+
 - i18n for GTK and XDG Portal
 - Use XDG Portal as default
 - Use zenity as a fallback for XDG Portal
@@ -33,14 +42,17 @@
 - Add `FileDialog/AsyncFileDialog::set_can_create_directories`, supported on macOS only.
 
 ## 0.13.0
+
 - **[Breaking]** Users of the `xdg-portal` feature must now also select the `tokio`
   or `async-std` feature
 - [macOS] Use NSOpenPanel.message instead of title #166
 
 ## 0.12.1
+
 - Fix `FileHandle::inner` (under feature `file-handle-inner`) on wasm
 
 ## 0.12.0
+
 - Add title support for WASM (#132)
 - Add Create folder button to `pick_folder` on macOS (#127)
 - Add support for Yes/No/Cancel buttons (#123)
@@ -52,38 +64,48 @@
 - Make zenity related deps optional (#141)
 
 ## 0.11.3
+
 - Zenity message dialogs for xdg portal backend
 
 ## 0.10.1
+
 - Update `gtk-sys` to `0.16` and `windows-rs` to `0.44`
 
 ## 0.10.0
+
 - fix(FileDialog::set_directory): fallback to default if path is empty
 
 ## 0.9.0
+
 - feat: customize button text, Close #74
 - feat: Add support for selecting multiple folders, fixes #73
 
 ## 0.8.4
+
 - XDG: decode URI before converting to PathBuf #70
 
 ## 0.8.3
+
 - Windows-rs update 0.37
 
 ## 0.8.2
+
 - Windows-rs update 0.35
 
 ## 0.8.1
+
 - Macos parent for sync FileDialog (#58)
 - Windows-rs update 0.33
 
 ## 0.8.0
+
 - `parent` feature was removed, it is always on now
 - New feature `xdg-portal`
 - Now you have to choose one of the features `gtk3` or `xdg-portal`, gtk is on by default
 - `window` crate got updated to 0.32
 
 ## 0.7.0
+
 - Safe Rust XDG Desktop Portal support
 
 ## 0.6.3
@@ -91,9 +113,11 @@
 - Update `windows` crate to 0.30.
 
 ## 0.6.2
+
 - Strip Win32 namespaces from directory paths
 
 ## 0.6.0
+
 - FreeBSD support
 - Port to windows-rs
 - Update RawWindowHandle to 0.4
