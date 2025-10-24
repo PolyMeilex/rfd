@@ -195,6 +195,7 @@ impl AsyncFileDialog {
     ///  * Windows
     ///  * Linux
     ///  * Mac
+    ///  * WASM32 (otherwise defaults to a random string with no extension)
     pub fn set_file_name(mut self, file_name: impl Into<String>) -> Self {
         self.file_dialog = self.file_dialog.set_file_name(file_name);
         self
