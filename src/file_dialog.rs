@@ -100,7 +100,7 @@ impl FileDialog {
     }
 
     /// Set can create directories in the dialog.
-    /// Suported in: `macos`.
+    /// Supported in: `macos`.
     pub fn set_can_create_directories(mut self, can: bool) -> Self {
         self.can_create_directories.replace(can);
         self
@@ -222,7 +222,7 @@ impl AsyncFileDialog {
     }
 
     /// Set can create directories in the dialog.
-    /// Suported in: `macos`.
+    /// Supported in: `macos`.
     pub fn set_can_create_directories(mut self, can: bool) -> Self {
         self.file_dialog = self.file_dialog.set_can_create_directories(can);
         self
