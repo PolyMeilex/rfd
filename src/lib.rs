@@ -119,7 +119,7 @@
 //!
 //! | Feature       | Linux        | Windows | MacOS | Wasm32 |
 //! | ------------- | -----        | ------- | ----- | ------ |
-//! | MessageDialog | ✔ (GTK only) | ✔       | ✔     | ✔      |
+//! | MessageDialog | ✔            | ✔       | ✔     | ✔      |
 //! | PromptDialog  |              |         |       |        |
 //! | ColorPicker   |              |         |       |        |
 

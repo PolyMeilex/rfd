@@ -9,7 +9,7 @@ use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, Raw
 /// Synchronous Message Dialog. Supported platforms:
 ///  * Windows
 ///  * macOS
-///  * Linux (GTK only)
+///  * Linux
 ///  * WASM
 #[derive(Default, Debug, Clone)]
 pub struct MessageDialog {
@@ -84,7 +84,7 @@ impl MessageDialog {
 /// Asynchronous Message Dialog. Supported platforms:
 ///  * Windows
 ///  * macOS
-///  * Linux (GTK only)
+///  * Linux
 ///  * WASM
 #[derive(Default, Debug, Clone)]
 pub struct AsyncMessageDialog(MessageDialog);
