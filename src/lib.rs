@@ -100,7 +100,7 @@
 //!
 //! | API Stability |
 //! | ------------- |
-//! | 🚧             |
+//! | 🚧            |
 //!
 //! | Feature      | Linux | Windows | MacOS     | Wasm32 |
 //! | ------------ | ----- | ------- | --------- | ------ |
@@ -108,8 +108,7 @@
 //! | MultipleFile | ✔     | ✔       | ✔         | ✔      |
 //! | PickFolder   | ✔     | ✔       | ✔         | ✖      |
 //! | SaveFile     | ✔     | ✔       | ✔         | ✖      |
-//! |              |       |         |           |        |
-//! | Filters      | ✔ ([GTK only](https://github.com/PolyMeilex/rfd/issues/42)) | ✔ | ✔ | ✔ |
+//! | Filters      | ✔     | ✔       | ✔         | ✔      |
 //! | StartingPath | ✔     | ✔       | ✔         | ✖      |
 //! | Async        | ✔     | ✔       | ✔         | ✔      |
 //!
