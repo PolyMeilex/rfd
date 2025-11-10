@@ -64,20 +64,16 @@
 //! [KDE](https://invent.kde.org/plasma/xdg-desktop-portal-kde/) XDG Desktop Portal backend installed
 //! at runtime. These are typically installed by the distribution together with the desktop environment.
 //!
-//! If you are packaging an application that uses RFD, ensure either one of these is installed
-//! with the package. 
-//!
 //! The
 //! [wlroots portal backend](https://github.com/emersion/xdg-desktop-portal-wlr) does not implement the
 //! D-Bus API that RFD requires (it does not interfere with the other portal implementations;
 //! they can all be installed simultaneously).
 //!
-//! The user also needs [zenity](https://gitlab.gnome.org/GNOME/zenity) to show message dialogs.
-//! 
-//! File dialogs will also use [zenity](https://gitlab.gnome.org/GNOME/zenity) if [ashpd] fails to do so.
+//! [Zenity](https://gitlab.gnome.org/GNOME/zenity) is also required to display message dialogs,
+//! and is used for file dialogs if [ashpd] cannot.
 //!
-//! If you are packaging an application that uses RFD, ensure that
-//! [zenity](https://gitlab.gnome.org/GNOME/zenity) is also installed with the package.
+//! If you are packaging an application that uses RFD, ensure that both a supported portal backend and
+//! Zenity are installed with the package.
 //!
 //! # macOS non-windowed applications, async, and threading
 //!
