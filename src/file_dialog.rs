@@ -57,7 +57,7 @@ impl FileDialog {
     }
 
     /// Set starting directory of the dialog. Supported platforms:
-    ///   * Linux ([GTK only](https://github.com/PolyMeilex/rfd/issues/42))
+    ///   * Linux
     ///   * Windows
     ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
@@ -183,7 +183,7 @@ impl AsyncFileDialog {
     }
 
     /// Set starting directory of the dialog. Supported platforms:
-    ///   * Linux ([GTK only](https://github.com/PolyMeilex/rfd/issues/42))
+    ///   * Linux
     ///   * Windows
     ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
