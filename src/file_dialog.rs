@@ -57,7 +57,7 @@ impl FileDialog {
     }
 
     /// Set starting directory of the dialog. Supported platforms:
-    ///   * Linux ([GTK only](https://github.com/PolyMeilex/rfd/issues/42))
+    ///   * Linux
     ///   * Windows
     ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
@@ -100,7 +100,7 @@ impl FileDialog {
     }
 
     /// Set can create directories in the dialog.
-    /// Suported in: `macos`.
+    /// Supported in: `macos`.
     pub fn set_can_create_directories(mut self, can: bool) -> Self {
         self.can_create_directories.replace(can);
         self
@@ -183,7 +183,7 @@ impl AsyncFileDialog {
     }
 
     /// Set starting directory of the dialog. Supported platforms:
-    ///   * Linux ([GTK only](https://github.com/PolyMeilex/rfd/issues/42))
+    ///   * Linux
     ///   * Windows
     ///   * Mac
     pub fn set_directory<P: AsRef<Path>>(mut self, path: P) -> Self {
@@ -222,7 +222,7 @@ impl AsyncFileDialog {
     }
 
     /// Set can create directories in the dialog.
-    /// Suported in: `macos`.
+    /// Supported in: `macos`.
     pub fn set_can_create_directories(mut self, can: bool) -> Self {
         self.file_dialog = self.file_dialog.set_can_create_directories(can);
         self
