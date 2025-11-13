@@ -148,7 +148,6 @@ impl<'a> WasmDialog<'a> {
         let overlay = self.overlay.clone();
         let ok_button = self.ok_button.clone();
         let cancel_button = self.cancel_button.clone();
-        let io = self.io.clone();
 
         let promise = match &self.io {
             HtmlIoElement::Input(input) => js_sys::Promise::new(&mut move |res, rej| {
@@ -171,17 +170,23 @@ impl<'a> WasmDialog<'a> {
                 ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
                 cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
 
+                body.append_child(&overlay).ok();
+
+                input.add_event_listener_with_callback(
+                    "change",
+                    resolve_promise.as_ref().unchecked_ref(),
+                ).unwrap();
+
+                input.add_event_listener_with_callback(
+                    "cancel",
+                    reject_promise.as_ref().unchecked_ref(),
+                ).unwrap();
+
+                // click on the input element to open the file picker
+                input.click();
+
                 resolve_promise.forget();
                 reject_promise.forget();
-
-                body.append_child(&overlay).ok();
-                match &io {
-                    HtmlIoElement::Input(input) => {
-                        // click on the input element to open the file picker
-                        input.click();
-                    }
-                    HtmlIoElement::Output { .. } => {}
-                }
             }),
             HtmlIoElement::Output {
                 element,
