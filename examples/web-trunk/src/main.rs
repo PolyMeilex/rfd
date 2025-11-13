@@ -13,7 +13,7 @@ fn main() {
         .dyn_into::<HtmlButtonElement>()
         .unwrap();
 
-    let onclick = Closure::once_into_js(Box::new(move || {
+    let onclick = Closure::<dyn Fn()>::new(|| {
         // Spawn dialog on main thread
         let task = rfd::AsyncFileDialog::new().pick_file();
 
@@ -30,7 +30,7 @@ fn main() {
                 file.read().await;
             }
         });
-    }));
+    }).into_js_value();
 
     button.set_onclick(Some(&onclick.as_ref().unchecked_ref()));
 }
