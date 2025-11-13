@@ -21,9 +21,20 @@ fn main() {
         wasm_bindgen_futures::spawn_local(async {
             let file = task.await;
 
+            let output = web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .get_element_by_id("output")
+                .unwrap();
+
             if let Some(file) = file {
                 // If you care about wasm support you just read() the file
-                file.read().await;
+                let contents = file.read().await;
+
+                output.set_text_content(Some(&format!("Picked file: {}, loaded {} bytes", file.file_name(), contents.len())));
+            } else {
+                output.set_text_content(Some("No file picked"));
             }
         });
     }).into_js_value();
