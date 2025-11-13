@@ -3,11 +3,10 @@ use web_sys::wasm_bindgen::JsCast;
 use web_sys::HtmlButtonElement;
 
 fn main() {
+    let document = web_sys::window().unwrap().document().unwrap();
+
     // get element by id button
-    let button: HtmlButtonElement = web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
+    let button: HtmlButtonElement = document
         .get_element_by_id("button")
         .unwrap()
         .dyn_into::<HtmlButtonElement>()
@@ -39,5 +38,26 @@ fn main() {
         });
     }).into_js_value();
 
+    // Browsers require [user activation][mdn] to automatically show the file dialog.
+    // This tests using a timer to lose transient user activation such that the file
+    // dialog is not show automatically and we fall back to the popup.
+    //
+    // [mdn]: https://developer.mozilla.org/en-US/docs/Web/Security/User_activation
+    let button_delay: HtmlButtonElement = document
+        .get_element_by_id("button-delay")
+        .unwrap()
+        .dyn_into::<HtmlButtonElement>()
+        .unwrap();
+
     button.set_onclick(Some(&onclick.as_ref().unchecked_ref()));
+
+    let delay_onclick = Closure::<dyn Fn()>::new(move || {
+        let window = web_sys::window().unwrap();
+        window.set_timeout_with_callback_and_timeout_and_arguments_0(
+            &onclick.unchecked_ref(),
+            5000,
+        ).unwrap();
+    }).into_js_value();
+
+    button_delay.set_onclick(Some(&delay_onclick.as_ref().unchecked_ref()));
 }
