@@ -182,8 +182,16 @@ impl<'a> WasmDialog<'a> {
                     reject_promise.as_ref().unchecked_ref(),
                 ).unwrap();
 
-                // click on the input element to open the file picker
-                input.click();
+                if window.navigator().user_activation().is_active() {
+                    // Browsers require transient user activation to open the file picker from JS.
+                    // If we have it, we can click the input to immediately show the file picker
+                    // instead of showing the popup.
+
+                    overlay.set_class_name("hidden");
+
+                    // click on the input element to open the file picker
+                    input.click();
+                }
 
                 resolve_promise.forget();
                 reject_promise.forget();

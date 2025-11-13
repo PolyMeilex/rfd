@@ -97,6 +97,8 @@ web-sys = { version = "0.3.46", features = [
   'HtmlButtonElement',
   'HtmlAnchorElement',
   'Window',
+  'Navigator',
+  'UserActivation',
   'File',
   'FileList',
   'FileReader',
