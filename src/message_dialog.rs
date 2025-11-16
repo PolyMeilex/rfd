@@ -69,7 +69,7 @@ impl MessageDialog {
     ///  * Windows
     ///  * Mac
     ///  * Linux (XDG only)
-    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
+    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle + ?Sized>(mut self, parent: &W) -> Self {
         self.parent = parent.window_handle().ok().map(|x| x.as_raw());
         self.parent_display = parent.display_handle().ok().map(|x| x.as_raw());
         self
@@ -133,7 +133,7 @@ impl AsyncMessageDialog {
     ///  * Windows
     ///  * Mac
     ///  * Linux (XDG only)
-    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle>(mut self, parent: &W) -> Self {
+    pub fn set_parent<W: HasWindowHandle + HasDisplayHandle + ?Sized>(mut self, parent: &W) -> Self {
         self.0 = self.0.set_parent(parent);
         self
     }
