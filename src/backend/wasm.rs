@@ -199,8 +199,8 @@ impl<'a> WasmDialog<'a> {
                     }) as Box<dyn FnMut()>);
 
                     let reject_promise = Closure::wrap(Box::new(move || {
-                            rej.call1(&JsValue::undefined(), &JsValue::from(true))
-                                .unwrap();
+                        rej.call1(&JsValue::undefined(), &JsValue::from(true))
+                            .unwrap();
                     }) as Box<dyn FnMut()>);
 
                     // Resolve the promise once the user clicks the download link or the button.
