@@ -16,7 +16,7 @@ fn main() {
         }
     });
 
-    loop {}
+    std::thread::park();
 }
 
 use std::future::Future;
