@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.16.0
+
 - Fix regressions on Wayland due to `ashpd` upgrade (#255).
 - The `pick_file()` method of file dialog targeted WASM now can return `None` correctly when cancelled (#258)
 - Update `windows-sys` to 0.60.
