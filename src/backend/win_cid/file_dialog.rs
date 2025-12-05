@@ -1,9 +1,7 @@
 mod com;
 pub mod dialog_ffi;
-mod dialog_future;
 
 use dialog_ffi::{IDialog, Result};
-use dialog_future::{multiple_return_future, single_return_future};
 
 use crate::backend::DialogFutureType;
 use crate::FileDialog;
@@ -12,6 +10,23 @@ use crate::FileHandle;
 use std::path::PathBuf;
 
 use super::utils::init_com;
+
+fn async_thread<T, F>(f: F) -> DialogFutureType<Option<T>>
+where
+    F: FnOnce() -> Option<T>,
+    F: Send + 'static,
+    T: Send + 'static,
+{
+    Box::pin(async move {
+        let (tx, rx) = crate::oneshot::channel();
+
+        std::thread::spawn(move || {
+            tx.send(f()).ok();
+        });
+
+        rx.await.ok()?
+    })
+}
 
 //
 // File Picker
@@ -45,13 +60,13 @@ impl FilePickerDialogImpl for FileDialog {
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret = single_return_future(move || IDialog::build_pick_file(&self));
-        Box::pin(ret)
+        async_thread(move || Self::pick_file(self).map(FileHandle::wrap))
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let ret = multiple_return_future(move || IDialog::build_pick_files(&self));
-        Box::pin(ret)
+        async_thread(move || {
+            Self::pick_files(self).map(|res| res.into_iter().map(FileHandle::wrap).collect())
+        })
     }
 }
 
@@ -88,13 +103,13 @@ impl FolderPickerDialogImpl for FileDialog {
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret = single_return_future(move || IDialog::build_pick_folder(&self));
-        Box::pin(ret)
+        async_thread(move || Self::pick_folder(self).map(FileHandle::wrap))
     }
 
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let ret = multiple_return_future(move || IDialog::build_pick_folders(&self));
-        Box::pin(ret)
+        async_thread(move || {
+            Self::pick_folders(self).map(|res| res.into_iter().map(FileHandle::wrap).collect())
+        })
     }
 }
 
@@ -120,7 +135,6 @@ impl FileSaveDialogImpl for FileDialog {
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let ret = single_return_future(move || IDialog::build_save_file(&self));
-        Box::pin(ret)
+        async_thread(move || Self::save_file(self).map(FileHandle::wrap))
     }
 }

@@ -1,4 +1,3 @@
-use super::thread_future::ThreadFuture;
 use super::utils::str_to_vec_u16;
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
@@ -221,10 +220,6 @@ impl WinMessageDialog {
             _ => MessageDialogResult::Cancel,
         }
     }
-
-    pub fn run_async(self) -> ThreadFuture<MessageDialogResult> {
-        ThreadFuture::new(move |data| *data = Some(self.run()))
-    }
 }
 
 use crate::backend::MessageDialogImpl;
@@ -241,7 +236,14 @@ use crate::backend::DialogFutureType;
 
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
-        let dialog = WinMessageDialog::new(self);
-        Box::pin(dialog.run_async())
+        Box::pin(async move {
+            let (tx, rx) = crate::oneshot::channel();
+
+            std::thread::spawn(move || {
+                tx.send(self.show()).ok();
+            });
+
+            rx.await.unwrap_or(MessageDialogResult::Cancel)
+        })
     }
 }
