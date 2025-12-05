@@ -64,8 +64,14 @@ fn add_filename(command: &mut Command, file_name: &Option<String>) {
     }
 }
 
-async fn run(command: Command) -> ZenityResult<Option<String>> {
-    let res = super::async_command::AsyncCommand::spawn(command).await?;
+async fn run(mut command: Command) -> ZenityResult<Option<String>> {
+    let res = {
+        let (tx, rx) = crate::oneshot::channel();
+        std::thread::spawn(move || {
+            tx.send(command.output()).ok();
+        });
+        rx.await.map_err(std::io::Error::other)??
+    };
     let buffer = String::from_utf8(res.stdout)?;
 
     Ok((res.status.success() || !buffer.is_empty()).then_some(buffer))
