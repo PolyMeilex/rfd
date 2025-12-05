@@ -133,7 +133,7 @@ mod file_handle;
 pub use file_handle::FileHandle;
 
 mod file_dialog;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod oneshot;
 
 #[cfg(not(target_arch = "wasm32"))]
