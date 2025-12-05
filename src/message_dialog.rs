@@ -150,21 +150,17 @@ impl AsyncMessageDialog {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum MessageLevel {
+    #[default]
     Info,
     Warning,
     Error,
 }
 
-impl Default for MessageLevel {
-    fn default() -> Self {
-        Self::Info
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum MessageButtons {
+    #[default]
     Ok,
     OkCancel,
     YesNo,
@@ -178,12 +174,6 @@ pub enum MessageButtons {
     /// Three customizable buttons.
     /// Notice that in Windows, this only works with the feature *common-controls-v6* enabled
     YesNoCancelCustom(String, String, String),
-}
-
-impl Default for MessageButtons {
-    fn default() -> Self {
-        Self::Ok
-    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
