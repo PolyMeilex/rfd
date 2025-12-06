@@ -14,13 +14,13 @@ documentation = "https://docs.rs/rfd"
 default = ["xdg-portal", "wayland", "async-std"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
-xdg-portal = ["ashpd", "urlencoding", "pollster"]
+xdg-portal = ["urlencoding", "pollster"]
 # Use async-std for xdg-portal
-async-std = ["ashpd?/async-std"]
+async-std = ["zbus/async-io"]
 # Use tokio for xdg-portal
-tokio = ["ashpd?/tokio"]
+tokio = ["zbus/tokio"]
 # Enable wayland support for xdg-portal
-wayland = ["ashpd?/wayland"]
+wayland = []
 common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
 
 [dev-dependencies]
@@ -77,15 +77,31 @@ windows-sys = { version = "0.61", features = [
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
 # XDG Desktop Portal
-ashpd = { version = "0.12", optional = true, default-features = false, features = [
-  "raw_handle",
-] }
+# ashpd = { path = "./ashpd", optional = true, default-features = false, features = [] }
 urlencoding = { version = "2.1.0", optional = true }
 pollster = { version = "0.4", optional = true }
 # GTK
 gtk-sys = { version = "0.18.0", features = ["v3_24"], optional = true }
 glib-sys = { version = "0.18.0", optional = true }
 gobject-sys = { version = "0.18.0", optional = true }
+
+# =================
+fastrand = "2.3"
+futures-util = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_repr = "0.1"
+url = { version = "2.5", features = ["serde"] }
+wayland-backend = { version = "0.3", features = [
+    "client_system",
+] }
+wayland-client = { version = "0.31" }
+wayland-protocols = { version = "0.32", features = [
+    "unstable",
+    "client",
+    "staging",
+] }
+zbus = { version = "5.0", default-features = false, features = ["url", "blocking-api"] }
+# =================
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.69"

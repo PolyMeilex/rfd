@@ -1,13 +1,16 @@
 use std::path::PathBuf;
 
 use super::linux::zenity;
+use crate::backend::xdg_impl::{
+    desktop::{
+        FileFilter, FilePath, OpenFileOptions, OpenFileRequest, SaveFileOptions, SaveFileRequest,
+    },
+    WindowIdentifier,
+};
 use crate::backend::DialogFutureType;
 use crate::file_dialog::Filter;
 use crate::message_dialog::MessageDialog;
 use crate::{FileDialog, FileHandle, MessageButtons, MessageDialogResult};
-
-use ashpd::desktop::file_chooser::{FileFilter, OpenFileRequest, SaveFileRequest};
-use ashpd::WindowIdentifier;
 
 use log::error;
 use pollster::block_on;
@@ -58,15 +61,19 @@ use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(false)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
+            let res = OpenFileRequest::send(
+                to_window_identifier(self.parent, self.parent_display),
+                self.title.as_deref().unwrap_or_default(),
+                &OpenFileOptions {
+                    multiple: Some(false),
+                    filters: self.filters.iter().map(Into::into).collect(),
+                    current_folder: self
+                        .starting_directory
+                        .as_ref()
+                        .and_then(|f| FilePath::new(f).ok()),
+                    ..Default::default()
+                },
+            );
 
             if let Err(err) = res {
                 error!("Failed to pick file: {err}");
@@ -93,15 +100,19 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(true)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
+            let res = OpenFileRequest::send(
+                to_window_identifier(self.parent, self.parent_display),
+                self.title.as_deref().unwrap_or_default(),
+                &OpenFileOptions {
+                    multiple: Some(true),
+                    filters: self.filters.iter().map(Into::into).collect(),
+                    current_folder: self
+                        .starting_directory
+                        .as_ref()
+                        .and_then(|f| FilePath::new(f).ok()),
+                    ..Default::default()
+                },
+            );
 
             if let Err(err) = res {
                 error!("Failed to pick files: {err}");
@@ -148,16 +159,20 @@ use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(false)
-                .directory(true)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
+            let res = OpenFileRequest::send(
+                to_window_identifier(self.parent, self.parent_display),
+                self.title.as_deref().unwrap_or_default(),
+                &OpenFileOptions {
+                    multiple: Some(false),
+                    directory: Some(true),
+                    filters: self.filters.iter().map(Into::into).collect(),
+                    current_folder: self
+                        .starting_directory
+                        .as_ref()
+                        .and_then(|f| FilePath::new(f).ok()),
+                    ..Default::default()
+                },
+            );
 
             if let Err(err) = res {
                 error!("Failed to pick folder: {err}");
@@ -184,16 +199,20 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
         Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(true)
-                .directory(true)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
+            let res = OpenFileRequest::send(
+                to_window_identifier(self.parent, self.parent_display),
+                self.title.as_deref().unwrap_or_default(),
+                &OpenFileOptions {
+                    multiple: Some(true),
+                    directory: Some(true),
+                    filters: self.filters.iter().map(Into::into).collect(),
+                    current_folder: self
+                        .starting_directory
+                        .as_ref()
+                        .and_then(|f| FilePath::new(f).ok()),
+                    ..Default::default()
+                },
+            );
 
             if let Err(err) = res {
                 error!("Failed to pick folders: {err}");
@@ -235,15 +254,19 @@ use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
         Box::pin(async move {
-            let res = SaveFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .title(self.title.as_deref().or(None))
-                .current_name(self.file_name.as_deref())
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
+            let res = SaveFileRequest::send(
+                to_window_identifier(self.parent, self.parent_display),
+                self.title.as_deref().unwrap_or_default(),
+                &SaveFileOptions {
+                    filters: self.filters.iter().map(Into::into).collect(),
+                    current_folder: self
+                        .starting_directory
+                        .as_ref()
+                        .and_then(|f| FilePath::new(f).ok()),
+                    current_name: self.file_name.clone(),
+                    ..Default::default()
+                },
+            );
 
             if let Err(err) = res {
                 error!("Failed to save file: {err}");
