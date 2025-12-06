@@ -46,6 +46,8 @@ mod win_cid;
 ))]
 mod xdg_desktop_portal;
 
+mod xdg_impl;
+
 //
 // Sync
 //
