@@ -6,7 +6,7 @@ fn main() {
         .add_filter("text", &["txt", "rs"])
         .add_filter("rust", &["rs", "toml"])
         .set_directory(&path)
-        .pick_files();
+        .pick_file();
 
     println!("The user choose: {:#?}", res);
 }

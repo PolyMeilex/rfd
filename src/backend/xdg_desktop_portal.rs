@@ -1,4 +1,10 @@
-use std::path::PathBuf;
+use std::path::Path;
+use std::{ffi::CString, os::unix::ffi::OsStrExt, path::PathBuf};
+
+mod portal;
+
+mod window_identifier;
+use window_identifier::WindowIdentifier;
 
 use super::linux::zenity;
 use crate::backend::DialogFutureType;
@@ -6,12 +12,26 @@ use crate::file_dialog::Filter;
 use crate::message_dialog::MessageDialog;
 use crate::{FileDialog, FileHandle, MessageButtons, MessageDialogResult};
 
-use ashpd::desktop::file_chooser::{FileFilter, OpenFileRequest, SaveFileRequest};
-use ashpd::WindowIdentifier;
-
 use log::error;
 use pollster::block_on;
 use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
+
+fn async_thread<T, F>(f: F) -> DialogFutureType<Option<T>>
+where
+    F: FnOnce() -> Option<T>,
+    F: Send + 'static,
+    T: Send + 'static,
+{
+    Box::pin(async move {
+        let (tx, rx) = crate::oneshot::channel();
+
+        std::thread::spawn(move || {
+            tx.send(f()).ok();
+        });
+
+        rx.await.ok()?
+    })
+}
 
 fn to_window_identifier(
     window: Option<RawWindowHandle>,
@@ -24,18 +44,34 @@ fn to_window_identifier(
     })?
 }
 
-impl From<&Filter> for FileFilter {
+impl From<&Filter> for portal::FileFilter {
     fn from(filter: &Filter) -> Self {
-        let mut ashpd_filter = FileFilter::new(&filter.name);
-        for file_extension in &filter.extensions {
-            if file_extension == "*" || file_extension.is_empty() {
-                ashpd_filter = ashpd_filter.glob("*");
-            } else {
-                ashpd_filter = ashpd_filter.glob(&format!("*.{file_extension}"));
-            }
-        }
-        ashpd_filter
+        let name = CString::new(filter.name.as_str()).unwrap();
+
+        let globs = filter
+            .extensions
+            .iter()
+            .map(|file_extension| {
+                if file_extension == "*" || file_extension.is_empty() {
+                    c"*".to_owned()
+                } else {
+                    CString::new(format!("*.{file_extension}")).unwrap()
+                }
+            })
+            .collect();
+
+        (name, globs)
     }
+}
+
+fn str_to_cstring(value: Option<&str>) -> Option<CString> {
+    value.and_then(|title| CString::new(title).ok())
+}
+
+fn path_to_cstring(value: Option<&Path>) -> Option<portal::FilePath> {
+    value
+        .and_then(|f| CString::new(f.as_os_str().as_bytes()).ok())
+        .map(portal::FilePath)
 }
 
 //
@@ -45,85 +81,77 @@ impl From<&Filter> for FileFilter {
 use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
-        block_on(self.pick_file_async()).map(PathBuf::from)
+        let window_identifier = to_window_identifier(self.parent, self.parent_display);
+        let res = portal::open_file(portal::OpenFileOptions {
+            parent_window: window_identifier
+                .as_ref()
+                .and_then(|w| CString::new(w.to_string()).ok())
+                .unwrap_or_default(),
+            title: str_to_cstring(self.title.as_deref()).unwrap_or_default(),
+            multiple: Some(false),
+            filters: self.filters.iter().map(Into::into).collect(),
+            current_folder: path_to_cstring(self.starting_directory.as_deref()),
+            ..Default::default()
+        })
+        .map(portal::uris_to_paths);
+
+        if let Some(mut res) = res {
+            if res.is_empty() {
+                None
+            } else {
+                Some(res.remove(0))
+            }
+        } else {
+            error!("Failed to pick file");
+            match block_on(zenity::pick_file(&self)) {
+                Ok(res) => res,
+                Err(err) => {
+                    error!("Failed to pick file with zenity: {err}");
+                    None
+                }
+            }
+        }
     }
 
     fn pick_files(self) -> Option<Vec<PathBuf>> {
-        block_on(self.pick_files_async())
-            .map(|vec_file_handle| vec_file_handle.iter().map(PathBuf::from).collect())
+        let window_identifier = to_window_identifier(self.parent, self.parent_display);
+        let res = portal::open_file(portal::OpenFileOptions {
+            parent_window: window_identifier
+                .as_ref()
+                .and_then(|w| CString::new(w.to_string()).ok())
+                .unwrap_or_default(),
+            title: str_to_cstring(self.title.as_deref()).unwrap_or_default(),
+            multiple: Some(true),
+            filters: self.filters.iter().map(Into::into).collect(),
+            current_folder: path_to_cstring(self.starting_directory.as_deref()),
+            ..Default::default()
+        })
+        .map(portal::uris_to_paths);
+
+        if let Some(res) = res {
+            Some(res)
+        } else {
+            error!("Failed to pick files");
+            match block_on(zenity::pick_files(&self)) {
+                Ok(res) => Some(res),
+                Err(err) => {
+                    error!("Failed to pick files with zenity: {err}");
+                    None
+                }
+            }
+        }
     }
 }
 
 use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(false)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
-
-            if let Err(err) = res {
-                error!("Failed to pick file: {err}");
-                match zenity::pick_file(&self).await {
-                    Ok(res) => res,
-                    Err(err) => {
-                        error!("Failed to pick file with zenity: {err}");
-                        return None;
-                    }
-                }
-            } else {
-                res.ok()
-                    .and_then(|request| request.response().ok())
-                    .and_then(|response| {
-                        response
-                            .uris()
-                            .first()
-                            .and_then(|uri| uri.to_file_path().ok())
-                    })
-            }
-            .map(FileHandle::from)
-        })
+        async_thread(move || Self::pick_file(self).map(FileHandle::wrap))
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(true)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
-
-            if let Err(err) = res {
-                error!("Failed to pick files: {err}");
-                match zenity::pick_files(&self).await {
-                    Ok(res) => Some(res.into_iter().map(FileHandle::from).collect::<Vec<_>>()),
-                    Err(err) => {
-                        error!("Failed to pick files with zenity: {err}");
-                        None
-                    }
-                }
-            } else {
-                res.ok()
-                    .and_then(|request| request.response().ok())
-                    .map(|response| {
-                        response
-                            .uris()
-                            .iter()
-                            .filter_map(|uri| uri.to_file_path().ok())
-                            .map(FileHandle::from)
-                            .collect::<Vec<FileHandle>>()
-                    })
-            }
+        async_thread(move || {
+            Self::pick_files(self).map(|res| res.into_iter().map(FileHandle::wrap).collect())
         })
     }
 }
@@ -135,87 +163,79 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
-        block_on(self.pick_folder_async()).map(PathBuf::from)
+        let window_identifier = to_window_identifier(self.parent, self.parent_display);
+        let res = portal::open_file(portal::OpenFileOptions {
+            parent_window: window_identifier
+                .as_ref()
+                .and_then(|w| CString::new(w.to_string()).ok())
+                .unwrap_or_default(),
+            title: str_to_cstring(self.title.as_deref()).unwrap_or_default(),
+            multiple: Some(false),
+            directory: Some(true),
+            filters: self.filters.iter().map(Into::into).collect(),
+            current_folder: path_to_cstring(self.starting_directory.as_deref()),
+            ..Default::default()
+        })
+        .map(portal::uris_to_paths);
+
+        if let Some(mut res) = res {
+            if res.is_empty() {
+                None
+            } else {
+                Some(res.remove(0))
+            }
+        } else {
+            error!("Failed to pick folder");
+            match block_on(zenity::pick_folder(&self)) {
+                Ok(res) => res,
+                Err(err) => {
+                    error!("Failed to pick folder with zenity: {err}");
+                    None
+                }
+            }
+        }
     }
 
     fn pick_folders(self) -> Option<Vec<PathBuf>> {
-        block_on(self.pick_folders_async())
-            .map(|vec_file_handle| vec_file_handle.iter().map(PathBuf::from).collect())
+        let window_identifier = to_window_identifier(self.parent, self.parent_display);
+        let res = portal::open_file(portal::OpenFileOptions {
+            parent_window: window_identifier
+                .as_ref()
+                .and_then(|w| CString::new(w.to_string()).ok())
+                .unwrap_or_default(),
+            title: str_to_cstring(self.title.as_deref()).unwrap_or_default(),
+            multiple: Some(true),
+            directory: Some(true),
+            filters: self.filters.iter().map(Into::into).collect(),
+            current_folder: path_to_cstring(self.starting_directory.as_deref()),
+            ..Default::default()
+        })
+        .map(portal::uris_to_paths);
+
+        if let Some(res) = res {
+            Some(res)
+        } else {
+            error!("Failed to pick folders");
+            match block_on(zenity::pick_folders(&self)) {
+                Ok(res) => Some(res),
+                Err(err) => {
+                    error!("Failed to pick folders with zenity: {err}");
+                    None
+                }
+            }
+        }
     }
 }
 
 use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(false)
-                .directory(true)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
-
-            if let Err(err) = res {
-                error!("Failed to pick folder: {err}");
-                match zenity::pick_folder(&self).await {
-                    Ok(res) => res,
-                    Err(err) => {
-                        error!("Failed to pick folder with zenity: {err}");
-                        return None;
-                    }
-                }
-            } else {
-                res.ok()
-                    .and_then(|request| request.response().ok())
-                    .and_then(|response| {
-                        response
-                            .uris()
-                            .first()
-                            .and_then(|uri| uri.to_file_path().ok())
-                    })
-            }
-            .map(FileHandle::from)
-        })
+        async_thread(move || Self::pick_folder(self).map(FileHandle::wrap))
     }
 
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        Box::pin(async move {
-            let res = OpenFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .multiple(true)
-                .directory(true)
-                .title(self.title.as_deref().or(None))
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
-
-            if let Err(err) = res {
-                error!("Failed to pick folders: {err}");
-                match zenity::pick_folders(&self).await {
-                    Ok(res) => Some(res.into_iter().map(FileHandle::from).collect::<Vec<_>>()),
-                    Err(err) => {
-                        error!("Failed to pick folders with zenity: {err}");
-                        None
-                    }
-                }
-            } else {
-                res.ok()
-                    .and_then(|request| request.response().ok())
-                    .map(|response| {
-                        response
-                            .uris()
-                            .iter()
-                            .filter_map(|uri| uri.to_file_path().ok())
-                            .map(FileHandle::from)
-                            .collect::<Vec<FileHandle>>()
-                    })
-            }
+        async_thread(move || {
+            Self::pick_folders(self).map(|res| res.into_iter().map(FileHandle::wrap).collect())
         })
     }
 }
@@ -227,45 +247,43 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
-        block_on(self.save_file_async()).map(PathBuf::from)
+        let window_identifier = to_window_identifier(self.parent, self.parent_display);
+        let res = portal::save_file(portal::SaveFileOptions {
+            parent_window: window_identifier
+                .as_ref()
+                .and_then(|w| CString::new(w.to_string()).ok())
+                .unwrap_or_default(),
+            title: str_to_cstring(self.title.as_deref()).unwrap_or_default(),
+            filters: self.filters.iter().map(Into::into).collect(),
+            current_folder: path_to_cstring(self.starting_directory.as_deref()),
+            current_name: str_to_cstring(self.file_name.as_deref()),
+            ..Default::default()
+        })
+        .map(portal::uris_to_paths);
+
+        if let Some(mut res) = res {
+            if res.is_empty() {
+                None
+            } else {
+                Some(res.remove(0))
+            }
+        } else {
+            error!("Failed to save file");
+            match block_on(zenity::save_file(&self)) {
+                Ok(res) => res,
+                Err(err) => {
+                    error!("Failed to save file with zenity: {err}");
+                    None
+                }
+            }
+        }
     }
 }
 
 use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        Box::pin(async move {
-            let res = SaveFileRequest::default()
-                .identifier(to_window_identifier(self.parent, self.parent_display))
-                .title(self.title.as_deref().or(None))
-                .current_name(self.file_name.as_deref())
-                .filters(self.filters.iter().map(From::from))
-                .current_folder::<&PathBuf>(&self.starting_directory)
-                .expect("File path should not be nul-terminated")
-                .send()
-                .await;
-
-            if let Err(err) = res {
-                error!("Failed to save file: {err}");
-                match zenity::save_file(&self).await {
-                    Ok(res) => res,
-                    Err(err) => {
-                        error!("Failed to save file with zenity: {err}");
-                        return None;
-                    }
-                }
-            } else {
-                res.ok()
-                    .and_then(|request| request.response().ok())
-                    .and_then(|response| {
-                        response
-                            .uris()
-                            .first()
-                            .and_then(|uri| uri.to_file_path().ok())
-                    })
-            }
-            .map(FileHandle::from)
-        })
+        async_thread(move || Self::save_file(self).map(FileHandle::wrap))
     }
 }
 
