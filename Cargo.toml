@@ -86,7 +86,6 @@ wayland-client = { version = "0.31", optional = true }
 wayland-protocols = { version = "0.32", features = [
     "unstable",
     "client",
-    "staging",
 ], optional = true }
 # GTK
 gtk-sys = { version = "0.18.0", features = ["v3_24"], optional = true }
