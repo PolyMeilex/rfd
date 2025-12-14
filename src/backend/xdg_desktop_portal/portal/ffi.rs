@@ -195,7 +195,10 @@ impl Libdbus {
         if let Some(lib) = LIB.get() {
             return Some(lib);
         }
-        let lib = Self::new(Liblary::open(c"libdbus-1.so")?)?;
+
+        let lib = Liblary::open(c"libdbus-1.so.3").or_else(|| Liblary::open(c"libdbus-1.so"))?;
+
+        let lib = Self::new(lib)?;
         LIB.set(lib).ok();
         LIB.get()
     }
