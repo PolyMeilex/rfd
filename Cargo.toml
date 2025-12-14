@@ -20,7 +20,7 @@ async-std = []
 # Use tokio for xdg-portal
 tokio = []
 # Enable wayland support for xdg-portal
-wayland = []
+wayland = ["wayland-backend", "wayland-client", "wayland-protocols"]
 common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
 
 [dev-dependencies]
@@ -81,13 +81,13 @@ libc = "0.2"
 pollster = { version = "0.4", optional = true }
 wayland-backend = { version = "0.3", features = [
     "client_system",
-] }
-wayland-client = { version = "0.31" }
+], optional = true }
+wayland-client = { version = "0.31", optional = true }
 wayland-protocols = { version = "0.32", features = [
     "unstable",
     "client",
     "staging",
-] }
+], optional = true }
 # GTK
 gtk-sys = { version = "0.18.0", features = ["v3_24"], optional = true }
 glib-sys = { version = "0.18.0", optional = true }
