@@ -214,7 +214,13 @@ unsafe impl Sync for Liblary {}
 
 impl Liblary {
     pub fn open(lib: &CStr) -> Option<Self> {
-        unsafe { NonNull::new(libc::dlopen(lib.as_ptr(), libc::RTLD_NOW)).map(Self) }
+        unsafe {
+            NonNull::new(libc::dlopen(
+                lib.as_ptr(),
+                libc::RTLD_LAZY | libc::RTLD_LOCAL,
+            ))
+            .map(Self)
+        }
     }
 
     pub fn symbol(&mut self, symbol: &CStr) -> Option<NonNull<c_void>> {
