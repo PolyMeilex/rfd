@@ -12,7 +12,7 @@ use crate::file_dialog::Filter;
 use crate::message_dialog::MessageDialog;
 use crate::{FileDialog, FileHandle, MessageButtons, MessageDialogResult};
 
-use log::error;
+use log::{error, warn};
 use pollster::block_on;
 use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
 
@@ -102,7 +102,7 @@ impl FilePickerDialogImpl for FileDialog {
                 Some(res.remove(0))
             }
         } else {
-            error!("Failed to pick file");
+            warn!("Using zenity fallback");
             match block_on(zenity::pick_file(&self)) {
                 Ok(res) => res,
                 Err(err) => {
@@ -131,7 +131,7 @@ impl FilePickerDialogImpl for FileDialog {
         if let Some(res) = res {
             Some(res)
         } else {
-            error!("Failed to pick files");
+            warn!("Using zenity fallback");
             match block_on(zenity::pick_files(&self)) {
                 Ok(res) => Some(res),
                 Err(err) => {
@@ -185,7 +185,7 @@ impl FolderPickerDialogImpl for FileDialog {
                 Some(res.remove(0))
             }
         } else {
-            error!("Failed to pick folder");
+            warn!("Using zenity fallback");
             match block_on(zenity::pick_folder(&self)) {
                 Ok(res) => res,
                 Err(err) => {
@@ -215,7 +215,7 @@ impl FolderPickerDialogImpl for FileDialog {
         if let Some(res) = res {
             Some(res)
         } else {
-            error!("Failed to pick folders");
+            warn!("Using zenity fallback");
             match block_on(zenity::pick_folders(&self)) {
                 Ok(res) => Some(res),
                 Err(err) => {
@@ -268,7 +268,7 @@ impl FileSaveDialogImpl for FileDialog {
                 Some(res.remove(0))
             }
         } else {
-            error!("Failed to save file");
+            warn!("Using zenity fallback");
             match block_on(zenity::save_file(&self)) {
                 Ok(res) => res,
                 Err(err) => {
