@@ -15,10 +15,6 @@ default = ["xdg-portal", "wayland"]
 file-handle-inner = []
 gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 xdg-portal = ["pollster"]
-# Use async-std for xdg-portal
-async-std = []
-# Use tokio for xdg-portal
-tokio = []
 # Enable wayland support for xdg-portal
 wayland = ["wayland-backend", "wayland-client", "wayland-protocols"]
 common-controls-v6 = ["windows-sys/Win32_UI_Controls"]
