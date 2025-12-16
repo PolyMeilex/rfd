@@ -285,4 +285,46 @@ impl Panel {
 
         Self::new(Retained::into_super(panel), opt.parent.as_ref())
     }
+
+    pub fn build_pick_file_or_folder(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
+        let panel = unsafe { NSOpenPanel::openPanel(mtm) };
+
+        if let Some(path) = &opt.starting_directory {
+            panel.set_path(path, opt.file_name.as_deref());
+        }
+
+        if let Some(title) = &opt.title {
+            panel.set_title(title);
+        }
+
+        let can = opt.can_create_directories.unwrap_or(true);
+        panel.set_can_create_directories(can);
+
+        unsafe { panel.setCanChooseDirectories(true) };
+        unsafe { panel.setCanChooseFiles(true) };
+        unsafe { panel.setAllowsMultipleSelection(false) };
+
+        Self::new(Retained::into_super(panel), opt.parent.as_ref())
+    }
+
+    pub fn build_pick_files_or_folders(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
+        let panel = unsafe { NSOpenPanel::openPanel(mtm) };
+
+        if let Some(path) = &opt.starting_directory {
+            panel.set_path(path, opt.file_name.as_deref());
+        }
+
+        if let Some(title) = &opt.title {
+            panel.set_title(title);
+        }
+
+        let can = opt.can_create_directories.unwrap_or(true);
+        panel.set_can_create_directories(can);
+
+        unsafe { panel.setCanChooseDirectories(true) };
+        unsafe { panel.setCanChooseFiles(true) };
+        unsafe { panel.setAllowsMultipleSelection(true) };
+
+        Self::new(Retained::into_super(panel), opt.parent.as_ref())
+    }
 }

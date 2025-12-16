@@ -113,6 +113,9 @@ impl FileDialog {
 #[cfg(not(target_arch = "wasm32"))]
 use crate::backend::{FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl};
 
+#[cfg(target_os = "macos")]
+use crate::backend::FileOrFolderPickerDialogImpl;
+
 #[cfg(not(target_arch = "wasm32"))]
 impl FileDialog {
     /// Pick one file
@@ -133,6 +136,18 @@ impl FileDialog {
     /// Pick multiple folders
     pub fn pick_folders(self) -> Option<Vec<PathBuf>> {
         FolderPickerDialogImpl::pick_folders(self)
+    }
+
+    #[cfg(target_os = "macos")]
+    /// Pick one file or folder
+    pub fn pick_file_or_folder(self) -> Option<PathBuf> {
+        FileOrFolderPickerDialogImpl::pick_file_or_folder(self)
+    }
+
+    #[cfg(target_os = "macos")]
+    /// Pick multiple folders
+    pub fn pick_files_or_folders(self) -> Option<Vec<PathBuf>> {
+        FileOrFolderPickerDialogImpl::pick_files_or_folders(self)
     }
 
     /// Opens save file dialog
@@ -235,6 +250,8 @@ impl AsyncFileDialog {
     }
 }
 
+#[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+use crate::backend::AsyncFileOrFolderPickerDialogImpl;
 use crate::backend::AsyncFilePickerDialogImpl;
 use crate::backend::AsyncFileSaveDialogImpl;
 #[cfg(not(target_arch = "wasm32"))]
@@ -267,6 +284,22 @@ impl AsyncFileDialog {
     /// Does not exist in `WASM32`
     pub fn pick_folders(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
         AsyncFolderPickerDialogImpl::pick_folders_async(self.file_dialog)
+    }
+
+    #[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+    /// Pick one file or folder
+    ///
+    /// Does not exist in `WASM32`
+    pub fn pick_file_or_folder(self) -> impl Future<Output = Option<FileHandle>> {
+        AsyncFileOrFolderPickerDialogImpl::pick_file_or_folder_async(self.file_dialog)
+    }
+
+    #[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+    /// Pick multiple folders
+    ///
+    /// Does not exist in `WASM32`
+    pub fn pick_files_or_folders(self) -> impl Future<Output = Option<Vec<FileHandle>>> {
+        AsyncFileOrFolderPickerDialogImpl::pick_files_or_folders_async(self.file_dialog)
     }
 
     /// Opens save file dialog
