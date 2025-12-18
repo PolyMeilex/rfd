@@ -71,7 +71,7 @@ pub trait FolderPickerDialogImpl {
 }
 
 /// Dialog used to pick folder or files
-#[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+#[cfg(target_os = "macos")]
 pub trait FileOrFolderPickerDialogImpl {
     fn pick_file_or_folder(self) -> Option<PathBuf>;
     fn pick_files_or_folders(self) -> Option<Vec<PathBuf>>;
@@ -105,7 +105,7 @@ pub trait AsyncFolderPickerDialogImpl {
 }
 
 /// Dialog used to pick folder or files
-#[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+#[cfg(target_os = "macos")]
 pub trait AsyncFileOrFolderPickerDialogImpl {
     fn pick_file_or_folder_async(self) -> DialogFutureType<Option<FileHandle>>;
     fn pick_files_or_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;
