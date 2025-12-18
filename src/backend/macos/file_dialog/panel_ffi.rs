@@ -289,6 +289,10 @@ impl Panel {
     pub fn build_pick_file_or_folder(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
+        if !opt.filters.is_empty() {
+            panel.add_filters(opt);
+        }
+
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path, opt.file_name.as_deref());
         }
@@ -309,6 +313,10 @@ impl Panel {
 
     pub fn build_pick_files_or_folders(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
+
+        if !opt.filters.is_empty() {
+            panel.add_filters(opt);
+        }
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path, opt.file_name.as_deref());
