@@ -70,6 +70,13 @@ pub trait FolderPickerDialogImpl {
     fn pick_folders(self) -> Option<Vec<PathBuf>>;
 }
 
+/// Dialog used to pick folder or files
+#[cfg(target_os = "macos")]
+pub trait FileOrFolderPickerDialogImpl {
+    fn pick_file_or_folder(self) -> Option<PathBuf>;
+    fn pick_files_or_folders(self) -> Option<Vec<PathBuf>>;
+}
+
 pub trait MessageDialogImpl {
     fn show(self) -> MessageDialogResult;
 }
@@ -95,6 +102,13 @@ pub trait AsyncFilePickerDialogImpl {
 pub trait AsyncFolderPickerDialogImpl {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>>;
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;
+}
+
+/// Dialog used to pick folder or files
+#[cfg(target_os = "macos")]
+pub trait AsyncFileOrFolderPickerDialogImpl {
+    fn pick_file_or_folder_async(self) -> DialogFutureType<Option<FileHandle>>;
+    fn pick_files_or_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;
 }
 
 /// Dialog used to pick folder
