@@ -37,11 +37,7 @@ fn to_window_identifier(
     window: Option<RawWindowHandle>,
     display: Option<RawDisplayHandle>,
 ) -> Option<WindowIdentifier> {
-    window.map(|window| {
-        block_on(Box::pin(async move {
-            WindowIdentifier::from_raw_handle(&window, display.as_ref()).await
-        }))
-    })?
+    window.and_then(|window| WindowIdentifier::from_raw_handle(&window, display.as_ref()))
 }
 
 impl From<&Filter> for portal::FileFilter {

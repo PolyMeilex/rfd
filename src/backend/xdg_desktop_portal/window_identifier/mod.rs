@@ -2,10 +2,12 @@ use std::fmt;
 
 use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
 
+mod wayland;
+pub use wayland::WaylandWindowIdentifier;
+
 #[derive(Debug)]
-#[non_exhaustive]
+#[allow(clippy::large_enum_variant)]
 pub enum WindowIdentifier {
-    #[cfg(feature = "wayland")]
     Wayland(WaylandWindowIdentifier),
     X11(WindowIdentifierType),
 }
@@ -13,7 +15,6 @@ pub enum WindowIdentifier {
 impl std::fmt::Display for WindowIdentifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            #[cfg(feature = "wayland")]
             Self::Wayland(identifier) => identifier.fmt(f),
             Self::X11(identifier) => identifier.fmt(f),
         }
@@ -21,20 +22,18 @@ impl std::fmt::Display for WindowIdentifier {
 }
 
 impl WindowIdentifier {
-    pub async fn from_raw_handle(
+    pub fn from_raw_handle(
         window_handle: &RawWindowHandle,
         display_handle: Option<&RawDisplayHandle>,
     ) -> Option<Self> {
         use raw_window_handle::RawWindowHandle::{Xcb, Xlib};
-        #[cfg(feature = "wayland")]
+
         use raw_window_handle::{
             RawDisplayHandle::Wayland as DisplayHandle, RawWindowHandle::Wayland,
         };
         match (window_handle, display_handle) {
-            #[cfg(feature = "wayland")]
             (Wayland(wl_handle), Some(DisplayHandle(wl_display))) => unsafe {
                 Self::from_wayland_raw(wl_handle.surface.as_ptr(), wl_display.display.as_ptr())
-                    .await
             },
             (Xlib(x_handle), _) => Some(Self::from_xid(x_handle.window)),
             (Xcb(x_handle), _) => Some(Self::from_xid(x_handle.window.get().into())),
@@ -46,14 +45,11 @@ impl WindowIdentifier {
         Self::X11(WindowIdentifierType::X11(xid))
     }
 
-    #[cfg(feature = "wayland")]
-    pub async unsafe fn from_wayland_raw(
+    pub unsafe fn from_wayland_raw(
         surface_ptr: *mut std::ffi::c_void,
         display_ptr: *mut std::ffi::c_void,
     ) -> Option<Self> {
-        WaylandWindowIdentifier::from_raw(surface_ptr, display_ptr)
-            .await
-            .map(Self::Wayland)
+        WaylandWindowIdentifier::from_raw(surface_ptr, display_ptr).map(Self::Wayland)
     }
 }
 
@@ -81,9 +77,3 @@ impl fmt::Display for WindowIdentifierType {
         }
     }
 }
-
-#[cfg(feature = "wayland")]
-mod wayland;
-
-#[cfg(feature = "wayland")]
-pub use self::wayland::WaylandWindowIdentifier;

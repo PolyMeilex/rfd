@@ -1,5 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
+    env_logger::init();
+
     let path = std::env::current_dir().unwrap();
 
     let res = rfd::FileDialog::new()

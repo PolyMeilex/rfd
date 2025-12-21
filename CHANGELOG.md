@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `wayland` feature removed
 - `tokio` and `async-std` features removed
 
 ## 0.16.0
