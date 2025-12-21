@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `tokio` and `async-std` features removed
+
 ## 0.16.0
 
 - Fix regressions on Wayland due to `ashpd` upgrade (#255).
