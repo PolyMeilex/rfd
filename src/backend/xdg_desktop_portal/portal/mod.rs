@@ -1,5 +1,6 @@
 use std::{
-    ffi::{CStr, CString},
+    ffi::{CStr, CString, OsStr},
+    os::unix::ffi::OsStrExt,
     path::PathBuf,
 };
 
@@ -15,11 +16,13 @@ pub use file_dialog::{FileFilter, FilePath, HandleToken, OpenFileOptions, SaveFi
 pub fn uris_to_paths(uris: Vec<CString>) -> Vec<PathBuf> {
     uris.into_iter()
         .filter_map(|uri| {
-            uri.into_string()
-                .inspect_err(|err| log::error!("Ignoring uri: {err:?}"))
-                .ok()
+            let bytes: Vec<u8> = percent_encoding::percent_decode(uri.as_bytes()).collect();
+            let Some(path) = bytes.strip_prefix(b"file://") else {
+                log::error!("Ignoring uri: {bytes:?} lacks `file://`");
+                return None;
+            };
+            Some(PathBuf::from(OsStr::from_bytes(path)))
         })
-        .filter_map(|uri| uri.strip_prefix("file://").map(PathBuf::from))
         .collect()
 }
 
