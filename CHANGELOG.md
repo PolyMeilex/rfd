@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.17.1
+
+- Fix aarch64 compile error and add CI by @oscargus in https://github.com/PolyMeilex/rfd/pull/294
+- docs: Fixup docs post libdbus port by @PolyMeilex in https://github.com/PolyMeilex/rfd/pull/298
+- xdg_porta: Url decode the path by @PolyMeilex in https://github.com/PolyMeilex/rfd/pull/297
+
 ## 0.17.0
 
 - `tokio` and `async-std` features removed
