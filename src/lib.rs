@@ -39,8 +39,7 @@
 //!
 //! On Linux & BSDs, two backends are available, one using the [GTK3 Rust bindings](https://gtk-rs.org/)
 //! and the other using the [XDG Desktop Portal](https://github.com/flatpak/xdg-desktop-portal)
-//! D-Bus API through [ashpd](https://github.com/bilelmoussaoui/ashpd),
-//! [zbus](https://gitlab.freedesktop.org/dbus/zbus/) and [zenity](https://gitlab.gnome.org/GNOME/zenity).
+//! D-Bus API through `libdbus` or [zenity](https://gitlab.gnome.org/GNOME/zenity).
 //!
 //! ## GTK backend
 //! The GTK backend is used when the `xdg-portal` feature is disabled with the [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `gtk3` is enabled instead. The GTK3
@@ -54,11 +53,13 @@
 //! | Debian & Ubuntu | apt install libgtk-3-dev |
 //!
 //! ## XDG Desktop Portal backend
-//! The XDG Desktop Portal backend is used with the `xdg-portal` Cargo feature which is enabled by default. Either the `tokio` or `async-std` feature must be enabled. This backend will use either the GTK or KDE file dialog depending on the desktop environment
+//! The XDG Desktop Portal backend is used with the `xdg-portal` Cargo feature which is enabled by default. This backend will use either the GTK or KDE file dialog depending on the desktop environment
 //! in use at runtime.
 //!
-//! It does not have any non-Rust
-//! build dependencies, however it requires the user to have either the
+//! It requires the user to have `libdbus` system liblary (should be available on any systemd
+//! distro), if the liblary is not found `zenity` will be used instead.
+//!
+//! It requires the user to also have either the
 //! [GTK](https://github.com/flatpak/xdg-desktop-portal-gtk),
 //! [GNOME](https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome), or
 //! [KDE](https://invent.kde.org/plasma/xdg-desktop-portal-kde/) XDG Desktop Portal backend installed
@@ -70,7 +71,7 @@
 //! they can all be installed simultaneously).
 //!
 //! [Zenity](https://gitlab.gnome.org/GNOME/zenity) is also required to display message dialogs,
-//! and is used for file dialogs if [ashpd] cannot.
+//! and is used for file dialogs if xdg portal fails.
 //!
 //! If you are packaging an application that uses RFD, ensure that both a supported portal backend and
 //! Zenity are installed with the package.
