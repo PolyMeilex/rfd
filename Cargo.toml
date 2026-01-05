@@ -72,6 +72,7 @@ windows-sys = { version = "0.61", features = [
 ] }
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
+percent-encoding = "2"
 libc = "0.2"
 # XDG Desktop Portal
 pollster = { version = "0.4", optional = true }
