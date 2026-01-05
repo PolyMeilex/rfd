@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.17.0
+
 - `tokio` and `async-std` features removed
 
 ## 0.16.0
