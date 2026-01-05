@@ -1,5 +1,5 @@
 use std::{
-    ffi::{CStr, CString, c_void},
+    ffi::{c_char, c_void, CStr, CString},
     fmt,
     marker::PhantomData,
     ptr::NonNull,
@@ -295,8 +295,8 @@ impl<'a> MessageIter<'a> {
 
     unsafe fn get_basic_str(&mut self) -> Option<CString> {
         unsafe {
-            let mut out: *const i8 = std::ptr::null_mut();
-            self.get_basic(&mut out as *mut *const i8 as *mut _);
+            let mut out: *const c_char = std::ptr::null_mut();
+            self.get_basic(&mut out as *mut *const c_char as *mut _);
 
             if out.is_null() {
                 None

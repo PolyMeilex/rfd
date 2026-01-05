@@ -172,15 +172,19 @@ impl<'a> WasmDialog<'a> {
 
                 body.append_child(&overlay).ok();
 
-                input.add_event_listener_with_callback(
-                    "change",
-                    resolve_promise.as_ref().unchecked_ref(),
-                ).unwrap();
+                input
+                    .add_event_listener_with_callback(
+                        "change",
+                        resolve_promise.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
 
-                input.add_event_listener_with_callback(
-                    "cancel",
-                    reject_promise.as_ref().unchecked_ref(),
-                ).unwrap();
+                input
+                    .add_event_listener_with_callback(
+                        "cancel",
+                        reject_promise.as_ref().unchecked_ref(),
+                    )
+                    .unwrap();
 
                 if window.navigator().user_activation().is_active() {
                     // Browsers require transient user activation to open the file picker from JS.
