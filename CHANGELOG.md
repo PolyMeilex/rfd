@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lower MSRV back to 1.88 by @PolyMeilex in https://github.com/PolyMeilex/rfd/pull/303
+
 ## 0.17.1
 
 - Fix aarch64 compile error and add CI by @oscargus in https://github.com/PolyMeilex/rfd/pull/294
