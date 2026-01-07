@@ -176,7 +176,7 @@ fn parse_response(msg: &Message) -> Option<Vec<CString>> {
         };
 
         entry_iter.next();
-        if key == c"uris" {
+        if key.as_c_str() == c"uris" {
             if entry_iter.get_arg_type() == ffi::DBUS_TYPE_VARIANT {
                 let mut var_iter = entry_iter.iter_recurse();
                 return Some(var_iter.get_string_array());
