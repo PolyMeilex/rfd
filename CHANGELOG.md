@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.17.2
+
 - Lower MSRV back to 1.88 by @PolyMeilex in https://github.com/PolyMeilex/rfd/pull/303
 
 ## 0.17.1
