@@ -25,6 +25,7 @@ pub struct FileDialog {
     pub(crate) parent: Option<RawWindowHandle>,
     pub(crate) parent_display: Option<RawDisplayHandle>,
     pub(crate) can_create_directories: Option<bool>,
+    pub(crate) show_hidden_files: Option<bool>,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
@@ -106,6 +107,16 @@ impl FileDialog {
     /// Supported in: `macos`.
     pub fn set_can_create_directories(mut self, can: bool) -> Self {
         self.can_create_directories.replace(can);
+        self
+    }
+
+    /// Show hidden files in the dialog.
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (GTK3 only, not XDG Portal)
+    pub fn set_show_hidden_files(mut self, show: bool) -> Self {
+        self.show_hidden_files = Some(show);
         self
     }
 }
@@ -250,6 +261,16 @@ impl AsyncFileDialog {
     /// Supported in: `macos`.
     pub fn set_can_create_directories(mut self, can: bool) -> Self {
         self.file_dialog = self.file_dialog.set_can_create_directories(can);
+        self
+    }
+
+    /// Show hidden files in the dialog.
+    /// Supported platforms:
+    ///  * Windows
+    ///  * Mac
+    ///  * Linux (GTK3 only, not XDG Portal)
+    pub fn set_show_hidden_files(mut self, show: bool) -> Self {
+        self.file_dialog = self.file_dialog.set_show_hidden_files(show);
         self
     }
 }
