@@ -196,7 +196,7 @@ pub(super) struct IFileDialogV {
     Unadvise: unsafe extern "system" fn(this: *mut c_void, dwcookie: u32) -> HRESULT,
     pub(super) SetOptions:
         unsafe extern "system" fn(this: *mut c_void, fos: FILEOPENDIALOGOPTIONS) -> HRESULT,
-    GetOptions:
+    pub(super) GetOptions:
         unsafe extern "system" fn(this: *mut c_void, pfos: *mut FILEOPENDIALOGOPTIONS) -> HRESULT,
     SetDefaultFolder: unsafe extern "system" fn(this: *mut c_void, psi: *mut c_void) -> HRESULT,
     pub(super) SetFolder: unsafe extern "system" fn(this: *mut c_void, psi: *mut c_void) -> HRESULT,
