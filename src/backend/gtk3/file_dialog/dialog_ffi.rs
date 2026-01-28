@@ -96,6 +96,14 @@ impl GtkFileDialog {
         }
     }
 
+    fn set_show_hidden(&self, show: Option<bool>) {
+        if let Some(show) = show {
+            unsafe {
+                gtk_sys::gtk_file_chooser_set_show_hidden(self.ptr as _, show as i32);
+            }
+        }
+    }
+
     pub fn get_result(&self) -> Option<PathBuf> {
         let cstr = unsafe {
             let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as _);
@@ -162,6 +170,7 @@ impl GtkFileDialog {
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_show_hidden(opt.show_hidden_files);
 
         if let (Some(mut path), Some(file_name)) =
             (opt.starting_directory.to_owned(), opt.file_name.as_deref())
@@ -185,6 +194,7 @@ impl GtkFileDialog {
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_show_hidden(opt.show_hidden_files);
 
         if let (Some(mut path), Some(file_name)) =
             (opt.starting_directory.to_owned(), opt.file_name.as_deref())
@@ -211,6 +221,7 @@ impl GtkFileDialog {
             GtkFileChooserAction::SelectFolder,
         );
         dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_show_hidden(opt.show_hidden_files);
 
         if let (Some(mut path), Some(file_name)) =
             (opt.starting_directory.to_owned(), opt.file_name.as_deref())
@@ -231,6 +242,7 @@ impl GtkFileDialog {
         );
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_show_hidden(opt.show_hidden_files);
 
         if let (Some(mut path), Some(file_name)) =
             (opt.starting_directory.to_owned(), opt.file_name.as_deref())
@@ -253,6 +265,7 @@ impl GtkFileDialog {
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
+        dialog.set_show_hidden(opt.show_hidden_files);
 
         if let (Some(mut path), Some(file_name)) =
             (opt.starting_directory.to_owned(), opt.file_name.as_deref())

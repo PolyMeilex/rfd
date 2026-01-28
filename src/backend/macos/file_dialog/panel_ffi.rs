@@ -104,6 +104,10 @@ trait PanelExt {
         unsafe { self.panel().setCanCreateDirectories(can) }
     }
 
+    fn set_shows_hidden_files(&self, show: bool) {
+        unsafe { self.panel().setShowsHiddenFiles(show) }
+    }
+
     fn add_filters(&self, opt: &FileDialog) {
         let mut exts: Vec<String> = Vec::new();
 
@@ -187,6 +191,10 @@ impl Panel {
             panel.set_can_create_directories(can);
         }
 
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
+
         unsafe { panel.setCanChooseDirectories(false) };
         unsafe { panel.setCanChooseFiles(true) };
 
@@ -216,6 +224,10 @@ impl Panel {
             panel.set_can_create_directories(can);
         }
 
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
+
         Self::new(panel, opt.parent.as_ref())
     }
 
@@ -232,6 +244,10 @@ impl Panel {
 
         let can = opt.can_create_directories.unwrap_or(true);
         panel.set_can_create_directories(can);
+
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
 
         unsafe { panel.setCanChooseDirectories(true) };
         unsafe { panel.setCanChooseFiles(false) };
@@ -252,6 +268,10 @@ impl Panel {
 
         let can = opt.can_create_directories.unwrap_or(true);
         panel.set_can_create_directories(can);
+
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
 
         unsafe { panel.setCanChooseDirectories(true) };
         unsafe { panel.setCanChooseFiles(false) };
@@ -279,6 +299,10 @@ impl Panel {
             panel.set_can_create_directories(can);
         }
 
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
+
         unsafe { panel.setCanChooseDirectories(false) };
         unsafe { panel.setCanChooseFiles(true) };
         unsafe { panel.setAllowsMultipleSelection(true) };
@@ -304,6 +328,10 @@ impl Panel {
         let can = opt.can_create_directories.unwrap_or(true);
         panel.set_can_create_directories(can);
 
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
+
         unsafe { panel.setCanChooseDirectories(true) };
         unsafe { panel.setCanChooseFiles(true) };
         unsafe { panel.setAllowsMultipleSelection(false) };
@@ -328,6 +356,10 @@ impl Panel {
 
         let can = opt.can_create_directories.unwrap_or(true);
         panel.set_can_create_directories(can);
+
+        if let Some(show) = opt.show_hidden_files {
+            panel.set_shows_hidden_files(show);
+        }
 
         unsafe { panel.setCanChooseDirectories(true) };
         unsafe { panel.setCanChooseFiles(true) };
