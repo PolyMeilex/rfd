@@ -3,10 +3,58 @@ mod file_dialog;
 use crate::{
     file_dialog::FileDialog, file_handle::WasmFileHandleKind, FileHandle, MessageDialogResult,
 };
+use js_sys::Promise;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::OpenFilePickerOptions;
 use web_sys::{Element, HtmlAnchorElement, HtmlButtonElement, HtmlElement, HtmlInputElement};
+
+#[wasm_bindgen]
+extern "C" {
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[wasm_bindgen (extends = js_sys::Object, js_name = FilePickerOptions)]
+    type OpenFilePickerOptions;
+
+    #[wasm_bindgen(extends = js_sys::Object, js_name = SaveFilePickerOptions)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    type SaveFilePickerOptions;
+
+    #[wasm_bindgen(method, getter = "multiple")]
+    fn get_multiple(this: &OpenFilePickerOptions) -> Option<bool>;
+
+    #[wasm_bindgen(method, setter = "multiple")]
+    fn set_multiple(this: &OpenFilePickerOptions, val: bool);
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(catch, js_name = showOpenFilePicker)]
+    fn show_open_file_picker() -> Result<Promise, JsValue>;
+
+    #[wasm_bindgen(catch, js_name = showSaveFilePicker)]
+    fn show_save_file_picker() -> Result<Promise, JsValue>;
+
+    #[wasm_bindgen(catch, js_name = showOpenFilePicker)]
+    fn show_open_file_picker_with_options(
+        options: &OpenFilePickerOptions,
+    ) -> Result<Promise, JsValue>;
+
+    #[wasm_bindgen(catch, js_name = showOpenFilePicker)]
+    fn show_save_file_picker_with_options(
+        options: &SaveFilePickerOptions,
+    ) -> Result<Promise, JsValue>;
+}
+
+impl OpenFilePickerOptions {
+    fn new() -> Self {
+        js_sys::Object::new().unchecked_into()
+    }
+}
+
+impl SaveFilePickerOptions {
+    fn new() -> Self {
+        js_sys::Object::new().unchecked_into()
+    }
+}
 
 fn check_exists(obj: &JsValue, name: &str) -> bool {
     js_sys::Reflect::get(obj, &JsValue::from_str(name))
@@ -320,7 +368,7 @@ impl<'a> WasmDialog<'a> {
             // If we have it, we can open it immediately instead of showing the popup.
             let options = OpenFilePickerOptions::new();
             options.set_multiple(true);
-            let future = window.show_open_file_picker_with_options(&options).unwrap();
+            let future = show_open_file_picker_with_options(&options).unwrap();
             if let Ok(files) = wasm_bindgen_futures::JsFuture::from(future).await {
                 let files: js_sys::Array = files.unchecked_into();
                 return Some(
@@ -354,7 +402,7 @@ impl<'a> WasmDialog<'a> {
         if window.navigator().user_activation().is_active() {
             // Browsers require transient user activation to open the file picker from JS.
             // If we have it, we can open it immediately instead of showing the popup.
-            let future = window.show_save_file_picker().unwrap();
+            let future = show_save_file_picker().unwrap();
             if let Ok(files) = wasm_bindgen_futures::JsFuture::from(future).await {
                 Some(FileHandle::mutable(files.unchecked_into()))
             } else {
@@ -378,8 +426,7 @@ impl<'a> WasmDialog<'a> {
 
                 let resolve_promise = Closure::wrap(Box::new(move || {
                     let res = res.clone();
-                    let window = web_sys::window().expect("Window not found");
-                    let future = window.show_save_file_picker().unwrap();
+                    let future = show_save_file_picker().unwrap();
                     let closure = Closure::wrap(Box::new(move |file: JsValue| {
                         res.call1(&JsValue::undefined(), &file).unwrap();
                     }) as Box<dyn FnMut(JsValue)>);
@@ -420,7 +467,7 @@ impl<'a> WasmDialog<'a> {
         {
             // Browsers require transient user activation to open the file picker from JS.
             // If we have it, we can open it immediately instead of showing the popup.
-            let future = window.show_open_file_picker().unwrap();
+            let future = show_open_file_picker().unwrap();
             if let Ok(files) = wasm_bindgen_futures::JsFuture::from(future).await {
                 let files: js_sys::Array = files.unchecked_into();
                 return Some(FileHandle::mutable(files.get(0).unchecked_into()));
