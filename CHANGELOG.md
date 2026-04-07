@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add `FileDialog::set_show_hidden_files` and `AsyncFileDialog::set_show_hidden_files` to control hidden file visibility. Supported on macOS, Windows, and Linux (GTK3).
+- Honor `FileDialog::set_directory` and `AsyncFileDialog::set_directory` when using the zenity fallback backend on Linux.
 
 ## 0.17.2
 
