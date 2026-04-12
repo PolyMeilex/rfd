@@ -10,7 +10,7 @@ It provides both asynchronous and synchronous APIs. Supported platforms:
 
   * Windows
   * macOS
-  * Linux & BSDs (GTK3 or XDG Desktop Portal)
+  * Linux & BSDs (GTK4 or XDG Desktop Portal)
   * WASM32 (async only)
 
 Refer to the [documentation](https://docs.rs/rfd) for more details.

@@ -13,7 +13,6 @@ documentation = "https://docs.rs/rfd"
 [features]
 default = ["xdg-portal", "wayland"]
 file-handle-inner = []
-gtk3 = ["gtk-sys", "glib-sys", "gobject-sys"]
 gtk4 = []
 xdg-portal = ["pollster"]
 # Enable wayland support for xdg-portal
@@ -86,9 +85,6 @@ wayland-protocols = { version = "0.32", features = [
     "client",
 ], optional = true }
 # GTK
-gtk-sys = { version = "0.18.0", features = ["v3_24"], optional = true }
-glib-sys = { version = "0.18.0", optional = true }
-gobject-sys = { version = "0.18.0", optional = true }
 gtk4 = { version = "0.11.1", features = ["v4_10"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

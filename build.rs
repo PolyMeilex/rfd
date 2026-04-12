@@ -7,14 +7,15 @@ fn main() {
         (_, "windows") => {}
         ("wasm32", _) => {}
         _ => {
-            let gtk = std::env::var_os("CARGO_FEATURE_GTK3").is_some()
-                || std::env::var_os("CARGO_FEATURE_GTK4").is_some();
+            let gtk = std::env::var_os("CARGO_FEATURE_GTK4").is_some();
             let xdg = std::env::var_os("CARGO_FEATURE_XDG_PORTAL").is_some();
 
             if gtk && xdg {
                 panic!("You can't enable both `gtk` and `xdg-portal` features at once");
             } else if !gtk && !xdg {
-                panic!("You need to choose at least one backend: `gtk` or `xdg-portal` features for {target_arch}-{target_os}");
+                panic!(
+                    "You need to choose at least one backend: `gtk` or `xdg-portal` features for {target_arch}-{target_os}"
+                );
             }
         }
     }

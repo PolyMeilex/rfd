@@ -3,7 +3,7 @@
 //!
 //!   * Windows
 //!   * macOS
-//!   * Linux & BSDs (GTK3 or XDG Desktop Portal)
+//!   * Linux & BSDs (GTK4 or XDG Desktop Portal)
 //!   * WASM32 (async only)
 //!
 //! # Examples
@@ -37,20 +37,20 @@
 //!
 //! # Linux & BSD backends
 //!
-//! On Linux & BSDs, two backends are available, one using the [GTK3 Rust bindings](https://gtk-rs.org/)
+//! On Linux & BSDs, two backends are available, one using the [GTK4 Rust bindings](https://gtk-rs.org/)
 //! and the other using the [XDG Desktop Portal](https://github.com/flatpak/xdg-desktop-portal)
 //! D-Bus API through `libdbus` or [zenity](https://gitlab.gnome.org/GNOME/zenity).
 //!
 //! ## GTK backend
-//! The GTK backend is used when the `xdg-portal` feature is disabled with the [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `gtk3` is enabled instead. The GTK3
+//! The GTK backend is used when the `xdg-portal` feature is disabled with the [`default-features = false`](https://doc.rust-lang.org/cargo/reference/features.html#dependency-features), and `gtk4` is enabled instead. The GTK4
 //! backend requires the C library and development headers to be installed to build RFD. The package
 //! names on various distributions are:
 //!
 //! | Distribution    | Installation Command |
 //! | --------------- | ------------ |
-//! | Fedora          | dnf install gtk3-devel   |
-//! | Arch            | pacman -S gtk3         |
-//! | Debian & Ubuntu | apt install libgtk-3-dev |
+//! | Fedora          | dnf install gtk4-devel   |
+//! | Arch            | pacman -S gtk4         |
+//! | Debian & Ubuntu | apt install libgtk-4-dev |
 //!
 //! ## XDG Desktop Portal backend
 //! The XDG Desktop Portal backend is used with the `xdg-portal` Cargo feature which is enabled by default. This backend will use either the GTK or KDE file dialog depending on the desktop environment
@@ -98,7 +98,7 @@
 //! Here is an [example](https://github.com/PolyMeilex/rfd/tree/master/examples/message-custom-buttons) using [embed-resource](https://docs.rs/embed-resource/latest/embed_resource/).
 //!
 //! # Cargo features
-//!  * `gtk3`: Uses GTK for dialogs on Linux & BSDs; has no effect on Windows and macOS
+//!  * `gtk4`: Uses GTK for dialogs on Linux & BSDs; has no effect on Windows and macOS
 //!  * `xdg-portal`: Uses XDG Desktop Portal instead of GTK on Linux & BSDs
 //!  * `common-controls-v6`: Use `TaskDialogIndirect` API from ComCtl32.dll v6 for showing message dialog. This is necessary if you need to customize dialog button texts.
 //!
