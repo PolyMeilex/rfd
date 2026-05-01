@@ -169,7 +169,10 @@ pub async fn message(
     }
 
     run(command).await.map(|res| match res {
-        Some(_) => MessageDialogResult::Ok,
+        Some(_) => match btns {
+            MessageButtons::OkCustom(ok) => MessageDialogResult::Custom(ok.clone()),
+            _ => MessageDialogResult::Ok,
+        },
         None => MessageDialogResult::Cancel,
     })
 }
