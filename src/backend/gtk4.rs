@@ -3,9 +3,7 @@ use crate::backend::DialogFutureType;
 use crate::file_dialog::Filter;
 use crate::message_dialog::MessageDialog;
 use crate::{FileDialog, FileHandle, MessageDialogResult};
-use gtk4::gio;
-use gtk4::glib;
-use gtk4::prelude::*;
+use gtk4::{Window, gio, glib, prelude::*};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -265,7 +263,7 @@ fn build_save_file(options: &FileDialog) -> gtk4::FileDialog {
 fn run_pick_file(dialog: gtk4::FileDialog) -> Option<PathBuf> {
     let context = glib::MainContext::ref_thread_default();
     context
-        .block_on(dialog.open_future(None::<&gtk4::Window>))
+        .block_on(dialog.open_future(Some(&Window::builder().title("dummy").build())))
         .ok()
         .and_then(first_path)
 }
@@ -273,7 +271,7 @@ fn run_pick_file(dialog: gtk4::FileDialog) -> Option<PathBuf> {
 fn run_pick_files(dialog: gtk4::FileDialog) -> Option<Vec<PathBuf>> {
     let context = glib::MainContext::ref_thread_default();
     context
-        .block_on(dialog.open_multiple_future(None::<&gtk4::Window>))
+        .block_on(dialog.open_multiple_future(Some(&Window::builder().title("dummy").build())))
         .ok()
         .map(all_paths)
 }
@@ -281,7 +279,7 @@ fn run_pick_files(dialog: gtk4::FileDialog) -> Option<Vec<PathBuf>> {
 fn run_pick_folder(dialog: gtk4::FileDialog) -> Option<PathBuf> {
     let context = glib::MainContext::ref_thread_default();
     context
-        .block_on(dialog.select_folder_future(None::<&gtk4::Window>))
+        .block_on(dialog.select_folder_future(Some(&Window::builder().title("dummy").build())))
         .ok()
         .and_then(first_path)
 }
@@ -289,7 +287,9 @@ fn run_pick_folder(dialog: gtk4::FileDialog) -> Option<PathBuf> {
 fn run_pick_folders(dialog: gtk4::FileDialog) -> Option<Vec<PathBuf>> {
     let context = glib::MainContext::ref_thread_default();
     context
-        .block_on(dialog.select_multiple_folders_future(None::<&gtk4::Window>))
+        .block_on(
+            dialog.select_multiple_folders_future(Some(&Window::builder().title("dummy").build())),
+        )
         .ok()
         .map(all_paths)
 }
@@ -297,7 +297,7 @@ fn run_pick_folders(dialog: gtk4::FileDialog) -> Option<Vec<PathBuf>> {
 fn run_save_file(dialog: gtk4::FileDialog) -> Option<PathBuf> {
     let context = glib::MainContext::ref_thread_default();
     context
-        .block_on(dialog.save_future(None::<&gtk4::Window>))
+        .block_on(dialog.save_future(Some(&Window::builder().title("dummy").build())))
         .ok()
         .and_then(first_path)
 }
@@ -366,7 +366,7 @@ fn run_message_dialog(options: MessageDialog) -> MessageDialogResult {
 
     let context = glib::MainContext::ref_thread_default();
     let response = context
-        .block_on(dialog.choose_future(None::<&gtk4::Window>))
+        .block_on(dialog.choose_future(Some(&Window::builder().title("dummy").build())))
         .map(|result| match options.buttons {
             MessageButtons::Ok | MessageButtons::OkCustom(_) => match result {
                 _ => 0,
