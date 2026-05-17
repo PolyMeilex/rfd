@@ -1,10 +1,22 @@
 fn main() {
     // Spawn dialog on main thread
-    let task = rfd::AsyncFileDialog::new().pick_file();
+    let task1 = rfd::AsyncFileDialog::new().pick_file();
+    let task2 = rfd::AsyncFileDialog::new().pick_file();
 
     // Await somewhere else
     execute(async {
-        let file = task.await;
+        let file = task1.await;
+
+        if let Some(file) = file {
+            // If you are on native platform you can just get the path
+            #[cfg(not(target_arch = "wasm32"))]
+            println!("{:?}", file.path());
+
+            // If you care about wasm support you just read() the file
+            file.read().await;
+        }
+
+        let file = task2.await;
 
         if let Some(file) = file {
             // If you are on native platform you can just get the path

@@ -114,7 +114,6 @@ impl FileDialog {
     /// Supported platforms:
     ///  * Windows
     ///  * Mac
-    ///  * Linux (GTK3 only, not XDG Portal)
     pub fn set_show_hidden_files(mut self, show: bool) -> Self {
         self.show_hidden_files = Some(show);
         self
@@ -268,7 +267,6 @@ impl AsyncFileDialog {
     /// Supported platforms:
     ///  * Windows
     ///  * Mac
-    ///  * Linux (GTK3 only, not XDG Portal)
     pub fn set_show_hidden_files(mut self, show: bool) -> Self {
         self.file_dialog = self.file_dialog.set_show_hidden_files(show);
         self

@@ -15,7 +15,7 @@ jobs:
           - name: Ubuntu GTK
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            flags: '--no-default-features --features gtk3'
+            flags: '--no-default-features --features gtk4'
           - name: Ubuntu XDG
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu

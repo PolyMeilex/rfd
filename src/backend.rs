@@ -1,5 +1,5 @@
-use crate::message_dialog::MessageDialogResult;
 use crate::FileHandle;
+use crate::message_dialog::MessageDialogResult;
 use std::future::Future;
 #[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
@@ -13,7 +13,7 @@ use std::pin::Pin;
         target_os = "netbsd",
         target_os = "openbsd"
     ),
-    not(feature = "gtk3")
+    not(feature = "gtk4")
 ))]
 mod linux;
 
@@ -25,9 +25,10 @@ mod linux;
         target_os = "netbsd",
         target_os = "openbsd"
     ),
-    feature = "gtk3"
+    feature = "gtk4"
 ))]
-mod gtk3;
+mod gtk4;
+
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(target_arch = "wasm32")]
@@ -42,7 +43,7 @@ mod win_cid;
         target_os = "netbsd",
         target_os = "openbsd"
     ),
-    not(feature = "gtk3")
+    not(feature = "gtk4"),
 ))]
 mod xdg_desktop_portal;
 
