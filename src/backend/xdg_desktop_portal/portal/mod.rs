@@ -172,6 +172,7 @@ fn parse_response(msg: &Message) -> Option<Vec<CString>> {
 
         let Some(key) = entry_iter.get_string() else {
             log::error!("Wrong type of a dict key");
+            dict_iter.next();
             continue;
         };
 
