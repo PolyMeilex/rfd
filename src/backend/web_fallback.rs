@@ -533,20 +533,15 @@ fn run_server<T: Send + 'static>(
         });
 
         // Wait for result with timeout
-        match tokio::time::timeout(
+        let result = match tokio::time::timeout(
             Duration::from_secs(DIALOG_TIMEOUT_SECS),
             result_rx,
         )
         .await
         {
             Ok(Ok(result)) => {
-                // Ensure the response is fully sent before dropping the runtime.
-                // The handler sends shutdown before the result is processed here,
-                // so graceful shutdown is already in progress.
-                // Use a timeout to prevent hanging if graceful shutdown stalls.
-                tokio::time::timeout(Duration::from_secs(5), server_handle)
-                    .await
-                    .ok();
+                // Response was already written synchronously by the connection
+                // task; runtime can drop immediately, aborting the server.
                 Some(result)
             }
             Ok(Err(_)) => {
@@ -557,7 +552,13 @@ fn run_server<T: Send + 'static>(
                 debug!("Web fallback: Timeout");
                 None
             }
-        }
+        };
+
+        // Drop the server handle explicitly (aborts the spawned server task
+        // which may still be waiting on the graceful shutdown signal).
+        drop(server_handle);
+
+        result
     });
 
     result
@@ -603,8 +604,6 @@ async fn message_dialog_submit(
     for (key, value) in params {
         if key == "result" {
             debug!("Web fallback: Message dialog result = {}", value);
-            // Trigger shutdown first so graceful shutdown is in progress
-            send_shutdown(&state.shutdown_tx);
             send_result(&state.result_tx, parse_dialog_result(&value));
             break;
         }
@@ -789,7 +788,6 @@ async fn file_picker_submit(
 
     let result = if paths.is_empty() { None } else { Some(paths) };
 
-    send_shutdown(&state.shutdown_tx);
     send_result(&state.result_tx, result);
 
     let body = r#"<div class="dialog success">
@@ -987,7 +985,6 @@ async fn folder_picker_submit(
         }
     };
 
-    send_shutdown(&state.shutdown_tx);
     send_result(&state.result_tx, result);
 
     let body = r#"<div class="dialog success">
@@ -1135,7 +1132,6 @@ async fn file_save_submit(State(state): State<FileSaveState>, body: String) -> H
         }
     }
 
-    send_shutdown(&state.shutdown_tx);
     send_result(&state.result_tx, result);
 
     let body = r#"<div class="dialog success">
