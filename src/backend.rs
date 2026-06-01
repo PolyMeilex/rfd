@@ -46,6 +46,18 @@ mod win_cid;
 ))]
 mod xdg_desktop_portal;
 
+#[cfg(not(any(
+    target_os = "macos",
+    target_os = "windows",
+    target_os = "linux",
+    target_os = "freebsd",
+    target_os = "dragonfly",
+    target_os = "netbsd",
+    target_os = "openbsd",
+    target_arch = "wasm32"
+)))]
+mod web_fallback;
+
 //
 // Sync
 //

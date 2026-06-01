@@ -110,6 +110,13 @@ web-sys = { version = "0.3.46", features = [
 ] }
 wasm-bindgen-futures = "0.4.19"
 
+[target.'cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux", target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd", target_os = "openbsd", target_arch = "wasm32")))'.dependencies]
+webbrowser = "0.8"
+tempfile = "3.8"
+tokio = { version = "1.0", features = ["sync", "rt", "time", "net"] }
+axum = "0.8"
+memchr = "2"
+
 [[example]]
 name = "simple"
 [[example]]
