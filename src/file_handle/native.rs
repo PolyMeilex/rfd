@@ -1,113 +1,9 @@
 use std::{
-    future::Future,
+    io,
     path::{Path, PathBuf},
-    pin::Pin,
-    sync::{Arc, Mutex},
-    task::{Context, Poll, Waker},
 };
 
-#[derive(Default)]
-struct ReaderState {
-    res: Option<std::io::Result<Vec<u8>>>,
-    waker: Option<Waker>,
-}
-
-struct Reader {
-    state: Arc<Mutex<ReaderState>>,
-}
-
-impl Reader {
-    fn new(path: &Path) -> Self {
-        let state: Arc<Mutex<ReaderState>> = Arc::new(Mutex::new(Default::default()));
-
-        {
-            let path = path.to_owned();
-            let state = state.clone();
-            std::thread::Builder::new()
-                .name("rfd_file_read".into())
-                .spawn(move || {
-                    let res = std::fs::read(path);
-
-                    let mut state = state.lock().unwrap();
-                    state.res.replace(res);
-
-                    if let Some(waker) = state.waker.take() {
-                        waker.wake();
-                    }
-                })
-                .unwrap();
-        }
-
-        Self { state }
-    }
-}
-
-impl Future for Reader {
-    type Output = Vec<u8>;
-
-    fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut state = self.state.lock().unwrap();
-        if let Some(res) = state.res.take() {
-            Poll::Ready(res.unwrap())
-        } else {
-            state.waker.replace(ctx.waker().clone());
-            Poll::Pending
-        }
-    }
-}
-
-struct WriterState {
-    waker: Option<Waker>,
-    res: Option<std::io::Result<()>>,
-}
-
-struct Writer {
-    state: Arc<Mutex<WriterState>>,
-}
-
-impl Writer {
-    fn new(path: &Path, bytes: &[u8]) -> Self {
-        let state = Arc::new(Mutex::new(WriterState {
-            waker: None,
-            res: None,
-        }));
-
-        {
-            let path = path.to_owned();
-            let bytes = bytes.to_owned();
-            let state = state.clone();
-            std::thread::Builder::new()
-                .name("rfd_file_write".into())
-                .spawn(move || {
-                    let res = std::fs::write(path, bytes);
-
-                    let mut state = state.lock().unwrap();
-                    state.res.replace(res);
-
-                    if let Some(waker) = state.waker.take() {
-                        waker.wake();
-                    }
-                })
-                .unwrap();
-        }
-
-        Self { state }
-    }
-}
-
-impl Future for Writer {
-    type Output = std::io::Result<()>;
-
-    fn poll(self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut state = self.state.lock().unwrap();
-        if let Some(res) = state.res.take() {
-            Poll::Ready(res)
-        } else {
-            state.waker.replace(ctx.waker().clone());
-            Poll::Pending
-        }
-    }
-}
+use super::super::oneshot;
 
 /// FileHandle is a way of abstracting over a file returned by a dialog
 #[derive(Clone)]
@@ -143,7 +39,22 @@ impl FileHandle {
     ///
     /// `This fn exists solely to keep native api in pair with async only web api.`
     pub async fn read(&self) -> Vec<u8> {
-        Reader::new(&self.0).await
+        let (tx, rx) = oneshot::channel();
+        let path = self.0.clone();
+
+        std::thread::Builder::new()
+            .name("rfd_file_read".into())
+            .spawn(move || {
+                tx.send(std::fs::read(path)).unwrap();
+            })
+            .unwrap();
+
+        match rx.await {
+            Ok(res) => res,
+            Err(_) => Err(io::Error::other("Read tread panicked")),
+        }
+        // TODO: Move to io::Result
+        .unwrap()
     }
 
     /// Writes a file asynchronously.
@@ -152,7 +63,22 @@ impl FileHandle {
     ///
     /// `This fn exists solely to keep native api in pair with async only web api.`
     pub async fn write(&self, data: &[u8]) -> std::io::Result<()> {
-        Writer::new(&self.0, data).await
+        let (tx, rx) = oneshot::channel();
+
+        let path = self.0.clone();
+        let bytes = data.to_owned();
+
+        std::thread::Builder::new()
+            .name("rfd_file_write".into())
+            .spawn(move || {
+                tx.send(std::fs::write(path, bytes)).unwrap();
+            })
+            .unwrap();
+
+        match rx.await {
+            Ok(res) => res,
+            Err(_) => Err(io::Error::other("Write tread panicked")),
+        }
     }
 
     /// Unwraps a `FileHandle` and returns inner type.
@@ -191,5 +117,26 @@ impl From<FileHandle> for PathBuf {
 impl From<&FileHandle> for PathBuf {
     fn from(file_handle: &FileHandle) -> Self {
         PathBuf::from(file_handle.path())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(target_family = "unix")]
+    #[test]
+    fn write_and_read() {
+        futures::executor::block_on(async {
+            let path = "/tmp/rfd_test_write_read.txt";
+            let handle = FileHandle(path.into());
+
+            handle.write(b"Hello world").await.unwrap();
+            let bytes = handle.read().await;
+
+            assert_eq!(bytes, b"Hello world");
+
+            std::fs::remove_file(path).unwrap();
+        });
     }
 }

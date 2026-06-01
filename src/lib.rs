@@ -56,8 +56,8 @@
 //! The XDG Desktop Portal backend is used with the `xdg-portal` Cargo feature which is enabled by default. This backend will use either the GTK or KDE file dialog depending on the desktop environment
 //! in use at runtime.
 //!
-//! It requires the user to have `libdbus` system liblary (should be available on any systemd
-//! distro), if the liblary is not found `zenity` will be used instead.
+//! It requires the user to have `libdbus` system library (should be available on any systemd
+//! distro), if the library is not found `zenity` will be used instead.
 //!
 //! It requires the user to also have either the
 //! [GTK](https://github.com/flatpak/xdg-desktop-portal-gtk),

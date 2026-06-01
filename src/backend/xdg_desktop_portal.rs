@@ -129,7 +129,11 @@ impl FilePickerDialogImpl for FileDialog {
         .map(portal::uris_to_paths);
 
         if let Some(res) = res {
-            Some(res)
+            if res.is_empty() {
+                None
+            } else {
+                Some(res)
+            }
         } else {
             warn!("Using zenity fallback");
             match block_on(zenity::pick_files(&self)) {
@@ -213,7 +217,11 @@ impl FolderPickerDialogImpl for FileDialog {
         .map(portal::uris_to_paths);
 
         if let Some(res) = res {
-            Some(res)
+            if res.is_empty() {
+                None
+            } else {
+                Some(res)
+            }
         } else {
             warn!("Using zenity fallback");
             match block_on(zenity::pick_folders(&self)) {
