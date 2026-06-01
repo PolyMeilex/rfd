@@ -115,6 +115,7 @@ webbrowser = "0.8"
 tempfile = "3.8"
 tokio = { version = "1.0", features = ["sync", "rt", "time", "net"] }
 axum = "0.8"
+memchr = "2"
 
 [[example]]
 name = "simple"

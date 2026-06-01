@@ -23,9 +23,10 @@ use axum::{
     Router,
 };
 use log::{debug, warn};
+use memchr::memmem;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::sync::oneshot;
 
@@ -33,8 +34,30 @@ use tokio::sync::oneshot;
 const DIALOG_TIMEOUT_SECS: u64 = 300;
 
 // Type aliases to reduce complexity
-type ResultSender<T> = Arc<Mutex<Option<mpsc::Sender<T>>>>;
+type ResultSender<T> = Arc<Mutex<Option<oneshot::Sender<T>>>>;
 type ShutdownSender = Arc<Mutex<Option<oneshot::Sender<()>>>>;
+
+/// Send the shutdown signal, recovering from a poisoned mutex.
+fn send_shutdown(shutdown_tx: &ShutdownSender) {
+    if let Some(tx) = shutdown_tx
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .take()
+    {
+        let _ = tx.send(());
+    }
+}
+
+/// Send a dialog result, recovering from a poisoned mutex.
+fn send_result<T>(result_tx: &ResultSender<T>, result: T) {
+    if let Some(tx) = result_tx
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .take()
+    {
+        let _ = tx.send(result);
+    }
+}
 
 // ============================================================================
 // HTML Helpers
@@ -279,75 +302,73 @@ struct MultipartFile {
     data: Vec<u8>,
 }
 
-/// Parse multipart/form-data content
+/// Parse multipart/form-data content.
+///
+/// Uses a single-pass scan: each boundary is found exactly once, avoiding the
+/// O(N·P) worst case of the naive two-pass-per-iteration approach.
 fn parse_multipart(body: &[u8], boundary: &str) -> Vec<MultipartFile> {
     let mut files = Vec::new();
 
-    // Create boundary markers
     let boundary_line = format!("--{}", boundary);
     let end_boundary_line = format!("--{}--", boundary);
-
-    // Convert to bytes for efficient searching
     let boundary_bytes = boundary_line.as_bytes();
     let end_boundary_bytes = end_boundary_line.as_bytes();
 
-    let mut pos = 0;
     let len = body.len();
 
-    while pos < len {
-        // Find the next boundary
-        let boundary_pos = if let Some(p) = find_subsequence(&body[pos..], boundary_bytes) {
-            pos + p
-        } else {
-            break;
-        };
+    // Find the first boundary
+    let first_boundary = match find_subsequence(body, boundary_bytes) {
+        Some(p) => p,
+        None => return files,
+    };
 
-        // Check if this is the end boundary
-        if boundary_pos + boundary_bytes.len() < len
-            && &body[boundary_pos..boundary_pos + end_boundary_bytes.len()] == end_boundary_bytes
-        {
-            break; // End of multipart data
-        }
+    // Check for immediate end boundary (empty multipart)
+    if first_boundary + end_boundary_bytes.len() <= len
+        && body[first_boundary..first_boundary + end_boundary_bytes.len()] == *end_boundary_bytes
+    {
+        return files;
+    }
 
-        // Move past the boundary
-        pos = boundary_pos + boundary_bytes.len();
+    let mut pos = first_boundary + boundary_bytes.len();
 
+    loop {
         // Skip CRLF after boundary
-        if pos + 1 < len && &body[pos..pos + 2] == b"\r\n" {
+        if pos + 1 < len && body[pos..pos + 2] == *b"\r\n" {
             pos += 2;
         } else if pos < len && body[pos] == b'\n' {
             pos += 1;
         }
 
-        // Find the next boundary or end of data
-        let next_boundary_pos = find_subsequence(&body[pos..], boundary_bytes)
-            .map(|p| pos + p)
-            .unwrap_or(len);
-
-        let part_end = if next_boundary_pos < len {
-            // Back up to before the next boundary
-            next_boundary_pos
-        } else {
-            len
+        // Find the next boundary (this is the end of the current part).
+        // Each call here advances pos monotonically, so total work is O(N).
+        let next_boundary = match find_subsequence(&body[pos..], boundary_bytes) {
+            Some(p) => pos + p,
+            None => break,
         };
 
-        if pos >= part_end {
-            break;
-        }
+        // Check for end-of-data boundary (--boundary--)
+        let is_end = next_boundary + end_boundary_bytes.len() <= len
+            && body[next_boundary..next_boundary + end_boundary_bytes.len()] == *end_boundary_bytes;
 
-        let part = &body[pos..part_end];
-
-        // Parse this part
-        if let Some((filename, data)) = parse_multipart_part(part) {
-            if !filename.is_empty() {
-                files.push(MultipartFile {
-                    filename,
-                    data: data.to_vec(),
-                });
+        // Parse the part up to the next boundary
+        if pos < next_boundary {
+            let part = &body[pos..next_boundary];
+            if let Some((filename, data)) = parse_multipart_part(part) {
+                if !filename.is_empty() {
+                    files.push(MultipartFile {
+                        filename,
+                        data: data.to_vec(),
+                    });
+                }
             }
         }
 
-        pos = part_end;
+        if is_end {
+            break;
+        }
+
+        // Advance past this boundary for the next iteration
+        pos = next_boundary + boundary_bytes.len();
     }
 
     files
@@ -381,11 +402,9 @@ fn parse_multipart_part(part: &[u8]) -> Option<(String, &[u8])> {
     Some((filename, body))
 }
 
-/// Find subsequence in byte slice
+/// Find subsequence in byte slice using SIMD-accelerated search.
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack
-        .windows(needle.len())
-        .position(|window| window == needle)
+    memmem::find(haystack, needle)
 }
 
 /// Extract filename from Content-Disposition header bytes
@@ -465,7 +484,7 @@ fn extract_boundary(content_type: &str) -> Option<String> {
 /// Run an Axum server, open browser, and wait for result
 fn run_server<T: Send + 'static>(
     router: Router,
-    result_rx: mpsc::Receiver<T>,
+    result_rx: oneshot::Receiver<T>,
     shutdown_rx: oneshot::Receiver<()>,
 ) -> Option<T> {
     // Create a tokio runtime for the server
@@ -512,24 +531,29 @@ fn run_server<T: Send + 'static>(
             let _ = shutdown_rx.await;
         });
 
-        tokio::spawn(async move {
+        let server_handle = tokio::spawn(async move {
             let _ = server.await;
         });
 
         // Wait for result with timeout
         match tokio::time::timeout(
             Duration::from_secs(DIALOG_TIMEOUT_SECS),
-            tokio::task::spawn_blocking(move || result_rx.recv()),
+            result_rx,
         )
         .await
         {
-            Ok(Ok(Ok(result))) => Some(result),
-            Ok(Ok(Err(_))) => {
-                debug!("Web fallback: Channel closed");
-                None
+            Ok(Ok(result)) => {
+                // Ensure the response is fully sent before dropping the runtime.
+                // The handler sends shutdown before the result is processed here,
+                // so graceful shutdown is already in progress.
+                // Use a timeout to prevent hanging if graceful shutdown stalls.
+                tokio::time::timeout(Duration::from_secs(5), server_handle)
+                    .await
+                    .ok();
+                Some(result)
             }
-            Ok(Err(e)) => {
-                warn!("Web fallback: Task error: {}", e);
+            Ok(Err(_)) => {
+                debug!("Web fallback: Channel closed");
                 None
             }
             Err(_) => {
@@ -582,13 +606,9 @@ async fn message_dialog_submit(
     for (key, value) in params {
         if key == "result" {
             debug!("Web fallback: Message dialog result = {}", value);
-            if let Some(tx) = state.result_tx.lock().unwrap().take() {
-                let _ = tx.send(parse_dialog_result(&value));
-            }
-            // Trigger shutdown
-            if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-                let _ = tx.send(());
-            }
+            // Trigger shutdown first so graceful shutdown is in progress
+            send_shutdown(&state.shutdown_tx);
+            send_result(&state.result_tx, parse_dialog_result(&value));
             break;
         }
     }
@@ -604,7 +624,7 @@ impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
         debug!("Web fallback: Starting message dialog");
 
-        let (result_tx, result_rx) = mpsc::channel();
+        let (result_tx, result_rx) = oneshot::channel();
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
         let state = MessageDialogState {
@@ -670,12 +690,8 @@ async fn file_picker_page(State(state): State<FilePickerState>) -> Html<String> 
 
 async fn file_picker_cancel(State(state): State<FilePickerState>) -> Html<String> {
     debug!("Web fallback: File picker cancelled");
-    if let Some(tx) = state.result_tx.lock().unwrap().take() {
-        let _ = tx.send(None);
-    }
-    if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-        let _ = tx.send(());
-    }
+    send_shutdown(&state.shutdown_tx);
+    send_result(&state.result_tx, None::<Vec<PathBuf>>);
 
     let body = r#"<div class="dialog success">
         <h1>Cancelled</h1>
@@ -700,12 +716,8 @@ async fn file_picker_submit(
         Some(b) => b,
         None => {
             warn!("Web fallback: No boundary in content-type");
-            if let Some(tx) = state.result_tx.lock().unwrap().take() {
-                let _ = tx.send(None);
-            }
-            if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-                let _ = tx.send(());
-            }
+            send_shutdown(&state.shutdown_tx);
+            send_result(&state.result_tx, None::<Vec<PathBuf>>);
             return (StatusCode::BAD_REQUEST, "Missing boundary").into_response();
         }
     };
@@ -716,12 +728,8 @@ async fn file_picker_submit(
         Ok(b) => b,
         Err(e) => {
             warn!("Web fallback: Failed to read body: {}", e);
-            if let Some(tx) = state.result_tx.lock().unwrap().take() {
-                let _ = tx.send(None);
-            }
-            if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-                let _ = tx.send(());
-            }
+            send_shutdown(&state.shutdown_tx);
+            send_result(&state.result_tx, None::<Vec<PathBuf>>);
             return (StatusCode::BAD_REQUEST, "Failed to read body").into_response();
         }
     };
@@ -747,12 +755,8 @@ async fn file_picker_submit(
         Ok(dir) => dir.keep(),
         Err(e) => {
             warn!("Web fallback: Failed to create temp dir: {}", e);
-            if let Some(tx) = state.result_tx.lock().unwrap().take() {
-                let _ = tx.send(None);
-            }
-            if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-                let _ = tx.send(());
-            }
+            send_shutdown(&state.shutdown_tx);
+            send_result(&state.result_tx, None::<Vec<PathBuf>>);
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to create temp directory",
@@ -788,12 +792,8 @@ async fn file_picker_submit(
 
     let result = if paths.is_empty() { None } else { Some(paths) };
 
-    if let Some(tx) = state.result_tx.lock().unwrap().take() {
-        let _ = tx.send(result);
-    }
-    if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-        let _ = tx.send(());
-    }
+    send_shutdown(&state.shutdown_tx);
+    send_result(&state.result_tx, result);
 
     let body = r#"<div class="dialog success">
         <h1>✓</h1>
@@ -805,7 +805,7 @@ async fn file_picker_submit(
 fn pick_files_impl(dialog: FileDialog, multiple: bool) -> Option<Vec<PathBuf>> {
     debug!("Web fallback: Starting file picker (multiple={})", multiple);
 
-    let (result_tx, result_rx) = mpsc::channel();
+    let (result_tx, result_rx) = oneshot::channel();
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
     let state = FilePickerState {
@@ -897,12 +897,8 @@ async fn folder_picker_page(State(state): State<FolderPickerState>) -> Html<Stri
 
 async fn folder_picker_cancel(State(state): State<FolderPickerState>) -> Html<String> {
     debug!("Web fallback: Folder picker cancelled");
-    if let Some(tx) = state.result_tx.lock().unwrap().take() {
-        let _ = tx.send(None);
-    }
-    if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-        let _ = tx.send(());
-    }
+    send_shutdown(&state.shutdown_tx);
+    send_result(&state.result_tx, None::<Vec<PathBuf>>);
 
     let body = r#"<div class="dialog success">
         <h1>Cancelled</h1>
@@ -926,12 +922,8 @@ async fn folder_picker_submit(
     let boundary = match extract_boundary(content_type) {
         Some(b) => b,
         None => {
-            if let Some(tx) = state.result_tx.lock().unwrap().take() {
-                let _ = tx.send(None);
-            }
-            if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-                let _ = tx.send(());
-            }
+            send_shutdown(&state.shutdown_tx);
+            send_result(&state.result_tx, None::<Vec<PathBuf>>);
             return (StatusCode::BAD_REQUEST, "Missing boundary").into_response();
         }
     };
@@ -941,12 +933,8 @@ async fn folder_picker_submit(
         Ok(b) => b,
         Err(e) => {
             warn!("Web fallback: Failed to read body: {}", e);
-            if let Some(tx) = state.result_tx.lock().unwrap().take() {
-                let _ = tx.send(None);
-            }
-            if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-                let _ = tx.send(());
-            }
+            send_shutdown(&state.shutdown_tx);
+            send_result(&state.result_tx, None::<Vec<PathBuf>>);
             return (StatusCode::BAD_REQUEST, "Failed to read body").into_response();
         }
     };
@@ -1002,12 +990,8 @@ async fn folder_picker_submit(
         }
     };
 
-    if let Some(tx) = state.result_tx.lock().unwrap().take() {
-        let _ = tx.send(result);
-    }
-    if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-        let _ = tx.send(());
-    }
+    send_shutdown(&state.shutdown_tx);
+    send_result(&state.result_tx, result);
 
     let body = r#"<div class="dialog success">
         <h1>✓</h1>
@@ -1022,7 +1006,7 @@ fn pick_folder_impl(dialog: FileDialog, multiple: bool) -> Option<Vec<PathBuf>> 
         multiple
     );
 
-    let (result_tx, result_rx) = mpsc::channel();
+    let (result_tx, result_rx) = oneshot::channel();
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
     let state = FolderPickerState {
@@ -1112,12 +1096,8 @@ async fn file_save_page(State(state): State<FileSaveState>) -> Html<String> {
 
 async fn file_save_cancel(State(state): State<FileSaveState>) -> Html<String> {
     debug!("Web fallback: Save dialog cancelled");
-    if let Some(tx) = state.result_tx.lock().unwrap().take() {
-        let _ = tx.send(None);
-    }
-    if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-        let _ = tx.send(());
-    }
+    send_shutdown(&state.shutdown_tx);
+    send_result(&state.result_tx, None::<PathBuf>);
 
     let body = r#"<div class="dialog success">
         <h1>Cancelled</h1>
@@ -1158,12 +1138,8 @@ async fn file_save_submit(State(state): State<FileSaveState>, body: String) -> H
         }
     }
 
-    if let Some(tx) = state.result_tx.lock().unwrap().take() {
-        let _ = tx.send(result);
-    }
-    if let Some(tx) = state.shutdown_tx.lock().unwrap().take() {
-        let _ = tx.send(());
-    }
+    send_shutdown(&state.shutdown_tx);
+    send_result(&state.result_tx, result);
 
     let body = r#"<div class="dialog success">
         <h1>✓</h1>
@@ -1176,7 +1152,7 @@ impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
         debug!("Web fallback: Starting save file dialog");
 
-        let (result_tx, result_rx) = mpsc::channel();
+        let (result_tx, result_rx) = oneshot::channel();
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
         let state = FileSaveState {
