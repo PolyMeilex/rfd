@@ -302,10 +302,7 @@ struct MultipartFile {
     data: Vec<u8>,
 }
 
-/// Parse multipart/form-data content.
-///
-/// Uses a single-pass scan: each boundary is found exactly once, avoiding the
-/// O(N·P) worst case of the naive two-pass-per-iteration approach.
+/// Parse multipart/form-data content
 fn parse_multipart(body: &[u8], boundary: &str) -> Vec<MultipartFile> {
     let mut files = Vec::new();
 
@@ -314,61 +311,61 @@ fn parse_multipart(body: &[u8], boundary: &str) -> Vec<MultipartFile> {
     let boundary_bytes = boundary_line.as_bytes();
     let end_boundary_bytes = end_boundary_line.as_bytes();
 
+    let mut pos = 0;
     let len = body.len();
 
-    // Find the first boundary
-    let first_boundary = match find_subsequence(body, boundary_bytes) {
-        Some(p) => p,
-        None => return files,
-    };
+    while pos < len {
+        // Find the next boundary
+        let boundary_pos = if let Some(p) = find_subsequence(&body[pos..], boundary_bytes) {
+            pos + p
+        } else {
+            break;
+        };
 
-    // Check for immediate end boundary (empty multipart)
-    if first_boundary + end_boundary_bytes.len() <= len
-        && body[first_boundary..first_boundary + end_boundary_bytes.len()] == *end_boundary_bytes
-    {
-        return files;
-    }
+        // Check if this is the end boundary
+        if boundary_pos + boundary_bytes.len() < len
+            && &body[boundary_pos..boundary_pos + end_boundary_bytes.len()] == end_boundary_bytes
+        {
+            break;
+        }
 
-    let mut pos = first_boundary + boundary_bytes.len();
+        // Move past the boundary
+        pos = boundary_pos + boundary_bytes.len();
 
-    loop {
         // Skip CRLF after boundary
-        if pos + 1 < len && body[pos..pos + 2] == *b"\r\n" {
+        if pos + 1 < len && &body[pos..pos + 2] == b"\r\n" {
             pos += 2;
         } else if pos < len && body[pos] == b'\n' {
             pos += 1;
         }
 
-        // Find the next boundary (this is the end of the current part).
-        // Each call here advances pos monotonically, so total work is O(N).
-        let next_boundary = match find_subsequence(&body[pos..], boundary_bytes) {
-            Some(p) => pos + p,
-            None => break,
+        // Find the next boundary or end of data
+        let next_boundary_pos = find_subsequence(&body[pos..], boundary_bytes)
+            .map(|p| pos + p)
+            .unwrap_or(len);
+
+        let part_end = if next_boundary_pos < len {
+            next_boundary_pos
+        } else {
+            len
         };
 
-        // Check for end-of-data boundary (--boundary--)
-        let is_end = next_boundary + end_boundary_bytes.len() <= len
-            && body[next_boundary..next_boundary + end_boundary_bytes.len()] == *end_boundary_bytes;
-
-        // Parse the part up to the next boundary
-        if pos < next_boundary {
-            let part = &body[pos..next_boundary];
-            if let Some((filename, data)) = parse_multipart_part(part) {
-                if !filename.is_empty() {
-                    files.push(MultipartFile {
-                        filename,
-                        data: data.to_vec(),
-                    });
-                }
-            }
-        }
-
-        if is_end {
+        if pos >= part_end {
             break;
         }
 
-        // Advance past this boundary for the next iteration
-        pos = next_boundary + boundary_bytes.len();
+        let part = &body[pos..part_end];
+
+        if let Some((filename, data)) = parse_multipart_part(part) {
+            if !filename.is_empty() {
+                files.push(MultipartFile {
+                    filename,
+                    data: data.to_vec(),
+                });
+            }
+        }
+
+        pos = part_end;
     }
 
     files
