@@ -1,11 +1,14 @@
 fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").expect("target OS not detected");
     let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").expect("target ARCH not detected");
+    let target_family =
+        std::env::var("CARGO_CFG_TARGET_FAMILY").expect("target FAMILY not detected");
+    let is_wasm = target_family.split(',').any(|f| f == "wasm");
 
-    match (target_arch.as_str(), target_os.as_str()) {
-        (_, "macos") => println!("cargo:rustc-link-lib=framework=AppKit"),
-        (_, "windows") => {}
-        ("wasm32", _) => {}
+    match target_os.as_str() {
+        "macos" => println!("cargo:rustc-link-lib=framework=AppKit"),
+        "windows" => {}
+        _ if is_wasm => {}
         _ => {
             let gtk = std::env::var_os("CARGO_FEATURE_GTK3").is_some();
             let xdg = std::env::var_os("CARGO_FEATURE_XDG_PORTAL").is_some();

@@ -8,7 +8,7 @@ fn main() {
 
         if let Some(file) = file {
             // If you are on native platform you can just get the path
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(target_family = "wasm"))]
             println!("{:?}", file.path());
 
             // If you care about wasm support you just read() the file
@@ -21,12 +21,12 @@ fn main() {
 
 use std::future::Future;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
     // this is stupid... use any executor of your choice instead
     std::thread::spawn(move || futures::executor::block_on(f));
 }
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 fn execute<F: Future<Output = ()> + 'static>(f: F) {
     wasm_bindgen_futures::spawn_local(f);
 }
