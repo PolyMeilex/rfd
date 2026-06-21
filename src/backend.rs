@@ -1,7 +1,7 @@
 use crate::message_dialog::MessageDialogResult;
 use crate::FileHandle;
 use std::future::Future;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 use std::path::PathBuf;
 use std::pin::Pin;
 
@@ -30,7 +30,7 @@ mod linux;
 mod gtk3;
 #[cfg(target_os = "macos")]
 mod macos;
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 mod wasm;
 #[cfg(target_os = "windows")]
 mod win_cid;
@@ -51,20 +51,20 @@ mod xdg_desktop_portal;
 //
 
 /// Dialog used to pick file/files
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub trait FilePickerDialogImpl {
     fn pick_file(self) -> Option<PathBuf>;
     fn pick_files(self) -> Option<Vec<PathBuf>>;
 }
 
 /// Dialog used to save file
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub trait FileSaveDialogImpl {
     fn save_file(self) -> Option<PathBuf>;
 }
 
 /// Dialog used to pick folder
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub trait FolderPickerDialogImpl {
     fn pick_folder(self) -> Option<PathBuf>;
     fn pick_folders(self) -> Option<Vec<PathBuf>>;
@@ -86,9 +86,9 @@ pub trait MessageDialogImpl {
 //
 
 // Return type of async dialogs:
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T> + Send>>;
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 pub type DialogFutureType<T> = Pin<Box<dyn Future<Output = T>>>;
 
 /// Dialog used to pick file/files
@@ -98,7 +98,7 @@ pub trait AsyncFilePickerDialogImpl {
 }
 
 /// Dialog used to pick folder
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub trait AsyncFolderPickerDialogImpl {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>>;
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>>;

@@ -1,4 +1,4 @@
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 fn main() {
     let path = std::env::current_dir().unwrap();
 
@@ -11,7 +11,7 @@ fn main() {
     println!("The user choose: {:#?}", res);
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 fn main() {
     // On wasm only async dialogs are possible
 }
