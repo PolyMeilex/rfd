@@ -82,8 +82,13 @@ impl GtkMessageDialog {
         let description = CString::new(s).unwrap();
 
         let ptr = unsafe {
+            let mut parent_gtk_window = ptr::null_mut();
+            if let Some(parent_handle) = &opt.parent {
+                parent_gtk_window = super::utils::find_gtk_window(parent_handle);
+            }
+
             let dialog = gtk_sys::gtk_message_dialog_new(
-                ptr::null_mut(),
+                parent_gtk_window,
                 gtk_sys::GTK_DIALOG_MODAL,
                 level,
                 buttons,
