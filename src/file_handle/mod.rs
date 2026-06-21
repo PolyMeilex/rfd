@@ -5,16 +5,16 @@
 //!
 //! It should allow a user to treat web browser files same way as native files
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 mod native;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub use native::FileHandle;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 mod web;
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 pub use web::FileHandle;
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 pub(crate) use web::WasmFileHandleKind;
 
 #[cfg(test)]
@@ -27,7 +27,7 @@ mod tests {
         let _ = FileHandle::read;
         #[cfg(feature = "file-handle-inner")]
         let _ = FileHandle::inner;
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(target_family = "wasm"))]
         let _ = FileHandle::path;
     }
 }
