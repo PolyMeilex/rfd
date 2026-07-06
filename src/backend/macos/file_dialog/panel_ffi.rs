@@ -133,15 +133,19 @@ trait PanelExt {
     }
 
     fn add_filters(&self, opt: &FileDialog) {
-        let types: Vec<_> = opt
-            .filters
-            .iter()
-            .flat_map(|filter| filter.extensions.iter())
-            .filter_map(|ext| utype_for_extension(ext))
-            .collect();
+        let mut exts: Vec<String> = Vec::new();
 
-        let array = NSArray::from_retained_slice(&types);
-        unsafe { self.panel().setAllowedContentTypes(&array) };
+        for filter in opt.filters.iter() {
+            exts.append(&mut filter.extensions.to_vec());
+        }
+
+        let f_raw: Vec<_> = exts.iter().map(|ext| NSString::from_str(ext)).collect();
+        let array = NSArray::from_retained_slice(&f_raw);
+
+        unsafe {
+            #[allow(deprecated)]
+            self.panel().setAllowedFileTypes(Some(&array));
+        }
     }
 
     fn set_path(&self, path: &Path, file_name: Option<&str>) {
