@@ -48,11 +48,11 @@ impl FileDialog {
     /// The name of the filter will be displayed on supported platforms:
     ///   * Windows
     ///   * Linux
-    ///   * Mac (`save_file` only, and only when more than one filter is registered)
+    ///   * Mac (`save_file` only, when two or more filters are registered)
     ///
-    /// On platforms/scenarios that don't support filter names (Mac's `pick_file`/`pick_files`/
-    /// etc, or Mac's `save_file` with 0 or 1 filters registered), all filters are merged into
-    /// one flat allowed-types list
+    /// In every other case — other platforms, Mac's `pick_file`/`pick_files`/etc, or Mac's
+    /// `save_file` with fewer than two filters — all filters are merged into one flat
+    /// allowed-types list
     pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.filters.push(Filter {
             name: name.into(),
@@ -224,11 +224,11 @@ impl AsyncFileDialog {
     /// The name of the filter will be displayed on supported platforms:
     ///   * Windows
     ///   * Linux
-    ///   * Mac (`save_file` only, and only when more than one filter is registered)
+    ///   * Mac (`save_file` only, when two or more filters are registered)
     ///
-    /// On platforms/scenarios that don't support filter names (Mac's `pick_file`/`pick_files`/
-    /// etc, or Mac's `save_file` with 0 or 1 filters registered), all filters are merged into
-    /// one flat allowed-types list
+    /// In every other case — other platforms, Mac's `pick_file`/`pick_files`/etc, or Mac's
+    /// `save_file` with fewer than two filters — all filters are merged into one flat
+    /// allowed-types list
     pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.file_dialog = self.file_dialog.add_filter(name, extensions);
         self
