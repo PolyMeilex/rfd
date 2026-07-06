@@ -34,9 +34,14 @@ objc2-foundation = { version = "0.3.0", default-features = false, features = [
   "std",
   "NSArray",
   "NSEnumerator",
+  "NSGeometry",
   "NSString",
   "NSThread",
   "NSURL",
+] }
+objc2-uniform-type-identifiers = { version = "0.3.0", default-features = false, features = [
+  "std",
+  "UTType",
 ] }
 objc2-app-kit = { version = "0.3.0", default-features = false, features = [
   "std",
@@ -47,10 +52,13 @@ objc2-app-kit = { version = "0.3.0", default-features = false, features = [
   "NSControl",
   "NSOpenPanel",
   "NSPanel",
+  "NSPopUpButton",
   "NSResponder",
   "NSRunningApplication",
   "NSSavePanel",
+  "NSTextField",
   "NSView",
+  "objc2-uniform-type-identifiers",
   "NSWindow",
 ] }
 objc2-core-foundation = { version = "0.3.0", default-features = false, features = [
