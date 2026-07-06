@@ -26,6 +26,7 @@ pub struct FileDialog {
     pub(crate) parent_display: Option<RawDisplayHandle>,
     pub(crate) can_create_directories: Option<bool>,
     pub(crate) show_hidden_files: Option<bool>,
+    pub(crate) format_label: Option<String>,
 }
 
 // Oh god, I don't like sending RawWindowHandle between threads but here we go anyways...
@@ -47,8 +48,11 @@ impl FileDialog {
     /// The name of the filter will be displayed on supported platforms:
     ///   * Windows
     ///   * Linux
+    ///   * Mac (`save_file` only, and only when more than one filter is registered)
     ///
-    /// On platforms that don't support filter names, all filters will be merged into one filter
+    /// On platforms/scenarios that don't support filter names (Mac's `pick_file`/`pick_files`/
+    /// etc, or Mac's `save_file` with 0 or 1 filters registered), all filters are merged into
+    /// one flat allowed-types list
     pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.filters.push(Filter {
             name: name.into(),
@@ -119,6 +123,14 @@ impl FileDialog {
         self.show_hidden_files = Some(show);
         self
     }
+
+    /// Set the label shown next to the format picker in `save_file`'s accessory view
+    /// (only shown when two or more filters are registered). Defaults to "Format:".
+    /// Supported in: `macos`.
+    pub fn set_format_label(mut self, label: impl Into<String>) -> Self {
+        self.format_label = Some(label.into());
+        self
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -169,9 +181,13 @@ impl FileDialog {
     ///
     /// #### Platform specific notes regarding save dialog filters:
     /// - On macOS
-    ///     - If filter is set, all files will be grayed out (no matter the extension sadly)
-    ///     - If user does not type an extension MacOs will append first available extension from filters list
-    ///     - If user types in filename with extension MacOs will check if it exists in filters list, if not it will display appropriate message
+    ///     - If exactly one filter is set, all other file types are grayed out (no matter the extension sadly)
+    ///     - If two or more filters are registered, a dropdown accessory view (labeled "Format:" by default,
+    ///       see `set_format_label`) is shown listing each filter's name; selecting one updates which file
+    ///       types are allowed and the auto-appended extension
+    ///     - If user does not type an extension MacOs will append the first available extension from the active filter
+    ///     - If user types in filename with extension MacOs will check if it exists in the active filter's list, if
+    ///       not it will display appropriate message
     /// - On GTK
     ///     - It only filters which already existing files get shown to the user
     ///     - It does not append extensions automatically
@@ -208,8 +224,11 @@ impl AsyncFileDialog {
     /// The name of the filter will be displayed on supported platforms:
     ///   * Windows
     ///   * Linux
+    ///   * Mac (`save_file` only, and only when more than one filter is registered)
     ///
-    /// On platforms that don't support filter names, all filters will be merged into one filter
+    /// On platforms/scenarios that don't support filter names (Mac's `pick_file`/`pick_files`/
+    /// etc, or Mac's `save_file` with 0 or 1 filters registered), all filters are merged into
+    /// one flat allowed-types list
     pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.file_dialog = self.file_dialog.add_filter(name, extensions);
         self
@@ -273,6 +292,14 @@ impl AsyncFileDialog {
         self.file_dialog = self.file_dialog.set_show_hidden_files(show);
         self
     }
+
+    /// Set the label shown next to the format picker in `save_file`'s accessory view
+    /// (only shown when two or more filters are registered). Defaults to "Format:".
+    /// Supported in: `macos`.
+    pub fn set_format_label(mut self, label: impl Into<String>) -> Self {
+        self.file_dialog = self.file_dialog.set_format_label(label);
+        self
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -331,9 +358,13 @@ impl AsyncFileDialog {
     ///
     /// #### Platform specific notes regarding save dialog filters:
     /// - On MacOs
-    ///     - If filter is set, all files will be grayed out (no matter the extension sadly)
-    ///     - If user does not type an extension MacOs will append first available extension from filters list
-    ///     - If user types in filename with extension MacOs will check if it exists in filters list, if not it will display appropriate message
+    ///     - If exactly one filter is set, all other file types are grayed out (no matter the extension sadly)
+    ///     - If two or more filters are registered, a dropdown accessory view (labeled "Format:" by default,
+    ///       see `set_format_label`) is shown listing each filter's name; selecting one updates which file
+    ///       types are allowed and the auto-appended extension
+    ///     - If user does not type an extension MacOs will append the first available extension from the active filter
+    ///     - If user types in filename with extension MacOs will check if it exists in the active filter's list, if
+    ///       not it will display appropriate message
     /// - On GTK
     ///     - It only filters which already existing files get shown to the user
     ///     - It does not append extensions automatically
