@@ -160,19 +160,22 @@ impl GtkFileDialog {
     }
 }
 
+fn parent_gtk_window(opt: &FileDialog) -> *mut gtk_sys::GtkWindow {
+    let mut parent_gtk_window = std::ptr::null_mut();
+    if let Some(parent_handle) = &opt.parent {
+        unsafe {
+            parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
+        }
+    }
+    parent_gtk_window
+}
+
 impl GtkFileDialog {
     pub fn build_pick_file(opt: &FileDialog) -> Self {
-        let mut parent_gtk_window = std::ptr::null_mut();
-        if let Some(parent_handle) = &opt.parent {
-            unsafe {
-                parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
-            }
-        }
-
         let mut dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Open File"),
             GtkFileChooserAction::Open,
-            parent_gtk_window,
+            parent_gtk_window(opt),
         );
 
         dialog.add_filters(&opt.filters);
@@ -192,17 +195,10 @@ impl GtkFileDialog {
     }
 
     pub fn build_save_file(opt: &FileDialog) -> Self {
-        let mut parent_gtk_window = std::ptr::null_mut();
-        if let Some(parent_handle) = &opt.parent {
-            unsafe {
-                parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
-            }
-        }
-
         let mut dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Save File"),
             GtkFileChooserAction::Save,
-            parent_gtk_window,
+            parent_gtk_window(opt),
         );
 
         unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr as _, 1) };
@@ -231,17 +227,10 @@ impl GtkFileDialog {
     }
 
     pub fn build_pick_folder(opt: &FileDialog) -> Self {
-        let mut parent_gtk_window = std::ptr::null_mut();
-        if let Some(parent_handle) = &opt.parent {
-            unsafe {
-                parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
-            }
-        }
-
         let dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Select Folder"),
             GtkFileChooserAction::SelectFolder,
-            parent_gtk_window,
+            parent_gtk_window(opt),
         );
         dialog.set_path(opt.starting_directory.as_deref());
         dialog.set_show_hidden(opt.show_hidden_files);
@@ -259,17 +248,10 @@ impl GtkFileDialog {
     }
 
     pub fn build_pick_folders(opt: &FileDialog) -> Self {
-        let mut parent_gtk_window = std::ptr::null_mut();
-        if let Some(parent_handle) = &opt.parent {
-            unsafe {
-                parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
-            }
-        }
-
         let dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Select Folder"),
             GtkFileChooserAction::SelectFolder,
-            parent_gtk_window,
+            parent_gtk_window(opt),
         );
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
         dialog.set_path(opt.starting_directory.as_deref());
@@ -288,17 +270,10 @@ impl GtkFileDialog {
     }
 
     pub fn build_pick_files(opt: &FileDialog) -> Self {
-        let mut parent_gtk_window = std::ptr::null_mut();
-        if let Some(parent_handle) = &opt.parent {
-            unsafe {
-                parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
-            }
-        }
-
         let mut dialog = GtkFileDialog::new(
             opt.title.as_deref().unwrap_or("Open File"),
             GtkFileChooserAction::Open,
-            parent_gtk_window,
+            parent_gtk_window(opt),
         );
 
         unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };

@@ -131,7 +131,8 @@ pub(super) unsafe fn find_gtk_window(
     let mut current = toplevels;
     let mut found_window = std::ptr::null_mut();
 
-    type GdkX11WindowGetXidFn = unsafe extern "C" fn(*mut std::ffi::c_void) -> std::os::raw::c_ulong;
+    type GdkX11WindowGetXidFn =
+        unsafe extern "C" fn(*mut std::ffi::c_void) -> std::os::raw::c_ulong;
     type GdkWaylandWindowGetWlSurfaceFn =
         unsafe extern "C" fn(*mut std::ffi::c_void) -> *mut std::ffi::c_void;
 
