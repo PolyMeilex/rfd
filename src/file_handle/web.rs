@@ -6,6 +6,7 @@ use wasm_bindgen::JsCast;
 pub(crate) enum WasmFileHandleKind {
     Readable(web_sys::File),
     Writable(FileDialog),
+    Mutable(web_sys::FileSystemFileHandle),
 }
 
 #[derive(Clone)]
@@ -17,6 +18,11 @@ impl FileHandle {
         Self(WasmFileHandleKind::Readable(file))
     }
 
+    /// Wrap a [`web_sys::FileSystemFileHandle`] for reading or writing. Use with [`FileHandle::write`] or [`FileHandle::read`]
+    pub(crate) fn mutable(file: web_sys::FileSystemFileHandle) -> Self {
+        Self(WasmFileHandleKind::Mutable(file))
+    }
+
     /// Create a dummy `FileHandle`. Use with [`FileHandle::write`].
     pub(crate) fn writable(dialog: FileDialog) -> Self {
         FileHandle(WasmFileHandleKind::Writable(dialog))
@@ -26,6 +32,7 @@ impl FileHandle {
         match &self.0 {
             WasmFileHandleKind::Readable(x) => x.name(),
             WasmFileHandleKind::Writable(x) => x.file_name.clone().unwrap_or_default(),
+            WasmFileHandleKind::Mutable(x) => x.name(),
         }
     }
 
@@ -50,10 +57,22 @@ impl FileHandle {
 
             closure.forget();
 
-            if let WasmFileHandleKind::Readable(reader) = &self.0 {
-                file_reader.read_as_array_buffer(reader).unwrap();
-            } else {
-                panic!("This File Handle doesn't support reading. Use `pick_file` to get a readable FileHandle");
+            match &self.0 {
+                WasmFileHandleKind::Readable(reader) => {
+                    file_reader.read_as_array_buffer(reader).unwrap();
+                }
+                WasmFileHandleKind::Mutable(file) => {
+                    let reader_promise = file.get_file();
+                    let closure = Closure::wrap(Box::new(move |reader: JsValue| {
+                        let reader: web_sys::File = reader.unchecked_into();
+                        file_reader.read_as_array_buffer(&reader).unwrap();
+                    }) as Box<dyn FnMut(JsValue)>);
+                    let _ = reader_promise.then(&closure);
+                    closure.forget();
+                }
+                _ => {
+                    panic!("This File Handle doesn't support reading. Use `pick_file` to get a readable FileHandle");
+                }
             }
         });
 
