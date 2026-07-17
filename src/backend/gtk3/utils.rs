@@ -123,3 +123,67 @@ unsafe fn connect_idle<F: FnMut() -> glib_sys::gboolean + Send + 'static>(f: F) 
         Some(destroy_closure::<F>),
     );
 }
+
+pub(super) unsafe fn find_gtk_window(
+    parent: &raw_window_handle::RawWindowHandle,
+) -> *mut gtk_sys::GtkWindow {
+    let toplevels = gtk_sys::gtk_window_list_toplevels();
+    let mut current = toplevels;
+    let mut found_window = std::ptr::null_mut();
+
+    type GdkX11WindowGetXidFn =
+        unsafe extern "C" fn(*mut std::ffi::c_void) -> std::os::raw::c_ulong;
+    type GdkWaylandWindowGetWlSurfaceFn =
+        unsafe extern "C" fn(*mut std::ffi::c_void) -> *mut std::ffi::c_void;
+
+    let gdk_x11_window_get_xid: Option<GdkX11WindowGetXidFn> = std::mem::transmute(libc::dlsym(
+        libc::RTLD_DEFAULT,
+        b"gdk_x11_window_get_xid\0".as_ptr() as *const _,
+    ));
+    let gdk_wayland_window_get_wl_surface: Option<GdkWaylandWindowGetWlSurfaceFn> =
+        std::mem::transmute(libc::dlsym(
+            libc::RTLD_DEFAULT,
+            b"gdk_wayland_window_get_wl_surface\0".as_ptr() as *const _,
+        ));
+
+    while !current.is_null() {
+        let window = (*current).data as *mut gtk_sys::GtkWindow;
+        if gtk_sys::gtk_widget_get_realized(window as _) != 0 {
+            let gdk_window = gtk_sys::gtk_widget_get_window(window as _) as *mut std::ffi::c_void;
+            if !gdk_window.is_null() {
+                match parent {
+                    raw_window_handle::RawWindowHandle::Xlib(h) => {
+                        if let Some(get_xid) = gdk_x11_window_get_xid {
+                            if get_xid(gdk_window) == h.window {
+                                found_window = window;
+                                break;
+                            }
+                        }
+                    }
+                    raw_window_handle::RawWindowHandle::Xcb(h) => {
+                        if let Some(get_xid) = gdk_x11_window_get_xid {
+                            if get_xid(gdk_window) == h.window.get() as std::os::raw::c_ulong {
+                                found_window = window;
+                                break;
+                            }
+                        }
+                    }
+                    raw_window_handle::RawWindowHandle::Wayland(h) => {
+                        if let Some(get_surface) = gdk_wayland_window_get_wl_surface {
+                            if get_surface(gdk_window) == h.surface.as_ptr() {
+                                found_window = window;
+                                break;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        current = (*current).next;
+    }
+
+    glib_sys::g_list_free(toplevels);
+
+    found_window
+}
