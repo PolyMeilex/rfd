@@ -61,3 +61,17 @@ jobs:
       # FIXME
       if: matrix.name != 'WASM32'
       run: cargo test --target ${{ matrix.target }} ${{ matrix.flags }}
+    - name: Clippy
+      run: |
+        cargo clippy --message-format=json --target ${{ matrix.target }} ${{ matrix.flags }} | jq -r '
+          select(.reason == "compiler-message").message |
+          .spans[0] as $span |
+          (
+            .rendered 
+            | gsub("%"; "%25") 
+            | gsub("\r"; "%0D") 
+            | gsub("\n"; "%0A")
+          ) as $msg |
+          
+          "::warning file=\($span.file_name),line=\($span.line_start)::\($msg)"
+        '
