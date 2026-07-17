@@ -161,13 +161,11 @@ impl GtkFileDialog {
 }
 
 fn parent_gtk_window(opt: &FileDialog) -> *mut gtk_sys::GtkWindow {
-    let mut parent_gtk_window = std::ptr::null_mut();
     if let Some(parent_handle) = &opt.parent {
-        unsafe {
-            parent_gtk_window = super::super::utils::find_gtk_window(parent_handle);
-        }
+        unsafe { super::super::utils::find_gtk_window(parent_handle) }
+    } else {
+        std::ptr::null_mut()
     }
-    parent_gtk_window
 }
 
 impl GtkFileDialog {
