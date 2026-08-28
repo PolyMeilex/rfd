@@ -59,7 +59,7 @@ impl<'a> WasmDialog<'a> {
             let title_el: HtmlElement = document.create_element("div").unwrap().dyn_into().unwrap();
 
             title_el.set_id("rfd-title");
-            title_el.set_inner_html(title);
+            title_el.set_text_content(Some(title));
 
             card.append_child(&title_el).unwrap();
             title_el
