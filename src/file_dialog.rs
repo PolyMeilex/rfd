@@ -36,7 +36,7 @@ unsafe impl Sync for FileDialog {}
 
 impl FileDialog {
     /// New file dialog builder
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_family = "wasm"))]
     pub fn new() -> Self {
         Default::default()
     }
@@ -133,13 +133,13 @@ impl FileDialog {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 use crate::backend::{FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl};
 
 #[cfg(target_os = "macos")]
 use crate::backend::FileOrFolderPickerDialogImpl;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 impl FileDialog {
     /// Pick one file
     pub fn pick_file(self) -> Option<PathBuf> {
@@ -306,7 +306,7 @@ impl AsyncFileDialog {
 use crate::backend::AsyncFileOrFolderPickerDialogImpl;
 use crate::backend::AsyncFilePickerDialogImpl;
 use crate::backend::AsyncFileSaveDialogImpl;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 use crate::backend::AsyncFolderPickerDialogImpl;
 
 use std::future::Future;
@@ -322,7 +322,7 @@ impl AsyncFileDialog {
         AsyncFilePickerDialogImpl::pick_files_async(self.file_dialog)
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_family = "wasm"))]
     /// Pick one folder
     ///
     /// Does not exist in `WASM32`
@@ -330,7 +330,7 @@ impl AsyncFileDialog {
         AsyncFolderPickerDialogImpl::pick_folder_async(self.file_dialog)
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_family = "wasm"))]
     /// Pick multiple folders
     ///
     /// Does not exist in `WASM32`
