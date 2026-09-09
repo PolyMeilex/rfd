@@ -19,7 +19,7 @@ fn main() {
 
     let window = builder.build(&event_loop).unwrap();
 
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(target_family = "wasm")]
     {
         use winit::platform::web::WindowExtWebSys;
 
@@ -41,9 +41,9 @@ fn main() {
     event_loop
         .run(move |event, target| match event {
             event::Event::UserEvent(name) => {
-                #[cfg(target_arch = "wasm32")]
+                #[cfg(target_family = "wasm")]
                 alert(&name);
-                #[cfg(not(target_arch = "wasm32"))]
+                #[cfg(not(target_family = "wasm"))]
                 println!("{}", name);
             }
             event::Event::WindowEvent { event, .. } => match event {
@@ -205,23 +205,23 @@ fn main() {
 use std::future::Future;
 
 struct Executor {
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_family = "wasm"))]
     pool: futures::executor::ThreadPool,
 }
 
 impl Executor {
     fn new() -> Self {
         Self {
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(not(target_family = "wasm"))]
             pool: futures::executor::ThreadPool::new().unwrap(),
         }
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(target_family = "wasm"))]
     fn execut<F: Future<Output = ()> + Send + 'static>(&self, f: F) {
         self.pool.spawn_ok(f);
     }
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(target_family = "wasm")]
     fn execut<F: Future<Output = ()> + 'static>(&self, f: F) {
         wasm_bindgen_futures::spawn_local(f);
     }

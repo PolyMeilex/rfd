@@ -136,7 +136,7 @@ pub use file_handle::FileHandle;
 mod file_dialog;
 mod oneshot;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub use file_dialog::FileDialog;
 
 pub use file_dialog::AsyncFileDialog;
