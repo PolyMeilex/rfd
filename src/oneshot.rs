@@ -7,13 +7,16 @@ use std::{
 };
 
 #[must_use = "futures do nothing unless you `.await` or poll them"]
+#[allow(dead_code)]
 pub struct Receiver<T>(Arc<Channel<T>>);
 impl<T> Unpin for Receiver<T> {}
 
+#[allow(dead_code)]
 pub struct Sender<T>(Arc<Channel<T>>);
 impl<T> Unpin for Sender<T> {}
 
 #[derive(Default)]
+#[allow(dead_code)]
 enum State<T> {
     Ready(T),
     #[default]
@@ -21,13 +24,16 @@ enum State<T> {
     Canceled,
 }
 
+#[allow(dead_code)]
 struct Inner<T> {
     rx_waker: Option<Waker>,
     state: State<T>,
 }
 
+#[allow(dead_code)]
 struct Channel<T>(Mutex<Inner<T>>);
 
+#[allow(dead_code)]
 pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
     let inner = Arc::new(Channel::new());
     (Sender(inner.clone()), Receiver(inner))
@@ -41,6 +47,7 @@ impl<T> Channel<T> {
         }))
     }
 
+    #[allow(dead_code)]
     fn send(&self, t: T) -> Result<(), T> {
         let Ok(mut inner) = self.0.lock() else {
             debug_assert!(false, "Lock poisoned");
@@ -94,6 +101,7 @@ impl<T> Channel<T> {
 }
 
 impl<T> Sender<T> {
+    #[allow(dead_code)]
     pub fn send(self, t: T) -> Result<(), T> {
         let res = self.0.send(t);
         drop(self);
