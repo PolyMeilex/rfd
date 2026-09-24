@@ -108,25 +108,25 @@
 //! | ------------- |
 //! | 🚧            |
 //!
-//! | Feature      | Linux | Windows | MacOS     | Wasm32 |
-//! | ------------ | ----- | ------- | --------- | ------ |
-//! | SingleFile   | ✔     | ✔       | ✔         | ✔      |
-//! | MultipleFile | ✔     | ✔       | ✔         | ✔      |
-//! | PickFolder   | ✔     | ✔       | ✔         | ✖      |
-//! | SaveFile     | ✔     | ✔       | ✔         | ✖      |
-//! | Filters      | ✔     | ✔       | ✔         | ✔      |
-//! | StartingPath | ✔     | ✔       | ✔         | ✖      |
-//! | Async        | ✔     | ✔       | ✔         | ✔      |
+//! | Feature      | Linux | Windows | MacOS     | Wasm32 | Others (Web) |
+//! | ------------ | ----- | ------- | --------- | ------ | ------------ |
+//! | SingleFile   | ✔     | ✔       | ✔         | ✔      | ✔          |
+//! | MultipleFile | ✔     | ✔       | ✔         | ✔      | ✔          |
+//! | PickFolder   | ✔     | ✔       | ✔         | ✖      | ✔          |
+//! | SaveFile     | ✔     | ✔       | ✔         | ✖      | ✔          |
+//! | Filters      | ✔     | ✔       | ✔         | ✔      | ✔          |
+//! | StartingPath | ✔     | ✔       | ✔         | ✖      | ✔          |
+//! | Async        | ✔     | ✔       | ✔         | ✔      | ✔          |
 //!
 //! # rfd-extras
 //!
 //! AKA features that are not file related
 //!
-//! | Feature       | Linux        | Windows | MacOS | Wasm32 |
-//! | ------------- | -----        | ------- | ----- | ------ |
-//! | MessageDialog | ✔            | ✔       | ✔     | ✔      |
-//! | PromptDialog  |              |         |       |        |
-//! | ColorPicker   |              |         |       |        |
+//! | Feature       | Linux        | Windows | MacOS | Wasm32 | Others (Web) |
+//! | ------------- | -----        | ------- | ----- | ------ | ------------ |
+//! | MessageDialog | ✔            | ✔       | ✔     | ✔      | ✔          |
+//! | PromptDialog  |              |         |       |        |              |
+//! | ColorPicker   |              |         |       |        |              |
 
 mod backend;
 
