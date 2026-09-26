@@ -163,7 +163,7 @@ impl<'a> WasmDialog<'a> {
                     move || {
                         rej.call0(&JsValue::undefined()).unwrap();
                         input.set_value("");
-                        body_for_cancel.remove_child(&overlay_for_cancel).unwrap();
+                        let _ = body_for_cancel.remove_child(&overlay_for_cancel);
                     }
                 }) as Box<dyn FnMut()>);
 
