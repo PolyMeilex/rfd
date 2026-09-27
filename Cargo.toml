@@ -2,6 +2,7 @@
 name = "rfd"
 version = "0.17.2"
 edition = "2021"
+rust-version = "1.92"
 
 authors = ["Poly <marynczak.bartlomiej@gmail.com>"]
 description = "Rusty File Dialog"
