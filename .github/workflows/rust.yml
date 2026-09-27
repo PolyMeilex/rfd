@@ -51,9 +51,9 @@ jobs:
     - name: "[Ubuntu XDG] install dependencies"
       if: startsWith(matrix.name, 'Ubuntu XDG')
       run: sudo apt update && sudo apt install libwayland-dev
-    - name: "[WASM] rustup"
-      if: matrix.name == 'WASM32'
-      run: rustup target add wasm32-unknown-unknown
+    - uses: dtolnay/rust-toolchain@1.92
+      with:
+        targets: ${{ matrix.target }}
     - uses: Swatinem/rust-cache@v2
     - name: Build
       run: cargo build --target ${{ matrix.target }} ${{ matrix.flags }}

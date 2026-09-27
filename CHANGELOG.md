@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- MSRV is now 1.92
 - Fix macOS file dialogs ignoring `set_directory` when `set_file_name` is also used.
 - Add `FileDialog::set_show_hidden_files` and `AsyncFileDialog::set_show_hidden_files` to control hidden file visibility. Supported on macOS, Windows, and Linux (GTK3).
 - Honor `FileDialog::set_directory` and `AsyncFileDialog::set_directory` when using the zenity fallback backend on Linux.
