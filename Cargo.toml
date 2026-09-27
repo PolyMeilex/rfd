@@ -83,7 +83,7 @@ windows-sys = { version = "0.61", features = [
 percent-encoding = "2"
 libc = "0.2"
 # XDG Desktop Portal
-pollster = { version = "0.4", optional = true }
+pollster = { version = "1.0", optional = true }
 wayland-backend = { version = "0.3", features = [
     "client_system",
 ], optional = true }
@@ -93,9 +93,9 @@ wayland-protocols = { version = "0.32", features = [
     "client",
 ], optional = true }
 # GTK
-gtk-sys = { version = "0.18.0", features = ["v3_24"], optional = true }
-glib-sys = { version = "0.18.0", optional = true }
-gobject-sys = { version = "0.18.0", optional = true }
+gtk-sys = { version = "0.19.0", features = ["v3_24"], optional = true }
+glib-sys = { version = "0.22.9", optional = true }
+gobject-sys = { version = "0.22.9", optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen = "0.2.69"
