@@ -92,14 +92,13 @@ impl FilePickerDialogImpl for FileDialog {
             filters: self.filters.iter().map(Into::into).collect(),
             current_folder: path_to_cstring(self.starting_directory.as_deref()),
             ..Default::default()
-        })
-        .map(portal::uris_to_paths);
+        });
 
-        if let Some(mut res) = res {
-            if res.is_empty() {
-                None
-            } else {
-                Some(res.remove(0))
+        if let Some(res) = res {
+            match res {
+                portal::Response::Selected(res) if res.is_empty() => None,
+                portal::Response::Selected(mut res) => Some(res.remove(0)),
+                portal::Response::Canceled => None,
             }
         } else {
             warn!("Using zenity fallback");
@@ -125,14 +124,12 @@ impl FilePickerDialogImpl for FileDialog {
             filters: self.filters.iter().map(Into::into).collect(),
             current_folder: path_to_cstring(self.starting_directory.as_deref()),
             ..Default::default()
-        })
-        .map(portal::uris_to_paths);
+        });
 
         if let Some(res) = res {
-            if res.is_empty() {
-                None
-            } else {
-                Some(res)
+            match res {
+                portal::Response::Selected(res) => Some(res),
+                portal::Response::Canceled => None,
             }
         } else {
             warn!("Using zenity fallback");
@@ -179,14 +176,13 @@ impl FolderPickerDialogImpl for FileDialog {
             filters: self.filters.iter().map(Into::into).collect(),
             current_folder: path_to_cstring(self.starting_directory.as_deref()),
             ..Default::default()
-        })
-        .map(portal::uris_to_paths);
+        });
 
-        if let Some(mut res) = res {
-            if res.is_empty() {
-                None
-            } else {
-                Some(res.remove(0))
+        if let Some(res) = res {
+            match res {
+                portal::Response::Selected(res) if res.is_empty() => None,
+                portal::Response::Selected(mut res) => Some(res.remove(0)),
+                portal::Response::Canceled => None,
             }
         } else {
             warn!("Using zenity fallback");
@@ -213,14 +209,12 @@ impl FolderPickerDialogImpl for FileDialog {
             filters: self.filters.iter().map(Into::into).collect(),
             current_folder: path_to_cstring(self.starting_directory.as_deref()),
             ..Default::default()
-        })
-        .map(portal::uris_to_paths);
+        });
 
         if let Some(res) = res {
-            if res.is_empty() {
-                None
-            } else {
-                Some(res)
+            match res {
+                portal::Response::Selected(res) => Some(res),
+                portal::Response::Canceled => None,
             }
         } else {
             warn!("Using zenity fallback");
@@ -266,14 +260,13 @@ impl FileSaveDialogImpl for FileDialog {
             current_folder: path_to_cstring(self.starting_directory.as_deref()),
             current_name: str_to_cstring(self.file_name.as_deref()),
             ..Default::default()
-        })
-        .map(portal::uris_to_paths);
+        });
 
-        if let Some(mut res) = res {
-            if res.is_empty() {
-                None
-            } else {
-                Some(res.remove(0))
+        if let Some(res) = res {
+            match res {
+                portal::Response::Selected(res) if res.is_empty() => None,
+                portal::Response::Selected(mut res) => Some(res.remove(0)),
+                portal::Response::Canceled => None,
             }
         } else {
             warn!("Using zenity fallback");
