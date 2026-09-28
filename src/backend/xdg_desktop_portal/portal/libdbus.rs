@@ -147,6 +147,7 @@ impl Drop for Connection {
     fn drop(&mut self) {
         unsafe {
             f!(dbus_connection_close)(self.as_ptr());
+            f!(dbus_connection_unref)(self.as_ptr());
         }
     }
 }
