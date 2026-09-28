@@ -128,7 +128,8 @@ enum ResponseCode {
 
 fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Vec<CString>> {
     loop {
-        conn.read_write(-1);
+        let connected = conn.read_write(-1);
+
         while let Some(signal) = conn.pop_message() {
             if signal.is_signal(c"org.freedesktop.portal.Request", c"Response") {
                 let Some(path) = signal.get_path() else {
@@ -140,6 +141,11 @@ fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Vec<CS
                     return parse_response(&signal);
                 }
             }
+        }
+
+        if !connected {
+            log::error!("Lost connection to the portal while waiting for a response");
+            return None;
         }
     }
 }

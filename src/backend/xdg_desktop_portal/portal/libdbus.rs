@@ -122,10 +122,9 @@ impl Connection {
         }
     }
 
-    pub fn read_write(&self, timeout_milliseconds: c_int) {
-        unsafe {
-            f!(dbus_connection_read_write)(self.as_ptr(), timeout_milliseconds);
-        }
+    /// Returns `true` if still connected
+    pub fn read_write(&self, timeout_milliseconds: c_int) -> bool {
+        unsafe { f!(dbus_connection_read_write)(self.as_ptr(), timeout_milliseconds) != 0 }
     }
 
     pub fn pop_message(&self) -> Option<Message> {
