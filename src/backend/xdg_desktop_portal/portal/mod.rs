@@ -13,7 +13,7 @@ use libdbus::*;
 
 pub use file_dialog::{FileFilter, FilePath, HandleToken, OpenFileOptions, SaveFileOptions};
 
-pub fn uris_to_paths(uris: Vec<CString>) -> Vec<PathBuf> {
+fn uris_to_paths(uris: Vec<CString>) -> Vec<PathBuf> {
     uris.into_iter()
         .filter_map(|uri| {
             let bytes: Vec<u8> = percent_encoding::percent_decode(uri.as_bytes()).collect();
@@ -26,7 +26,7 @@ pub fn uris_to_paths(uris: Vec<CString>) -> Vec<PathBuf> {
         .collect()
 }
 
-pub fn open_file(opts: OpenFileOptions) -> Option<Vec<CString>> {
+pub fn open_file(opts: OpenFileOptions) -> Option<Response> {
     let mut conn = Connection::new()?;
 
     let handle_path = generate_response_path(&mut conn, &opts.handle_token);
@@ -52,7 +52,7 @@ pub fn open_file(opts: OpenFileOptions) -> Option<Vec<CString>> {
     wait_for_response(&mut conn, &got_handle_path)
 }
 
-pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
+pub fn save_file(opts: SaveFileOptions) -> Option<Response> {
     let mut conn = Connection::new()?;
 
     let handle_path = generate_response_path(&mut conn, &opts.handle_token);
@@ -116,10 +116,10 @@ enum ResponseCode {
     // Other = 2,
 }
 
-fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Vec<CString>> {
+fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Response> {
+    let mut connected = true;
     loop {
-        let connected = conn.read_write(-1);
-
+        // Drain before blocking
         while let Some(signal) = conn.pop_message() {
             if signal.is_signal(c"org.freedesktop.portal.Request", c"Response") {
                 let Some(path) = signal.get_path() else {
@@ -137,10 +137,18 @@ fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Vec<CS
             log::error!("Lost connection to the portal while waiting for a response");
             return None;
         }
+
+        connected = conn.read_write(-1);
     }
 }
 
-fn parse_response(msg: &Message) -> Option<Vec<CString>> {
+#[derive(Debug)]
+pub enum Response {
+    Selected(Vec<PathBuf>),
+    Canceled,
+}
+
+fn parse_response(msg: &Message) -> Option<Response> {
     let mut iter = MessageIter::from_msg(msg);
 
     let Some(response_code) = iter.get_u32() else {
@@ -148,7 +156,7 @@ fn parse_response(msg: &Message) -> Option<Vec<CString>> {
         return None;
     };
     if response_code != ResponseCode::Success as u32 {
-        return Some(vec![]);
+        return Some(Response::Canceled);
     }
 
     if !iter.next() {
@@ -176,7 +184,9 @@ fn parse_response(msg: &Message) -> Option<Vec<CString>> {
         if key.as_c_str() == c"uris" {
             if entry_iter.get_arg_type() == ffi::DBUS_TYPE_VARIANT {
                 let mut var_iter = entry_iter.iter_recurse();
-                return Some(var_iter.get_string_array());
+                return Some(Response::Selected(uris_to_paths(
+                    var_iter.get_string_array(),
+                )));
             } else {
                 log::error!(
                     "Response.uris type {} != VARIANT",
