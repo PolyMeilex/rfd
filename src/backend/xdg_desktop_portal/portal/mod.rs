@@ -53,7 +53,7 @@ pub fn open_file(opts: OpenFileOptions) -> Option<Vec<CString>> {
         register_response_listener(&mut conn, &got_handle_path);
     }
 
-    wait_for_response(&mut conn, &handle_path)
+    wait_for_response(&mut conn, &got_handle_path)
 }
 
 pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
@@ -83,7 +83,7 @@ pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
         register_response_listener(&mut conn, &got_handle_path);
     }
 
-    wait_for_response(&mut conn, &handle_path)
+    wait_for_response(&mut conn, &got_handle_path)
 }
 
 fn generate_response_path(conn: &mut Connection, handle_token: &HandleToken) -> CString {
