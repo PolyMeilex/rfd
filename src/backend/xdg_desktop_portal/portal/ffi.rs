@@ -82,6 +82,7 @@ pub struct Libdbus {
 
     // Connection Management
     pub dbus_connection_close: unsafe extern "C" fn(*mut DBusConnection),
+    pub dbus_connection_unref: unsafe extern "C" fn(*mut DBusConnection),
     pub dbus_connection_flush: unsafe extern "C" fn(*mut DBusConnection),
     pub dbus_connection_send_with_reply_and_block: unsafe extern "C" fn(
         *mut DBusConnection,
@@ -165,6 +166,7 @@ impl Libdbus {
                 dbus_bus_add_match,
                 // Connection Management
                 dbus_connection_close,
+                dbus_connection_unref,
                 dbus_connection_flush,
                 dbus_connection_send_with_reply_and_block,
                 dbus_connection_read_write,

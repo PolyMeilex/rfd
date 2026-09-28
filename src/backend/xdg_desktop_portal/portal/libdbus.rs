@@ -68,7 +68,6 @@ impl Drop for DbusError {
 
 pub struct Connection {
     conn: NonNull<ffi::DBusConnection>,
-    err: DbusError,
 }
 
 impl Connection {
@@ -89,17 +88,8 @@ impl Connection {
 
             Some(Self {
                 conn: NonNull::new(ptr)?,
-                err,
             })
         }
-    }
-
-    pub fn err(&mut self) -> &mut DbusError {
-        &mut self.err
-    }
-
-    pub fn err_ptr(&mut self) -> &mut ffi::DBusError {
-        self.err.as_ptr()
     }
 
     pub fn as_ptr(&self) -> *mut ffi::DBusConnection {
@@ -110,9 +100,16 @@ impl Connection {
         unsafe { CStr::from_ptr(f!(dbus_bus_get_unique_name)(self.as_ptr())).to_owned() }
     }
 
-    pub fn add_match(&mut self, match_rule: &CStr) {
+    pub fn add_match(&mut self, match_rule: &CStr) -> Result<(), DbusError> {
+        let mut err = DbusError::new();
         unsafe {
-            f!(dbus_bus_add_match)(self.as_ptr(), match_rule.as_ptr(), self.err_ptr());
+            f!(dbus_bus_add_match)(self.as_ptr(), match_rule.as_ptr(), err.as_ptr());
+        }
+
+        if err.is_err() {
+            Err(err)
+        } else {
+            Ok(())
         }
     }
 
@@ -122,24 +119,30 @@ impl Connection {
         }
     }
 
-    pub fn read_write(&self, timeout_milliseconds: c_int) {
-        unsafe {
-            f!(dbus_connection_read_write)(self.as_ptr(), timeout_milliseconds);
-        }
+    /// Returns `true` if still connected
+    pub fn read_write(&self, timeout_milliseconds: c_int) -> bool {
+        unsafe { f!(dbus_connection_read_write)(self.as_ptr(), timeout_milliseconds) != 0 }
     }
 
     pub fn pop_message(&self) -> Option<Message> {
         unsafe { Message::new(f!(dbus_connection_pop_message)(self.as_ptr())) }
     }
 
-    pub fn send_and_block(&mut self, msg: &Message) -> Option<Message> {
-        unsafe {
+    pub fn send_and_block(&mut self, msg: &Message) -> Result<Option<Message>, DbusError> {
+        let mut err = DbusError::new();
+        let reply = unsafe {
             Message::new(f!(dbus_connection_send_with_reply_and_block)(
                 self.as_ptr(),
                 msg.as_ptr(),
                 -1,
-                self.err_ptr(),
+                err.as_ptr(),
             ))
+        };
+
+        if err.is_err() {
+            Err(err)
+        } else {
+            Ok(reply)
         }
     }
 }
@@ -148,6 +151,7 @@ impl Drop for Connection {
     fn drop(&mut self) {
         unsafe {
             f!(dbus_connection_close)(self.as_ptr());
+            f!(dbus_connection_unref)(self.as_ptr());
         }
     }
 }

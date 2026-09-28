@@ -32,14 +32,10 @@ pub fn open_file(opts: OpenFileOptions) -> Option<Vec<CString>> {
     let handle_path = generate_response_path(&mut conn, &opts.handle_token);
     register_response_listener(&mut conn, &handle_path);
 
-    let reply = conn.send_and_block(&Message::open_file(opts));
-
-    if conn.err().is_err() {
-        log::error!("OpenFile failed: {}", conn.err());
-        return None;
-    }
-
-    let reply = reply?;
+    let reply = conn
+        .send_and_block(&Message::open_file(opts))
+        .inspect_err(|err| log::error!("OpenFile failed: {err}"))
+        .ok()??;
 
     let mut iter = MessageIter::from_msg(&reply);
 
@@ -53,7 +49,7 @@ pub fn open_file(opts: OpenFileOptions) -> Option<Vec<CString>> {
         register_response_listener(&mut conn, &got_handle_path);
     }
 
-    wait_for_response(&mut conn, &handle_path)
+    wait_for_response(&mut conn, &got_handle_path)
 }
 
 pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
@@ -62,14 +58,10 @@ pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
     let handle_path = generate_response_path(&mut conn, &opts.handle_token);
     register_response_listener(&mut conn, &handle_path);
 
-    let reply = conn.send_and_block(&Message::save_file(opts));
-
-    if conn.err().is_err() {
-        log::error!("OpenFile failed: {}", conn.err());
-        return None;
-    }
-
-    let reply = reply?;
+    let reply = conn
+        .send_and_block(&Message::save_file(opts))
+        .inspect_err(|err| log::error!("SaveFile failed: {err}"))
+        .ok()??;
 
     let mut iter = MessageIter::from_msg(&reply);
 
@@ -83,7 +75,7 @@ pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
         register_response_listener(&mut conn, &got_handle_path);
     }
 
-    wait_for_response(&mut conn, &handle_path)
+    wait_for_response(&mut conn, &got_handle_path)
 }
 
 fn generate_response_path(conn: &mut Connection, handle_token: &HandleToken) -> CString {
@@ -110,11 +102,9 @@ fn register_response_listener(conn: &mut Connection, handle_path: &CStr) {
             .join(","),
         )
         .unwrap(),
-    );
-
-    if conn.err().is_err() {
-        log::error!("Failed to add match rule: {}", conn.err());
-    }
+    )
+    .inspect_err(|err| log::error!("Failed to add match rule: {err}"))
+    .ok();
 
     conn.flush();
 }
@@ -128,7 +118,8 @@ enum ResponseCode {
 
 fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Vec<CString>> {
     loop {
-        conn.read_write(-1);
+        let connected = conn.read_write(-1);
+
         while let Some(signal) = conn.pop_message() {
             if signal.is_signal(c"org.freedesktop.portal.Request", c"Response") {
                 let Some(path) = signal.get_path() else {
@@ -140,6 +131,11 @@ fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Vec<CS
                     return parse_response(&signal);
                 }
             }
+        }
+
+        if !connected {
+            log::error!("Lost connection to the portal while waiting for a response");
+            return None;
         }
     }
 }
