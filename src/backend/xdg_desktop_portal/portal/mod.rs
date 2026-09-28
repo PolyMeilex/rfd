@@ -32,14 +32,10 @@ pub fn open_file(opts: OpenFileOptions) -> Option<Vec<CString>> {
     let handle_path = generate_response_path(&mut conn, &opts.handle_token);
     register_response_listener(&mut conn, &handle_path);
 
-    let reply = conn.send_and_block(&Message::open_file(opts));
-
-    if conn.err().is_err() {
-        log::error!("OpenFile failed: {}", conn.err());
-        return None;
-    }
-
-    let reply = reply?;
+    let reply = conn
+        .send_and_block(&Message::open_file(opts))
+        .inspect_err(|err| log::error!("OpenFile failed: {err}"))
+        .ok()??;
 
     let mut iter = MessageIter::from_msg(&reply);
 
@@ -62,14 +58,10 @@ pub fn save_file(opts: SaveFileOptions) -> Option<Vec<CString>> {
     let handle_path = generate_response_path(&mut conn, &opts.handle_token);
     register_response_listener(&mut conn, &handle_path);
 
-    let reply = conn.send_and_block(&Message::save_file(opts));
-
-    if conn.err().is_err() {
-        log::error!("OpenFile failed: {}", conn.err());
-        return None;
-    }
-
-    let reply = reply?;
+    let reply = conn
+        .send_and_block(&Message::save_file(opts))
+        .inspect_err(|err| log::error!("SaveFile failed: {err}"))
+        .ok()??;
 
     let mut iter = MessageIter::from_msg(&reply);
 
@@ -110,11 +102,9 @@ fn register_response_listener(conn: &mut Connection, handle_path: &CStr) {
             .join(","),
         )
         .unwrap(),
-    );
-
-    if conn.err().is_err() {
-        log::error!("Failed to add match rule: {}", conn.err());
-    }
+    )
+    .inspect_err(|err| log::error!("Failed to add match rule: {err}"))
+    .ok();
 
     conn.flush();
 }
