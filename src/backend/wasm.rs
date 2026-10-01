@@ -1,16 +1,143 @@
 mod file_dialog;
 
+use crate::file_dialog::Filter;
 use crate::{
     file_dialog::FileDialog, file_handle::WasmFileHandleKind, FileHandle, MessageDialogResult,
 };
+use js_sys::Promise;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlAnchorElement, HtmlButtonElement, HtmlElement, HtmlInputElement};
 
+// Minimal copy of unstable types from web_sys
+
+#[wasm_bindgen]
+extern "C" {
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[wasm_bindgen (extends = js_sys::Object, js_name = FilePickerOptions)]
+    pub type FilePickerAcceptType;
+
+    #[wasm_bindgen(extends = js_sys::Object)]
+    #[derive(Clone, Debug)]
+    pub type AcceptMap;
+
+    // Because we don't know mime types, we only ever set this (dubiously valid) wildcard mime type
+    // so instead of having a generic setter, we just have this one
+    #[wasm_bindgen(method, setter = "*/*")]
+    pub fn set_wildcard_mime_type(this: &AcceptMap, val: &js_sys::Array);
+
+    #[wasm_bindgen(method, setter = "description")]
+    pub fn set_description(this: &FilePickerAcceptType, val: &str);
+
+    #[wasm_bindgen(method, setter = "accept")]
+    pub fn set_accept(this: &FilePickerAcceptType, val: &AcceptMap);
+
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen (extends = js_sys::Object, js_name = FilePickerOptions)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    type OpenFilePickerOptions;
+
+    #[wasm_bindgen(extends = js_sys::Object, js_name = SaveFilePickerOptions)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    type SaveFilePickerOptions;
+
+    #[wasm_bindgen(method, setter = "multiple")]
+    fn set_multiple(this: &OpenFilePickerOptions, val: bool);
+
+    #[wasm_bindgen(method, setter = "suggestedName")]
+    fn set_suggested_name(this: &SaveFilePickerOptions, val: Option<&str>);
+
+    // These types are unfortunately under specified,
+    // it needs a higher version of wasm-bindgen be typed properly
+
+    #[wasm_bindgen(method, setter = "types")]
+    fn set_types(this: &OpenFilePickerOptions, val: &js_sys::Array);
+
+    #[wasm_bindgen(method, setter = "types")]
+    fn set_types(this: &SaveFilePickerOptions, val: &js_sys::Array);
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(catch, js_name = showOpenFilePicker)]
+    fn show_open_file_picker() -> Result<Promise, JsValue>;
+
+    #[wasm_bindgen(catch, js_name = showSaveFilePicker)]
+    fn show_save_file_picker() -> Result<Promise, JsValue>;
+
+    #[wasm_bindgen(catch, js_name = showOpenFilePicker)]
+    fn show_open_file_picker_with_options(
+        options: &OpenFilePickerOptions,
+    ) -> Result<Promise, JsValue>;
+
+    #[wasm_bindgen(catch, js_name = showSaveFilePicker)]
+    fn show_save_file_picker_with_options(
+        options: &SaveFilePickerOptions,
+    ) -> Result<Promise, JsValue>;
+}
+
+impl OpenFilePickerOptions {
+    fn new() -> Self {
+        js_sys::Object::new().unchecked_into()
+    }
+}
+
+impl SaveFilePickerOptions {
+    fn new() -> Self {
+        js_sys::Object::new().unchecked_into()
+    }
+}
+
+impl FilePickerAcceptType {
+    fn new() -> Self {
+        js_sys::Object::new().unchecked_into()
+    }
+
+    fn from_filter(filter: &Filter) -> Self {
+        let accept = FilePickerAcceptType::new();
+        accept.set_description(&filter.name);
+
+        let map = AcceptMap::new();
+        let ext_array = filter
+            .extensions
+            .iter()
+            .map(|e| JsValue::from_str(e))
+            .collect();
+        map.set_wildcard_mime_type(&ext_array);
+
+        accept.set_accept(&map);
+        accept
+    }
+
+    fn from_filters(filters: &[Filter]) -> js_sys::Array {
+        let types = js_sys::Array::new();
+        for filter in filters.iter() {
+            types.push(&Self::from_filter(filter));
+        }
+        types
+    }
+}
+
+impl AcceptMap {
+    pub fn new() -> Self {
+        js_sys::Object::new().unchecked_into()
+    }
+}
+
+fn check_exists(obj: &JsValue, name: &str) -> bool {
+    js_sys::Reflect::get(obj, &JsValue::from_str(name))
+        .map(|val| val.dyn_ref::<js_sys::Function>().is_some())
+        .unwrap_or(false)
+}
+
 #[derive(Clone, Debug)]
 pub enum FileKind<'a> {
     In(FileDialog),
-    Out(FileDialog, &'a [u8]),
+    OutLate(FileDialog, &'a [u8]),
+    OutEarly(FileDialog),
 }
 
 #[derive(Clone, Debug)]
@@ -21,6 +148,7 @@ enum HtmlIoElement<'a> {
         name: String,
         data: &'a [u8],
     },
+    Mutable(HtmlAnchorElement, Vec<Filter>, Option<String>),
 }
 
 pub struct WasmDialog<'a> {
@@ -52,7 +180,8 @@ impl<'a> WasmDialog<'a> {
 
         let title = match opt {
             FileKind::In(dialog) => &dialog.title,
-            FileKind::Out(dialog, _) => &dialog.title,
+            FileKind::OutLate(dialog, _) => &dialog.title,
+            FileKind::OutEarly(dialog) => &dialog.title,
         }
         .as_ref()
         .map(|title| {
@@ -86,7 +215,7 @@ impl<'a> WasmDialog<'a> {
                 card.append_child(&input).unwrap();
                 HtmlIoElement::Input(input)
             }
-            FileKind::Out(dialog, data) => {
+            FileKind::OutLate(dialog, data) => {
                 let output_el = document.create_element("a").unwrap();
                 let output: HtmlAnchorElement = wasm_bindgen::JsCast::dyn_into(output_el).unwrap();
 
@@ -99,6 +228,16 @@ impl<'a> WasmDialog<'a> {
                     name: dialog.file_name.clone().unwrap_or_default(),
                     data,
                 }
+            }
+            FileKind::OutEarly(dialog) => {
+                let output_el = document.create_element("a").unwrap();
+                let output: HtmlAnchorElement = wasm_bindgen::JsCast::dyn_into(output_el).unwrap();
+
+                output.set_id("rfd-output");
+                output.set_inner_text("click here to download your file");
+
+                card.append_child(&output).unwrap();
+                HtmlIoElement::Mutable(output, dialog.filters.clone(), dialog.file_name.clone())
             }
         };
 
@@ -257,6 +396,7 @@ impl<'a> WasmDialog<'a> {
                     body.append_child(&overlay).ok();
                 })
             }
+            HtmlIoElement::Mutable(..) => unreachable!(),
         };
 
         let future = wasm_bindgen_futures::JsFuture::from(promise);
@@ -291,6 +431,35 @@ impl<'a> WasmDialog<'a> {
     }
 
     async fn pick_files(self) -> Option<Vec<FileHandle>> {
+        let window = web_sys::window().expect("Window not found");
+        if check_exists(&window, "showOpenFilePicker")
+            && window.navigator().user_activation().is_active()
+        {
+            // Browsers require transient user activation to open the file picker from JS.
+            // If we have it, we can open it immediately instead of showing the popup.
+            let options = OpenFilePickerOptions::new();
+            options.set_multiple(true);
+
+            if let HtmlIoElement::Mutable(_, filters, _) = &self.io {
+                options.set_types(&FilePickerAcceptType::from_filters(filters));
+            } else {
+                panic!("Internal error: Pick files only on input wasm dialog")
+            }
+
+            let future = show_open_file_picker_with_options(&options).unwrap();
+            if let Ok(files) = wasm_bindgen_futures::JsFuture::from(future).await {
+                let files: js_sys::Array = files.unchecked_into();
+                return Some(
+                    files
+                        .into_iter()
+                        .map(|elem| FileHandle::mutable(elem.unchecked_into()))
+                        .collect(),
+                );
+            } else {
+                return None;
+            }
+        }
+
         if let HtmlIoElement::Input(input) = &self.io {
             input.set_multiple(true);
         } else {
@@ -302,7 +471,122 @@ impl<'a> WasmDialog<'a> {
         self.get_results()
     }
 
+    async fn try_open_writable_file(self) -> Option<FileHandle> {
+        let window = web_sys::window().expect("Window not found");
+        if !check_exists(&window, "showSaveFilePicker") {
+            unreachable!();
+        }
+
+        if window.navigator().user_activation().is_active() {
+            let options = if let HtmlIoElement::Mutable(_, filters, file_name) = &self.io {
+                let options = SaveFilePickerOptions::new();
+                options.set_types(&FilePickerAcceptType::from_filters(filters));
+                options.set_suggested_name(file_name.as_deref());
+
+                options
+            } else {
+                panic!("Internal error: TODO")
+            };
+
+            // Browsers require transient user activation to open the file picker from JS.
+            // If we have it, we can open it immediately instead of showing the popup.
+            let future = show_save_file_picker_with_options(&options).unwrap();
+            if let Ok(file) = wasm_bindgen_futures::JsFuture::from(future).await {
+                Some(FileHandle::mutable(file.unchecked_into()))
+            } else {
+                None
+            }
+        } else {
+            let document = window.document().expect("Document not found");
+            let body = document.body().expect("Document should have a body");
+
+            let overlay = self.overlay.clone();
+            let ok_button = self.ok_button.clone();
+            let cancel_button = self.cancel_button.clone();
+            let (element, options) =
+                if let HtmlIoElement::Mutable(input, filters, file_name) = &self.io {
+                    let options = SaveFilePickerOptions::new();
+                    options.set_types(&FilePickerAcceptType::from_filters(filters));
+                    options.set_suggested_name(file_name.as_deref());
+
+                    (input, options)
+                } else {
+                    panic!("Internal error: TODO")
+                };
+            let promise = js_sys::Promise::new(&mut |res, rej| {
+                // Moved to keep closure as FnMut
+                let output = element.clone();
+                let options = options.clone();
+
+                let resolve_promise = Closure::wrap(Box::new(move || {
+                    let res = res.clone();
+
+                    let future = show_save_file_picker_with_options(&options).unwrap();
+                    let closure = Closure::wrap(Box::new(move |file: JsValue| {
+                        res.call1(&JsValue::undefined(), &file).unwrap();
+                    }) as Box<dyn FnMut(JsValue)>);
+                    let _ = future.then(&closure);
+                    closure.forget();
+                }) as Box<dyn FnMut()>);
+
+                let reject_promise = Closure::wrap(Box::new(move || {
+                    rej.call1(&JsValue::undefined(), &JsValue::from(true))
+                        .unwrap();
+                }) as Box<dyn FnMut()>);
+
+                // Resolve the promise once the user clicks the download link or the button.
+                output.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                ok_button.set_onclick(Some(resolve_promise.as_ref().unchecked_ref()));
+                cancel_button.set_onclick(Some(reject_promise.as_ref().unchecked_ref()));
+
+                resolve_promise.forget();
+                reject_promise.forget();
+
+                output.set_href("_blank");
+
+                body.append_child(&overlay).ok();
+            });
+
+            let future = wasm_bindgen_futures::JsFuture::from(promise);
+            future
+                .await
+                .ok()
+                .map(|val| FileHandle::mutable(val.unchecked_into()))
+        }
+    }
+
     async fn pick_file(self) -> Option<FileHandle> {
+        let window = web_sys::window().expect("Window not found");
+        if check_exists(&window, "showOpenFilePicker")
+            && window.navigator().user_activation().is_active()
+        {
+            let options = match &self.io {
+                HtmlIoElement::Mutable(_, filters, _) => {
+                    let options = OpenFilePickerOptions::new();
+                    options.set_types(&FilePickerAcceptType::from_filters(filters));
+
+                    options
+                }
+                HtmlIoElement::Input(input) => {
+                    let options = OpenFilePickerOptions::new();
+                    // TODO get filters here
+
+                    options
+                }
+                _ => panic!("Internal error: TODO"),
+            };
+
+            // Browsers require transient user activation to open the file picker from JS.
+            // If we have it, we can open it immediately instead of showing the popup.
+            let future = show_open_file_picker_with_options(&options).unwrap();
+            if let Ok(files) = wasm_bindgen_futures::JsFuture::from(future).await {
+                let files: js_sys::Array = files.unchecked_into();
+                return Some(FileHandle::mutable(files.get(0).unchecked_into()));
+            } else {
+                return None;
+            }
+        }
+
         if let HtmlIoElement::Input(input) = &self.io {
             input.set_multiple(false);
         } else {
@@ -318,6 +602,7 @@ impl<'a> WasmDialog<'a> {
         match self.io.clone() {
             HtmlIoElement::Input(element) => element.unchecked_into(),
             HtmlIoElement::Output { element, .. } => element.unchecked_into(),
+            HtmlIoElement::Mutable(element, ..) => element.unchecked_into(),
         }
     }
 }
@@ -389,12 +674,18 @@ impl crate::backend::AsyncMessageDialogImpl for MessageDialog {
 
 impl FileHandle {
     pub async fn write(&self, data: &[u8]) -> std::io::Result<()> {
-        let dialog = match &self.0 {
-            WasmFileHandleKind::Writable(dialog) => dialog,
-            _ => panic!("This File Handle doesn't support writing. Use `save_file` to get a writeable FileHandle in Wasm"),
-        };
-        let dialog = WasmDialog::new(&FileKind::Out(dialog.clone(), data));
-        dialog.show().await;
+        match &self.0 {
+            WasmFileHandleKind::Writable(dialog) => {
+                let dialog = WasmDialog::new(&FileKind::OutLate(dialog.clone(), data));
+                dialog.show().await;
+            },
+            WasmFileHandleKind::Mutable(file) => {
+                let a: web_sys::FileSystemWritableFileStream = wasm_bindgen_futures::JsFuture::from(file.create_writable()).await.unwrap().unchecked_into();
+                let _  = wasm_bindgen_futures::JsFuture::from(a.write_with_u8_array(data).unwrap()).await;
+                let _ = wasm_bindgen_futures::JsFuture::from(a.close()).await;
+            }
+            _ => return Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied, "This File Handle doesn't support writing. Use `save_file` to get a writeable FileHandle on non-chromium browsers"))
+        }
         Ok(())
     }
 }
