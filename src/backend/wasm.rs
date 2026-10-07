@@ -125,7 +125,7 @@ impl<'a> WasmDialog<'a> {
         };
 
         let style = document.create_element("style").unwrap();
-        style.set_inner_html(include_str!("./wasm/style.css"));
+        style.set_text_content(Some(include_str!("./wasm/style.css")));
         overlay.append_child(&style).unwrap();
 
         Self {
