@@ -144,7 +144,8 @@ fn wait_for_response(conn: &mut Connection, handle_path: &CStr) -> Option<Respon
 
 #[derive(Debug)]
 pub enum Response {
-    Selected(Vec<PathBuf>),
+    /// The selected paths, and the label of the filter that was selected when the dialog was closed
+    Selected(Vec<PathBuf>, Option<CString>),
     Canceled,
 }
 
@@ -170,6 +171,8 @@ fn parse_response(msg: &Message) -> Option<Response> {
     }
 
     let mut dict_iter = iter.iter_recurse();
+    let mut uris = None;
+    let mut current_filter = None;
 
     while dict_iter.get_arg_type() == ffi::DBUS_TYPE_DICT_ENTRY {
         let mut entry_iter = dict_iter.iter_recurse();
@@ -184,20 +187,43 @@ fn parse_response(msg: &Message) -> Option<Response> {
         if key.as_c_str() == c"uris" {
             if entry_iter.get_arg_type() == ffi::DBUS_TYPE_VARIANT {
                 let mut var_iter = entry_iter.iter_recurse();
-                return Some(Response::Selected(uris_to_paths(
-                    var_iter.get_string_array(),
-                )));
+                uris = Some(uris_to_paths(var_iter.get_string_array()));
             } else {
                 log::error!(
                     "Response.uris type {} != VARIANT",
                     entry_iter.get_arg_type()
                 );
             }
+        } else if key.as_c_str() == c"current_filter" {
+            current_filter = parse_filter_label(&mut entry_iter);
         }
 
         dict_iter.next();
     }
 
-    log::error!("Response.uris was not found");
-    None
+    let Some(uris) = uris else {
+        log::error!("Response.uris was not found");
+        return None;
+    };
+    Some(Response::Selected(uris, current_filter))
+}
+
+/// The label of a `current_filter` entry, a variant holding `(sa(us))`
+fn parse_filter_label(entry_iter: &mut MessageIter) -> Option<CString> {
+    if entry_iter.get_arg_type() != ffi::DBUS_TYPE_VARIANT {
+        log::error!(
+            "Response.current_filter type {} != VARIANT",
+            entry_iter.get_arg_type()
+        );
+        return None;
+    }
+    let mut var_iter = entry_iter.iter_recurse();
+    if var_iter.get_arg_type() != ffi::DBUS_TYPE_STRUCT {
+        log::error!(
+            "Response.current_filter type {} != STRUCT",
+            var_iter.get_arg_type()
+        );
+        return None;
+    }
+    var_iter.iter_recurse().get_string()
 }
