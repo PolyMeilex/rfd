@@ -96,8 +96,8 @@ impl FilePickerDialogImpl for FileDialog {
 
         if let Some(res) = res {
             match res {
-                portal::Response::Selected(res) if res.is_empty() => None,
-                portal::Response::Selected(mut res) => Some(res.remove(0)),
+                portal::Response::Selected(res, _) if res.is_empty() => None,
+                portal::Response::Selected(mut res, _) => Some(res.remove(0)),
                 portal::Response::Canceled => None,
             }
         } else {
@@ -128,7 +128,7 @@ impl FilePickerDialogImpl for FileDialog {
 
         if let Some(res) = res {
             match res {
-                portal::Response::Selected(res) => Some(res),
+                portal::Response::Selected(res, _) => Some(res),
                 portal::Response::Canceled => None,
             }
         } else {
@@ -180,8 +180,8 @@ impl FolderPickerDialogImpl for FileDialog {
 
         if let Some(res) = res {
             match res {
-                portal::Response::Selected(res) if res.is_empty() => None,
-                portal::Response::Selected(mut res) => Some(res.remove(0)),
+                portal::Response::Selected(res, _) if res.is_empty() => None,
+                portal::Response::Selected(mut res, _) => Some(res.remove(0)),
                 portal::Response::Canceled => None,
             }
         } else {
@@ -213,7 +213,7 @@ impl FolderPickerDialogImpl for FileDialog {
 
         if let Some(res) = res {
             match res {
-                portal::Response::Selected(res) => Some(res),
+                portal::Response::Selected(res, _) => Some(res),
                 portal::Response::Canceled => None,
             }
         } else {
@@ -264,8 +264,26 @@ impl FileSaveDialogImpl for FileDialog {
 
         if let Some(res) = res {
             match res {
-                portal::Response::Selected(res) if res.is_empty() => None,
-                portal::Response::Selected(mut res) => Some(res.remove(0)),
+                portal::Response::Selected(res, _) if res.is_empty() => None,
+                portal::Response::Selected(mut res, current_filter) => {
+                    let path = res.remove(0);
+                    let chosen = current_filter.and_then(|label| {
+                        self.filters
+                            .iter()
+                            .find(|filter| filter.name.as_bytes() == label.as_bytes())
+                    });
+                    match chosen.and_then(|filter| {
+                        with_chosen_extension(&path, self.file_name.as_deref(), filter)
+                    }) {
+                        // The portal only asked to overwrite the path it returned
+                        Some(renamed) if renamed.exists() => {
+                            warn!("Not renaming {path:?} to {renamed:?}: it already exists");
+                            Some(path)
+                        }
+                        Some(renamed) => Some(renamed),
+                        None => Some(path),
+                    }
+                }
                 portal::Response::Canceled => None,
             }
         } else {
@@ -279,6 +297,35 @@ impl FileSaveDialogImpl for FileDialog {
             }
         }
     }
+}
+
+/// The path with the extension of the filter that was selected in the save dialog, when the
+/// portal didn't apply it (GTK keeps the name as typed when a different filter is selected).
+///
+/// An extension the user typed is kept: the path is only changed when it has no extension, or
+/// still has the extension of `file_name` (the name the dialog was opened with) and that
+/// extension isn't one of the filter's.
+fn with_chosen_extension(path: &Path, file_name: Option<&str>, filter: &Filter) -> Option<PathBuf> {
+    let new_ext = filter
+        .extensions
+        .first()
+        .filter(|ext| !ext.is_empty() && *ext != "*")?;
+    let Some(ext) = path.extension() else {
+        return Some(path.with_extension(new_ext));
+    };
+    let ext = ext.to_string_lossy();
+    if filter
+        .extensions
+        .iter()
+        .any(|e| e.eq_ignore_ascii_case(&ext))
+    {
+        return None;
+    }
+    let suggested = file_name.and_then(|name| Path::new(name).extension())?;
+    suggested
+        .to_string_lossy()
+        .eq_ignore_ascii_case(&ext)
+        .then(|| path.with_extension(new_ext))
 }
 
 use crate::backend::AsyncFileSaveDialogImpl;
@@ -339,5 +386,84 @@ impl AsyncMessageDialogImpl for MessageDialog {
                 }
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn filter(name: &str, extensions: &[&str]) -> Filter {
+        Filter {
+            name: name.into(),
+            extensions: extensions.iter().map(|e| e.to_string()).collect(),
+        }
+    }
+
+    fn renamed(path: &str, file_name: Option<&str>, filter: &Filter) -> Option<PathBuf> {
+        with_chosen_extension(Path::new(path), file_name, filter)
+    }
+
+    #[test]
+    fn chosen_filter_replaces_the_suggested_extension() {
+        let png = filter("PNG", &["png"]);
+        assert_eq!(
+            renamed("/a/Untitled.psd", Some("Untitled.psd"), &png),
+            Some(PathBuf::from("/a/Untitled.png"))
+        );
+        // The user renamed the file but kept the suggested extension
+        assert_eq!(
+            renamed("/a/cat.psd", Some("Untitled.psd"), &png),
+            Some(PathBuf::from("/a/cat.png"))
+        );
+        assert_eq!(
+            renamed("/a/Untitled.PSD", Some("Untitled.psd"), &png),
+            Some(PathBuf::from("/a/Untitled.png"))
+        );
+        assert_eq!(
+            renamed("/a/x.png.psd", Some("x.png.psd"), &png),
+            Some(PathBuf::from("/a/x.png.png"))
+        );
+    }
+
+    #[test]
+    fn a_typed_extension_is_kept() {
+        let psd = filter("PSD", &["psd", "psb"]);
+        assert_eq!(renamed("/a/Untitled.png", Some("Untitled.psd"), &psd), None);
+        // Without a suggested name there is nothing to tell a typed extension from
+        assert_eq!(renamed("/a/Untitled.png", None, &psd), None);
+    }
+
+    #[test]
+    fn a_matching_extension_is_kept() {
+        let psd = filter("PSD", &["psd", "psb"]);
+        assert_eq!(renamed("/a/Untitled.psd", Some("Untitled.psd"), &psd), None);
+        assert_eq!(renamed("/a/Untitled.psb", Some("Untitled.psd"), &psd), None);
+        assert_eq!(renamed("/a/Untitled.PSB", Some("Untitled.psd"), &psd), None);
+    }
+
+    #[test]
+    fn a_missing_extension_is_added() {
+        let psd = filter("PSD", &["psd", "psb"]);
+        assert_eq!(
+            renamed("/a/Untitled", Some("Untitled.psd"), &psd),
+            Some(PathBuf::from("/a/Untitled.psd"))
+        );
+        assert_eq!(
+            renamed("/a/Untitled", None, &psd),
+            Some(PathBuf::from("/a/Untitled.psd"))
+        );
+    }
+
+    #[test]
+    fn filters_without_an_extension_change_nothing() {
+        for any in [
+            filter("All", &["*"]),
+            filter("All", &[""]),
+            filter("None", &[]),
+        ] {
+            assert_eq!(renamed("/a/Untitled.psd", Some("Untitled.psd"), &any), None);
+            assert_eq!(renamed("/a/Untitled", None, &any), None);
+        }
     }
 }

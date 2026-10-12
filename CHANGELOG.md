@@ -9,6 +9,7 @@
 - Fix `liblary` typo in docs
 - Change wasm title to sanitize text contents via `title_el.set_text_content()` rather than `title_el.set_inner_html()`.
 - Set wasm dialog styles via `set_text_content()` rather than `set_inner_html()`, so rfd no longer uses `innerHTML`.
+- XDG portal: a filter selected in the save dialog now sets the extension of the returned file name when the portal left the old one (GTK does), as the macOS and Windows save dialogs do. An extension the user typed is kept, and a name is never changed to one of an existing file.
 
 ## 0.17.2
 
