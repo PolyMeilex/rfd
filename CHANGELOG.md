@@ -9,6 +9,7 @@
 - Fix `liblary` typo in docs
 - Change wasm title to sanitize text contents via `title_el.set_text_content()` rather than `title_el.set_inner_html()`.
 - Set wasm dialog styles via `set_text_content()` rather than `set_inner_html()`, so rfd no longer uses `innerHTML`.
+- Fix GTK3 message dialogs using the description as a printf format string, which garbled text containing `%` and could crash. The description is now shown as given, so `%%` is no longer shown as `%`.
 
 ## 0.17.2
 
