@@ -48,7 +48,13 @@ impl GtkFileDialog {
                     let paterns: Vec<_> = f
                         .extensions
                         .iter()
-                        .filter_map(|e| CString::new(format!("*.{}", e)).ok())
+                        .filter_map(|e| {
+                            if e == "*" || e.is_empty() {
+                                Some(c"*".to_owned())
+                            } else {
+                                CString::new(format!("*.{}", e)).ok()
+                            }
+                        })
                         .collect();
 
                     gtk_sys::gtk_file_filter_set_name(filter, name.as_ptr());
