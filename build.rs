@@ -10,13 +10,13 @@ fn main() {
         "windows" => {}
         _ if is_wasm => {}
         _ => {
-            let gtk = std::env::var_os("CARGO_FEATURE_GTK3").is_some();
-            let xdg = std::env::var_os("CARGO_FEATURE_XDG_PORTAL").is_some();
+            let backends = ["GTK3", "GTK4", "XDG_PORTAL"]
+                .iter()
+                .filter(|f| std::env::var_os(format!("CARGO_FEATURE_{f}")).is_some())
+                .count();
 
-            if gtk && xdg {
-                panic!("You can't enable both `gtk3` and `xdg-portal` features at once");
-            } else if !gtk && !xdg {
-                panic!("You need to choose at least one backend: `gtk3` or `xdg-portal` features for {target_arch}-{target_os}");
+            if backends != 1 {
+                panic!("You need to enable exactly one backend feature: `gtk3`, `gtk4` or `xdg-portal` for {target_arch}-{target_os}");
             }
         }
     }

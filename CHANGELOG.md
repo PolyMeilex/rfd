@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add GTK4 backend behind the `gtk4` feature
 - MSRV is now 1.92
 - Fix macOS file dialogs ignoring `set_directory` when `set_file_name` is also used.
 - Add `FileDialog::set_show_hidden_files` and `AsyncFileDialog::set_show_hidden_files` to control hidden file visibility. Supported on macOS, Windows, and Linux (GTK3).

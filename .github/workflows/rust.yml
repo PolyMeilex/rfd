@@ -16,6 +16,10 @@ jobs:
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             flags: '--no-default-features --features gtk3'
+          - name: Ubuntu GTK4
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            flags: '--no-default-features --features gtk4'
           - name: Ubuntu XDG
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -48,6 +52,9 @@ jobs:
     - name: "[Ubuntu GTK] install dependencies"
       if: matrix.name == 'Ubuntu GTK'
       run: sudo apt update && sudo apt install libgtk-3-dev
+    - name: "[Ubuntu GTK4] install dependencies"
+      if: matrix.name == 'Ubuntu GTK4'
+      run: sudo apt update && sudo apt install libgtk-4-dev
     - name: "[Ubuntu XDG] install dependencies"
       if: startsWith(matrix.name, 'Ubuntu XDG')
       run: sudo apt update && sudo apt install libwayland-dev
