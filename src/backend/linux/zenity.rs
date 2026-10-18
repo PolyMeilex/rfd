@@ -51,7 +51,13 @@ fn file_dialog_command(dialog: &FileDialog) -> Command {
         let extensions: Vec<_> = filter
             .extensions
             .iter()
-            .map(|ext| format!("*.{}", ext))
+            .map(|ext| {
+                if ext == "*" || ext.is_empty() {
+                    "*".to_owned()
+                } else {
+                    format!("*.{}", ext)
+                }
+            })
             .collect();
         command.arg(format!("{} | {}", filter.name, extensions.join(" ")));
     }

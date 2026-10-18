@@ -10,6 +10,7 @@
 - Change wasm title to sanitize text contents via `title_el.set_text_content()` rather than `title_el.set_inner_html()`.
 - Set wasm dialog styles via `set_text_content()` rather than `set_inner_html()`, so rfd no longer uses `innerHTML`.
 - Fix GTK3 message dialogs using the description as a printf format string, which garbled text containing `%` and could crash. The description is now shown as given, so `%%` is no longer shown as `%`.
+- Support files without an extension in GTK3 and zenity filters, as the XDG portal backend does since #215. A match-all filter (`"*"`) or an empty one (`""`) now uses the glob `"*"`, not `"*.*"` or `"*."`, so a filter such as "All files" matches a name with no dot, like `README`.
 
 ## 0.17.2
 
