@@ -1,7 +1,6 @@
 use std::{error::Error, fmt::Display, path::PathBuf, process::Command};
 
 use crate::{
-    file_dialog::Filter,
     message_dialog::{MessageButtons, MessageLevel},
     FileDialog, MessageDialogResult,
 };
@@ -87,66 +86,71 @@ async fn run(mut command: Command) -> ZenityResult<Option<String>> {
     Ok((res.status.success() || !buffer.is_empty()).then_some(buffer))
 }
 
+/// Strip the single newline zenity prints after its output
+fn strip_newline(buffer: &str) -> &str {
+    buffer.strip_suffix('\n').unwrap_or(buffer)
+}
+
 pub async fn pick_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     let mut command = file_dialog_command(dialog);
     command.arg("--file-selection");
 
-    run(command).await.map(|res| {
-        res.map(|buffer| {
-            let trimed = buffer.trim();
-            trimed.into()
-        })
-    })
+    Ok(run(command)
+        .await?
+        .as_deref()
+        .map(strip_newline)
+        .map(PathBuf::from))
 }
 
 pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
     let mut command = file_dialog_command(dialog);
-    command.args(["--file-selection", "--multiple"]);
+    command.args(["--file-selection", "--multiple", "--separator=\n"]);
 
-    run(command).await.map(|res| {
-        res.map(|buffer| {
-            let list = buffer.trim().split('|').map(PathBuf::from).collect();
-            list
-        })
-        .unwrap_or_default()
-    })
+    Ok(run(command)
+        .await?
+        .as_deref()
+        .map(strip_newline)
+        .map(|s| s.split('\n').map(PathBuf::from).collect())
+        .unwrap_or_default())
 }
 
 pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     let mut command = file_dialog_command(dialog);
     command.args(["--file-selection", "--directory"]);
 
-    run(command).await.map(|res| {
-        res.map(|buffer| {
-            let trimed = buffer.trim();
-            trimed.into()
-        })
-    })
+    Ok(run(command)
+        .await?
+        .as_deref()
+        .map(strip_newline)
+        .map(PathBuf::from))
 }
 
 pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
     let mut command = file_dialog_command(dialog);
-    command.args(["--file-selection", "--directory", "--multiple"]);
+    command.args([
+        "--file-selection",
+        "--directory",
+        "--multiple",
+        "--separator=\n",
+    ]);
 
-    run(command).await.map(|res| {
-        res.map(|buffer| {
-            let list = buffer.trim().split('|').map(PathBuf::from).collect();
-            list
-        })
-        .unwrap_or_default()
-    })
+    Ok(run(command)
+        .await?
+        .as_deref()
+        .map(strip_newline)
+        .map(|s| s.split('\n').map(PathBuf::from).collect())
+        .unwrap_or_default())
 }
 
 pub async fn save_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
     let mut command = file_dialog_command(dialog);
     command.args(["--file-selection", "--save", "--confirm-overwrite"]);
 
-    run(command).await.map(|res| {
-        res.map(|buffer| {
-            let trimed = buffer.trim();
-            trimed.into()
-        })
-    })
+    Ok(run(command)
+        .await?
+        .as_deref()
+        .map(strip_newline)
+        .map(PathBuf::from))
 }
 
 pub async fn message(
