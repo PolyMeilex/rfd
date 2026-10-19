@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- GTK3 backend should now handle coexistence with other GTK3 libraries better
 - Add GTK4 backend behind the `gtk4` feature
 - MSRV is now 1.92
 - Fix macOS file dialogs ignoring `set_directory` when `set_file_name` is also used.

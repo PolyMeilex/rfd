@@ -1,8 +1,7 @@
 use std::ffi::CString;
 use std::ptr;
 
-use super::gtk_future::GtkDialogFuture;
-use super::utils::GtkGlobalThread;
+use super::utils::{run_dialog, spawn_dialog};
 use super::AsGtkDialog;
 
 use crate::message_dialog::{MessageButtons, MessageDialog, MessageLevel};
@@ -127,9 +126,7 @@ impl GtkMessageDialog {
         }
     }
 
-    pub fn run(self) -> MessageDialogResult {
-        let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
-
+    fn result(&self, res: i32) -> MessageDialogResult {
         use MessageButtons::*;
         match (&self.buttons, res) {
             (Ok | OkCancel, gtk_sys::GTK_RESPONSE_OK) => MessageDialogResult::Ok,
@@ -199,10 +196,10 @@ use crate::backend::MessageDialogImpl;
 
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
-        GtkGlobalThread::instance().run_blocking(move || {
-            let dialog = GtkMessageDialog::new(self);
-            dialog.run()
-        })
+        run_dialog(
+            move || GtkMessageDialog::new(self),
+            GtkMessageDialog::result,
+        )
     }
 }
 
@@ -211,16 +208,9 @@ use crate::backend::DialogFutureType;
 
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
-        let builder = move || GtkMessageDialog::new(self);
-
-        let future = GtkDialogFuture::new(builder, |_, res| match res {
-            gtk_sys::GTK_RESPONSE_OK => MessageDialogResult::Ok,
-            gtk_sys::GTK_RESPONSE_CANCEL => MessageDialogResult::Cancel,
-            gtk_sys::GTK_RESPONSE_YES => MessageDialogResult::Yes,
-            gtk_sys::GTK_RESPONSE_NO => MessageDialogResult::No,
-            gtk_sys::GTK_RESPONSE_DELETE_EVENT => MessageDialogResult::Cancel,
-            _ => unreachable!(),
-        });
-        Box::pin(future)
+        spawn_dialog(
+            move || GtkMessageDialog::new(self),
+            GtkMessageDialog::result,
+        )
     }
 }

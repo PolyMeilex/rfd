@@ -160,10 +160,6 @@ impl GtkFileDialog {
 
         paths
     }
-
-    pub fn run(&self) -> i32 {
-        unsafe { gtk_sys::gtk_native_dialog_run(self.ptr as *mut _) }
-    }
 }
 
 fn parent_gtk_window(opt: &FileDialog) -> *mut gtk_sys::GtkWindow {
@@ -304,6 +300,7 @@ impl AsGtkDialog for GtkFileDialog {
     }
 
     unsafe fn show(&self) {
+        gtk_sys::gtk_native_dialog_set_modal(self.ptr as *mut _, 1);
         gtk_sys::gtk_native_dialog_show(self.ptr as *mut _);
     }
 }
@@ -312,6 +309,7 @@ impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {
             gtk_sys::gtk_native_dialog_destroy(self.ptr as _);
+            gobject_sys::g_object_unref(self.ptr as _);
         }
     }
 }
