@@ -4,7 +4,6 @@ use std::rc::Rc;
 use std::sync::{mpsc, Once};
 
 use glib::prelude::*;
-use glib::translate::from_glib_none;
 
 use super::AsGtkDialog;
 
@@ -48,16 +47,13 @@ where
     Done: FnOnce(R) + 'static,
 {
     let dialog = build();
-    let object: glib::Object =
-        unsafe { from_glib_none(dialog.gtk_dialog_ptr() as *mut gobject_sys::GObject) };
+    let object = dialog.object().clone();
 
     unsafe { dialog.show() };
 
+    // The handler owns the dialog, which owns the object, taking the state on response breaks that cycle
     let state = RefCell::new(Some((dialog, cb, done)));
     object.connect_local("response", false, move |args| {
-        let object = args[0]
-            .get::<glib::Object>()
-            .expect("signal emitter should be an object");
         let res = args[1].get::<i32>().expect("response id should be an int");
 
         if let Some((dialog, cb, done)) = state.borrow_mut().take() {
@@ -65,8 +61,6 @@ where
             // Destroy the dialog outside of its own signal
             glib::idle_add_local_once(move || {
                 drop(dialog);
-                // GTK may have already destroyed the dialog (eg. on delete-event), so keep it alive until now
-                drop(object);
                 done(res);
             });
         }

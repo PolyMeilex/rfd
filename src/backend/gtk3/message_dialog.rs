@@ -1,6 +1,9 @@
 use std::ffi::CString;
 use std::ptr;
 
+use glib::prelude::*;
+use glib::translate::from_glib_none;
+
 use super::utils::{run_dialog, spawn_dialog};
 use super::AsGtkDialog;
 
@@ -9,7 +12,7 @@ use crate::MessageDialogResult;
 
 pub struct GtkMessageDialog {
     buttons: MessageButtons,
-    ptr: *mut gtk_sys::GtkDialog,
+    object: glib::Object,
 }
 
 impl GtkMessageDialog {
@@ -121,9 +124,14 @@ impl GtkMessageDialog {
         }
 
         Self {
-            ptr,
+            // GTK owns toplevel windows, so we only take an extra ref to keep it alive until we are done with it
+            object: unsafe { from_glib_none(ptr as *mut gobject_sys::GObject) },
             buttons: opt.buttons,
         }
+    }
+
+    fn ptr(&self) -> *mut gtk_sys::GtkDialog {
+        self.object.as_ptr() as *mut _
     }
 
     fn result(&self, res: i32) -> MessageDialogResult {
@@ -165,30 +173,33 @@ unsafe fn is_label(type_instance: *const gobject_sys::GTypeInstance) -> bool {
 /// Sets the child labels of a widget selectable
 unsafe fn set_child_labels_selectable(dialog: *mut gtk_sys::GtkDialog) {
     let area = gtk_sys::gtk_message_dialog_get_message_area(dialog as _);
-    let mut children = gtk_sys::gtk_container_get_children(area as _);
-    while !children.is_null() {
-        let child = (*children).data;
+    let children = gtk_sys::gtk_container_get_children(area as _);
+    let mut current = children;
+    while !current.is_null() {
+        let child = (*current).data;
         if is_label(child as _) {
             gtk_sys::gtk_label_set_selectable(child as _, 1);
         }
-        children = (*children).next;
+        current = (*current).next;
     }
+    glib_sys::g_list_free(children);
 }
 
 impl Drop for GtkMessageDialog {
     fn drop(&mut self) {
         unsafe {
-            gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
+            gtk_sys::gtk_widget_destroy(self.ptr() as *mut _);
         }
     }
 }
 
 impl AsGtkDialog for GtkMessageDialog {
-    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
-        self.ptr as *mut _
+    fn object(&self) -> &glib::Object {
+        &self.object
     }
+
     unsafe fn show(&self) {
-        gtk_sys::gtk_widget_show_all(self.ptr as *mut _);
+        gtk_sys::gtk_widget_show_all(self.ptr() as *mut _);
     }
 }
 

@@ -4,6 +4,6 @@ mod message_dialog;
 mod utils;
 
 trait AsGtkDialog {
-    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog;
+    fn object(&self) -> &glib::Object;
     unsafe fn show(&self);
 }
