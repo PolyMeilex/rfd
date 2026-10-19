@@ -8,6 +8,7 @@
 - Fix macOS file dialogs ignoring `set_directory` when `set_file_name` is also used.
 - Add `FileDialog::set_show_hidden_files` and `AsyncFileDialog::set_show_hidden_files` to control hidden file visibility. Supported on macOS, Windows, and Linux (GTK3).
 - Honor `FileDialog::set_directory` and `AsyncFileDialog::set_directory` when using the zenity fallback backend on Linux.
+- Fix the zenity fallback returning `None` for a file name that isn't valid UTF-8. zenity's output is now kept as bytes.
 - Fix `liblary` typo in docs
 - Change wasm title to sanitize text contents via `title_el.set_text_content()` rather than `title_el.set_inner_html()`.
 - Set wasm dialog styles via `set_text_content()` rather than `set_inner_html()`, so rfd no longer uses `innerHTML`.
