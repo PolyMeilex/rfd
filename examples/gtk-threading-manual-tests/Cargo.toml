@@ -1,0 +1,21 @@
+[package]
+name = "threading-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dev-only binaries for manually testing weird threading setups of rfd backends"
+
+[features]
+default = []
+gtk3 = ["rfd/gtk3", "dep:gtk-sys"]
+gtk4 = ["rfd/gtk4", "dep:gtk4"]
+xdg-portal = ["rfd/xdg-portal"]
+
+[dependencies]
+rfd = { path = "../../", default-features = false }
+env_logger = "0.11"
+futures = "0.3"
+glib = "0.22"
+log = "0.4"
+gtk-sys = { version = "0.19", optional = true }
+gtk4 = { version = "0.11", optional = true }
