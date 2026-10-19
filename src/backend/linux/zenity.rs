@@ -53,7 +53,10 @@ fn file_dialog_command(dialog: &FileDialog) -> Command {
                 }
             })
             .collect();
-        command.arg(format!("{} | {}", filter.name, extensions.join(" ")));
+        // zenity ends the name at the first `|`, with no way to escape it, so show `/` instead.
+        // A non-ASCII lookalike would stop zenity from starting in the C locale.
+        let name = filter.name.replace('|', "/");
+        command.arg(format!("{} | {}", name, extensions.join(" ")));
     }
 
     if let Some(name) = dialog.file_name.as_ref() {
@@ -325,5 +328,19 @@ mod tests {
             PathBuf::from(OsStr::from_bytes(b"/home/user/caf\xe9.txt"))
         );
         assert_eq!(super::strip_newline(b"x\n\n"), b"x\n");
+    }
+
+    #[test]
+    fn file_filter_name_with_pipe() {
+        let dialog = FileDialog::new().add_filter("Text | Markdown", &["txt", "md"]);
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                "--no-markup",
+                "--file-filter",
+                "Text / Markdown | *.txt *.md"
+            ]
+        );
     }
 }
