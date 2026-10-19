@@ -15,6 +15,9 @@ struct FutureState<R, D> {
 
 unsafe impl<R, D> Send for FutureState<R, D> {}
 
+struct UnsafeSendToGtkThread<D>(D);
+unsafe impl<D> Send for UnsafeSendToGtkThread<D> {}
+
 pub(super) struct GtkDialogFuture<R, D> {
     state: Arc<Mutex<FutureState<R, D>>>,
 }
@@ -43,6 +46,10 @@ impl<R: Default + 'static, D: AsGtkDialog + 'static> GtkDialogFuture<R, D> {
 
                     if let Some(mut dialog) = state.dialog.take() {
                         state.data = Some(cb(&mut dialog, res_id));
+
+                        let dialog = UnsafeSendToGtkThread(dialog);
+                        // Don't drop the dialog inside of the signal, instead just send it to on_idle
+                        GtkGlobalThread::instance().run(move || drop(dialog));
                     }
 
                     if let Some(waker) = state.waker.take() {
