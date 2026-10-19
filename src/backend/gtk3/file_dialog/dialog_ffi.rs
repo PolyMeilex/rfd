@@ -2,8 +2,11 @@ use super::super::AsGtkDialog;
 use crate::FileDialog;
 use gtk_sys::GtkFileChooserNative;
 
+use glib::prelude::*;
+use glib::translate::from_glib_full;
+
 use std::{
-    ffi::{CStr, CString},
+    ffi::{c_char, CString},
     ops::Deref,
     path::{Path, PathBuf},
 };
@@ -17,14 +20,14 @@ pub enum GtkFileChooserAction {
 }
 
 pub struct GtkFileDialog {
-    pub ptr: *mut GtkFileChooserNative,
+    object: glib::Object,
 }
 
 impl GtkFileDialog {
     fn new(title: &str, action: GtkFileChooserAction, parent: *mut gtk_sys::GtkWindow) -> Self {
         let title = CString::new(title).unwrap();
 
-        let ptr = unsafe {
+        let object = unsafe {
             let dialog = gtk_sys::gtk_file_chooser_native_new(
                 title.as_ptr(),
                 parent,
@@ -33,10 +36,14 @@ impl GtkFileDialog {
                 std::ptr::null(),
                 std::ptr::null(),
             );
-            dialog as _
+            from_glib_full(dialog as *mut gobject_sys::GObject)
         };
 
-        Self { ptr }
+        Self { object }
+    }
+
+    fn ptr(&self) -> *mut GtkFileChooserNative {
+        self.object.as_ptr() as *mut _
     }
 
     fn add_filters(&mut self, filters: &[crate::file_dialog::Filter]) {
@@ -63,7 +70,7 @@ impl GtkFileDialog {
                         gtk_sys::gtk_file_filter_add_pattern(filter, p.as_ptr());
                     }
 
-                    gtk_sys::gtk_file_chooser_add_filter(self.ptr as _, filter);
+                    gtk_sys::gtk_file_chooser_add_filter(self.ptr() as _, filter);
                 }
             }
         }
@@ -73,7 +80,7 @@ impl GtkFileDialog {
         if let Some(name) = name {
             if let Ok(name) = CString::new(name) {
                 unsafe {
-                    gtk_sys::gtk_file_chooser_set_filename(self.ptr as _, name.as_ptr());
+                    gtk_sys::gtk_file_chooser_set_filename(self.ptr() as _, name.as_ptr());
                 }
             }
         }
@@ -83,7 +90,7 @@ impl GtkFileDialog {
         if let Some(name) = name {
             if let Ok(name) = CString::new(name) {
                 unsafe {
-                    gtk_sys::gtk_file_chooser_set_current_name(self.ptr as _, name.as_ptr());
+                    gtk_sys::gtk_file_chooser_set_current_name(self.ptr() as _, name.as_ptr());
                 }
             }
         }
@@ -94,7 +101,10 @@ impl GtkFileDialog {
             if let Some(path) = path.to_str() {
                 if let Ok(path) = CString::new(path) {
                     unsafe {
-                        gtk_sys::gtk_file_chooser_set_current_folder(self.ptr as _, path.as_ptr());
+                        gtk_sys::gtk_file_chooser_set_current_folder(
+                            self.ptr() as _,
+                            path.as_ptr(),
+                        );
                     }
                 }
             }
@@ -104,65 +114,32 @@ impl GtkFileDialog {
     fn set_show_hidden(&self, show: Option<bool>) {
         if let Some(show) = show {
             unsafe {
-                gtk_sys::gtk_file_chooser_set_show_hidden(self.ptr as _, show as i32);
+                gtk_sys::gtk_file_chooser_set_show_hidden(self.ptr() as _, show as i32);
             }
         }
     }
 
     pub fn get_result(&self) -> Option<PathBuf> {
-        let cstr = unsafe {
-            let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as _);
-            CStr::from_ptr(chosen_filename).to_str()
-        };
-
-        if let Ok(cstr) = cstr {
-            Some(PathBuf::from(cstr.to_owned()))
-        } else {
-            None
+        unsafe {
+            let filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr() as _);
+            (!filename.is_null()).then(|| from_glib_full(filename))
         }
     }
 
     pub fn get_results(&self) -> Vec<PathBuf> {
-        #[derive(Debug)]
-        struct FileList(*mut glib_sys::GSList);
+        unsafe {
+            let filenames = gtk_sys::gtk_file_chooser_get_filenames(self.ptr() as _);
 
-        impl Iterator for FileList {
-            type Item = glib_sys::GSList;
-            fn next(&mut self) -> Option<Self::Item> {
-                let curr_ptr = self.0;
-
-                if !curr_ptr.is_null() {
-                    let curr = unsafe { *curr_ptr };
-
-                    self.0 = curr.next;
-
-                    Some(curr)
-                } else {
-                    None
-                }
+            let mut paths = Vec::new();
+            let mut current = filenames;
+            while !current.is_null() {
+                paths.push(from_glib_full((*current).data as *mut c_char));
+                current = (*current).next;
             }
+
+            glib_sys::g_slist_free(filenames);
+            paths
         }
-
-        let chosen_filenames =
-            unsafe { gtk_sys::gtk_file_chooser_get_filenames(self.ptr as *mut _) };
-
-        let paths: Vec<PathBuf> = FileList(chosen_filenames)
-            .filter_map(|item| {
-                let cstr = unsafe { CStr::from_ptr(item.data as _).to_str() };
-
-                if let Ok(cstr) = cstr {
-                    Some(PathBuf::from(cstr.to_owned()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        paths
-    }
-
-    pub fn run(&self) -> i32 {
-        unsafe { gtk_sys::gtk_native_dialog_run(self.ptr as *mut _) }
     }
 }
 
@@ -205,7 +182,7 @@ impl GtkFileDialog {
             parent_gtk_window(opt),
         );
 
-        unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr as _, 1) };
+        unsafe { gtk_sys::gtk_file_chooser_set_do_overwrite_confirmation(dialog.ptr() as _, 1) };
 
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
@@ -257,7 +234,7 @@ impl GtkFileDialog {
             GtkFileChooserAction::SelectFolder,
             parent_gtk_window(opt),
         );
-        unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
+        unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr() as _, 1) };
         dialog.set_path(opt.starting_directory.as_deref());
         dialog.set_show_hidden(opt.show_hidden_files);
 
@@ -280,7 +257,7 @@ impl GtkFileDialog {
             parent_gtk_window(opt),
         );
 
-        unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr as _, 1) };
+        unsafe { gtk_sys::gtk_file_chooser_set_select_multiple(dialog.ptr() as _, 1) };
         dialog.add_filters(&opt.filters);
         dialog.set_path(opt.starting_directory.as_deref());
         dialog.set_show_hidden(opt.show_hidden_files);
@@ -299,19 +276,18 @@ impl GtkFileDialog {
 }
 
 impl AsGtkDialog for GtkFileDialog {
-    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
-        self.ptr as *mut _
+    fn object(&self) -> &glib::Object {
+        &self.object
     }
 
     unsafe fn show(&self) {
-        gtk_sys::gtk_native_dialog_show(self.ptr as *mut _);
+        gtk_sys::gtk_native_dialog_set_modal(self.ptr() as *mut _, 1);
+        gtk_sys::gtk_native_dialog_show(self.ptr() as *mut _);
     }
 }
 
 impl Drop for GtkFileDialog {
     fn drop(&mut self) {
-        unsafe {
-            gtk_sys::gtk_native_dialog_destroy(self.ptr as _);
-        }
+        unsafe { gtk_sys::gtk_native_dialog_destroy(self.ptr() as _) };
     }
 }

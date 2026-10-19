@@ -1,127 +1,124 @@
+use std::cell::{Cell, RefCell};
 use std::ptr;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::OnceLock;
-use std::sync::{Arc, Condvar, Mutex};
-use std::thread::spawn;
+use std::rc::Rc;
+use std::sync::{mpsc, Once};
 
-static GTK_THREAD: OnceLock<GtkGlobalThread> = OnceLock::new();
+use glib::prelude::*;
 
-/// GTK functions are not thread-safe, and must all be called from the thread that initialized GTK. To ensure this, we
-/// spawn one thread the first time a GTK dialog is opened and keep it open for the entire lifetime of the application,
-/// as GTK cannot be de-initialized or re-initialized on another thread. You're stuck on the thread on which you first
-/// initialize GTK.
-pub struct GtkGlobalThread {
-    running: Arc<AtomicBool>,
+use super::AsGtkDialog;
+
+/// Makes sure something is running the GTK event loop
+fn ensure_gtk_thread() {
+    static INIT: Once = Once::new();
+
+    INIT.call_once(|| {
+        // GTK3 has no `gtk_is_initialized`, but `gtk_init` opens the default display
+        if unsafe { gdk_sys::gdk_display_get_default() }.is_null() {
+            let (tx, rx) = mpsc::channel();
+
+            std::thread::spawn(move || {
+                let initialized =
+                    unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) } != 0;
+                tx.send(initialized).ok();
+                if initialized {
+                    unsafe { gtk_sys::gtk_main() };
+                }
+            });
+
+            let initialized = rx.recv().expect("GTK3 thread exited before initializing");
+            assert!(initialized, "failed to initialize GTK3");
+        }
+    });
 }
 
-impl GtkGlobalThread {
-    /// Return the global, lazily-initialized instance of the global GTK thread.
-    pub(super) fn instance() -> &'static Self {
-        GTK_THREAD.get_or_init(|| Self::new())
-    }
+/// Runs the function on GTK thread
+fn run_on_main<F: FnOnce() + Send + 'static>(f: F) {
+    ensure_gtk_thread();
+    glib::idle_add_once(f);
+}
 
-    fn new() -> Self {
-        // When the GtkGlobalThread is eventually dropped, we will set `running` to false and wake up the loop so
-        // gtk_main_iteration unblocks and we exit the thread on the next iteration.
-        let running = Arc::new(AtomicBool::new(true));
-        let thread_running = Arc::clone(&running);
+/// Builds and shows a dialog, must be called on GTK thread
+fn show_dialog_local<D, R, B, F, Done>(build: B, cb: F, done: Done)
+where
+    D: AsGtkDialog + 'static,
+    R: 'static,
+    B: FnOnce() -> D,
+    F: FnOnce(&D, i32) -> R + 'static,
+    Done: FnOnce(R) + 'static,
+{
+    let dialog = build();
+    let object = dialog.object().clone();
 
-        spawn(move || {
-            let initialized =
-                unsafe { gtk_sys::gtk_init_check(ptr::null_mut(), ptr::null_mut()) == 1 };
-            if !initialized {
-                return;
-            }
+    unsafe { dialog.show() };
 
-            loop {
-                if !thread_running.load(Ordering::Acquire) {
-                    break;
-                }
+    // The handler owns the dialog, which owns the object, taking the state on response breaks that cycle
+    let state = RefCell::new(Some((dialog, cb, done)));
+    object.connect_local("response", false, move |args| {
+        let res = args[1].get::<i32>().expect("response id should be an int");
 
-                unsafe {
-                    gtk_sys::gtk_main_iteration();
-                }
+        if let Some((dialog, cb, done)) = state.borrow_mut().take() {
+            let res = cb(&dialog, res);
+            // Destroy the dialog outside of its own signal
+            glib::idle_add_local_once(move || {
+                drop(dialog);
+                done(res);
+            });
+        }
+
+        None
+    });
+}
+
+/// Shows a dialog on GTK thread, and returns `cb` result once it responds
+pub(super) fn spawn_dialog<D, R, B, F>(build: B, cb: F) -> crate::backend::DialogFutureType<R>
+where
+    D: AsGtkDialog + 'static,
+    R: Send + 'static,
+    B: FnOnce() -> D + Send + 'static,
+    F: FnOnce(&D, i32) -> R + Send + 'static,
+{
+    let (tx, rx) = crate::oneshot::channel();
+    run_on_main(move || {
+        show_dialog_local(build, cb, move |res| {
+            tx.send(res).ok();
+        })
+    });
+    Box::pin(async move { rx.await.expect("GTK3 dialog was dropped") })
+}
+
+/// Shows a dialog on GTK thread, and blocks until it responds
+pub(super) fn run_dialog<D, R, B, F>(build: B, cb: F) -> R
+where
+    D: AsGtkDialog + 'static,
+    R: Send + 'static,
+    B: FnOnce() -> D + Send + 'static,
+    F: FnOnce(&D, i32) -> R + Send + 'static,
+{
+    if glib::MainContext::default().is_owner() {
+        // We are already on GTK thread, so we run a nested main loop until the dialog responds
+        let main_loop = glib::MainLoop::new(None, false);
+        let result = Rc::new(Cell::new(None));
+
+        show_dialog_local(build, cb, {
+            let main_loop = main_loop.clone();
+            let result = result.clone();
+            move |res| {
+                result.set(Some(res));
+                main_loop.quit();
             }
         });
 
-        Self {
-            running: Arc::new(AtomicBool::new(true)),
-        }
+        main_loop.run();
+        return result.take().expect("GTK3 dialog was dropped");
     }
 
-    /// Run a function on the GTK thread, blocking on the result which is then passed back.
-    pub(super) fn run_blocking<
-        T: Send + Clone + std::fmt::Debug + 'static,
-        F: FnOnce() -> T + Send + 'static,
-    >(
-        &self,
-        cb: F,
-    ) -> T {
-        let data: Arc<(Mutex<Option<T>>, _)> = Arc::new((Mutex::new(None), Condvar::new()));
-        let thread_data = Arc::clone(&data);
-        let mut cb = Some(cb);
-        unsafe {
-            connect_idle(move || {
-                // connect_idle takes a FnMut; convert our FnOnce into that by ensuring we only call it once
-                let res = cb.take().expect("Callback should only be called once")();
-
-                // pass the result back to the main thread
-                let (lock, cvar) = &*thread_data;
-                *lock.lock().unwrap() = Some(res);
-                cvar.notify_all();
-
-                glib_sys::GFALSE
-            });
-        };
-
-        // wait for GTK thread to execute the callback and place the result into `data`
-        let lock_res = data
-            .1
-            .wait_while(data.0.lock().unwrap(), |res| res.is_none())
-            .unwrap();
-        lock_res.as_ref().unwrap().clone()
-    }
-
-    /// Launch a function on the GTK thread without blocking.
-    pub(super) fn run<F: FnOnce() + Send + 'static>(&self, cb: F) {
-        let mut cb = Some(cb);
-        unsafe {
-            connect_idle(move || {
-                cb.take().expect("Callback should only be called once")();
-                glib_sys::GFALSE
-            });
-        };
-    }
-}
-
-impl Drop for GtkGlobalThread {
-    fn drop(&mut self) {
-        self.running.store(false, Ordering::Release);
-        unsafe { glib_sys::g_main_context_wakeup(std::ptr::null_mut()) };
-    }
-}
-
-unsafe fn connect_idle<F: FnMut() -> glib_sys::gboolean + Send + 'static>(f: F) {
-    unsafe extern "C" fn response_trampoline<F: FnMut() -> glib_sys::gboolean + Send + 'static>(
-        f: glib_sys::gpointer,
-    ) -> glib_sys::gboolean {
-        let f: &mut F = &mut *(f as *mut F);
-
-        f()
-    }
-    let f_box: Box<F> = Box::new(f);
-
-    unsafe extern "C" fn destroy_closure<F>(ptr: *mut std::ffi::c_void) {
-        // destroy
-        let _ = Box::<F>::from_raw(ptr as *mut _);
-    }
-
-    glib_sys::g_idle_add_full(
-        glib_sys::G_PRIORITY_DEFAULT_IDLE,
-        Some(response_trampoline::<F>),
-        Box::into_raw(f_box) as glib_sys::gpointer,
-        Some(destroy_closure::<F>),
-    );
+    let (tx, rx) = mpsc::channel();
+    run_on_main(move || {
+        show_dialog_local(build, cb, move |res| {
+            tx.send(res).ok();
+        })
+    });
+    rx.recv().expect("GTK3 dialog was dropped")
 }
 
 pub(super) unsafe fn find_gtk_window(
