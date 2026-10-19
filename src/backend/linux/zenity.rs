@@ -102,7 +102,7 @@ pub async fn pick_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
         .map(to_path))
 }
 
-pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
+pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Option<Vec<PathBuf>>> {
     let mut command = file_dialog_command(dialog);
     command.args(["--file-selection", "--multiple", "--separator=\n"]);
 
@@ -110,8 +110,7 @@ pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(|s| s.split(|&byte| byte == b'\n').map(to_path).collect())
-        .unwrap_or_default())
+        .map(|s| s.split(|&byte| byte == b'\n').map(to_path).collect()))
 }
 
 pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
@@ -125,7 +124,7 @@ pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
         .map(to_path))
 }
 
-pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
+pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Option<Vec<PathBuf>>> {
     let mut command = file_dialog_command(dialog);
     command.args([
         "--file-selection",
@@ -138,8 +137,7 @@ pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(|s| s.split(|&byte| byte == b'\n').map(to_path).collect())
-        .unwrap_or_default())
+        .map(|s| s.split(|&byte| byte == b'\n').map(to_path).collect()))
 }
 
 pub async fn save_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {

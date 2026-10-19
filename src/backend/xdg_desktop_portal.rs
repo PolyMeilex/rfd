@@ -134,7 +134,7 @@ impl FilePickerDialogImpl for FileDialog {
         } else {
             warn!("Using zenity fallback");
             match block_on(zenity::pick_files(&self)) {
-                Ok(res) => Some(res),
+                Ok(res) => res,
                 Err(err) => {
                     error!("Failed to pick files with zenity: {err}");
                     None
@@ -219,7 +219,7 @@ impl FolderPickerDialogImpl for FileDialog {
         } else {
             warn!("Using zenity fallback");
             match block_on(zenity::pick_folders(&self)) {
-                Ok(res) => Some(res),
+                Ok(res) => res,
                 Err(err) => {
                     error!("Failed to pick folders with zenity: {err}");
                     None
