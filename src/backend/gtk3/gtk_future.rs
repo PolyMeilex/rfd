@@ -1,5 +1,7 @@
 use super::utils::GtkGlobalThread;
 
+use glib::prelude::*;
+
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
@@ -55,13 +57,18 @@ impl<R: Default + 'static, D: AsGtkDialog + 'static> GtkDialogFuture<R, D> {
                 let mut state = state.lock().unwrap();
                 state.dialog = Some(build());
 
-                unsafe {
-                    let dialog = state.dialog.as_ref().unwrap();
-                    dialog.show();
+                let dialog = state.dialog.as_ref().unwrap();
+                unsafe { dialog.show() };
 
-                    let ptr = dialog.gtk_dialog_ptr();
-                    connect_response(ptr as *mut _, callback);
-                }
+                dialog
+                    .object()
+                    .connect_local("response", false, move |values| {
+                        let res_id = values[1]
+                            .get::<i32>()
+                            .expect("response signal should carry an i32 response id");
+                        callback(res_id);
+                        None
+                    });
             });
         }
 
@@ -82,59 +89,4 @@ impl<R, D> std::future::Future for GtkDialogFuture<R, D> {
             Poll::Pending
         }
     }
-}
-
-use gobject_sys::GCallback;
-use gtk_sys::{GtkDialog, GtkResponseType};
-use std::ffi::c_void;
-use std::os::raw::c_char;
-
-unsafe fn connect_raw<F>(
-    receiver: *mut gobject_sys::GObject,
-    signal_name: *const c_char,
-    trampoline: GCallback,
-    closure: *mut F,
-) {
-    use std::mem;
-
-    use glib_sys::gpointer;
-
-    unsafe extern "C" fn destroy_closure<F>(ptr: *mut c_void, _: *mut gobject_sys::GClosure) {
-        // destroy
-        let _ = Box::<F>::from_raw(ptr as *mut _);
-    }
-    assert_eq!(mem::size_of::<*mut F>(), mem::size_of::<gpointer>());
-    assert!(trampoline.is_some());
-    let handle = gobject_sys::g_signal_connect_data(
-        receiver,
-        signal_name,
-        trampoline,
-        closure as *mut _,
-        Some(destroy_closure::<F>),
-        0,
-    );
-    assert!(handle > 0);
-}
-
-unsafe fn connect_response<F: Fn(GtkResponseType) + 'static>(dialog: *mut GtkDialog, f: F) {
-    use std::mem::transmute;
-
-    unsafe extern "C" fn response_trampoline<F: Fn(GtkResponseType) + 'static>(
-        _this: *mut gtk_sys::GtkDialog,
-        res: GtkResponseType,
-        f: glib_sys::gpointer,
-    ) {
-        let f: &F = &*(f as *const F);
-
-        f(res);
-    }
-    let f: Box<F> = Box::new(f);
-    connect_raw(
-        dialog as *mut _,
-        b"response\0".as_ptr() as *const _,
-        Some(transmute::<_, unsafe extern "C" fn()>(
-            response_trampoline::<F> as *const (),
-        )),
-        Box::into_raw(f),
-    );
 }

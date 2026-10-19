@@ -906,8 +906,7 @@ version = "0.17.2"
 dependencies = [
  "block2",
  "dispatch2",
- "glib-sys",
- "gobject-sys",
+ "glib",
  "gtk-sys",
  "gtk4",
  "js-sys",

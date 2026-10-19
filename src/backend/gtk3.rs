@@ -6,6 +6,6 @@ mod gtk_future;
 mod utils;
 
 pub(self) trait AsGtkDialog {
-    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog;
+    fn object(&self) -> &glib::Object;
     unsafe fn show(&self);
 }

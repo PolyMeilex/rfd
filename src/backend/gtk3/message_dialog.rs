@@ -1,5 +1,6 @@
-use std::ffi::CString;
-use std::ptr;
+use glib::prelude::*;
+use glib::translate::{from_glib, from_glib_none, FromGlibPtrContainer};
+use glib::GString;
 
 use super::gtk_future::GtkDialogFuture;
 use super::utils::GtkGlobalThread;
@@ -10,7 +11,7 @@ use crate::MessageDialogResult;
 
 pub struct GtkMessageDialog {
     buttons: MessageButtons,
-    ptr: *mut gtk_sys::GtkDialog,
+    object: glib::Object,
 }
 
 impl GtkMessageDialog {
@@ -33,42 +34,39 @@ impl GtkMessageDialog {
 
         let custom_buttons = match &opt.buttons {
             MessageButtons::YesNoCancel => vec![
-                Some((CString::new("Yes").unwrap(), gtk_sys::GTK_RESPONSE_YES)),
-                Some((CString::new("No").unwrap(), gtk_sys::GTK_RESPONSE_NO)),
-                Some((
-                    CString::new("Cancel").unwrap(),
-                    gtk_sys::GTK_RESPONSE_CANCEL,
-                )),
+                Some((GString::from("Yes"), gtk_sys::GTK_RESPONSE_YES)),
+                Some((GString::from("No"), gtk_sys::GTK_RESPONSE_NO)),
+                Some((GString::from("Cancel"), gtk_sys::GTK_RESPONSE_CANCEL)),
                 None,
             ],
             MessageButtons::OkCustom(ok_text) => vec![
                 Some((
-                    CString::new(ok_text.as_bytes()).unwrap(),
+                    GString::from_string_checked(ok_text.clone()).unwrap(),
                     gtk_sys::GTK_RESPONSE_OK,
                 )),
                 None,
             ],
             MessageButtons::OkCancelCustom(ok_text, cancel_text) => vec![
                 Some((
-                    CString::new(ok_text.as_bytes()).unwrap(),
+                    GString::from_string_checked(ok_text.clone()).unwrap(),
                     gtk_sys::GTK_RESPONSE_OK,
                 )),
                 Some((
-                    CString::new(cancel_text.as_bytes()).unwrap(),
+                    GString::from_string_checked(cancel_text.clone()).unwrap(),
                     gtk_sys::GTK_RESPONSE_CANCEL,
                 )),
             ],
             MessageButtons::YesNoCancelCustom(yes_text, no_text, cancel_text) => vec![
                 Some((
-                    CString::new(yes_text.as_bytes()).unwrap(),
+                    GString::from_string_checked(yes_text.clone()).unwrap(),
                     gtk_sys::GTK_RESPONSE_YES,
                 )),
                 Some((
-                    CString::new(no_text.as_bytes()).unwrap(),
+                    GString::from_string_checked(no_text.clone()).unwrap(),
                     gtk_sys::GTK_RESPONSE_NO,
                 )),
                 Some((
-                    CString::new(cancel_text.as_bytes()).unwrap(),
+                    GString::from_string_checked(cancel_text.clone()).unwrap(),
                     gtk_sys::GTK_RESPONSE_CANCEL,
                 )),
                 None,
@@ -76,16 +74,19 @@ impl GtkMessageDialog {
             _ => vec![],
         };
 
-        let s: &str = &opt.title;
-        let title = CString::new(s).unwrap();
-        let s: &str = &opt.description;
-        let description = CString::new(s).unwrap();
+        let title = GString::from_string_checked(opt.title.clone()).unwrap();
+        let description = GString::from_string_checked(opt.description.clone()).unwrap();
 
-        let ptr = unsafe {
-            let mut parent_gtk_window = ptr::null_mut();
-            if let Some(parent_handle) = &opt.parent {
-                parent_gtk_window = super::utils::find_gtk_window(parent_handle);
-            }
+        let object: glib::Object = unsafe {
+            let parent_gtk_window = opt
+                .parent
+                .as_ref()
+                .and_then(|parent_handle| super::utils::find_gtk_window(parent_handle));
+            let parent_gtk_window = parent_gtk_window
+                .as_ref()
+                .map_or(std::ptr::null_mut(), |p| {
+                    p.as_ptr() as *mut gtk_sys::GtkWindow
+                });
 
             let dialog = gtk_sys::gtk_message_dialog_new(
                 parent_gtk_window,
@@ -110,25 +111,28 @@ impl GtkMessageDialog {
                 }
             }
 
-            dialog
-        };
-
-        unsafe {
             gtk_sys::gtk_message_dialog_format_secondary_text(
-                ptr as *mut _,
+                dialog as *mut _,
                 c"%s".as_ptr(),
                 description.as_ptr(),
             );
-        }
+
+            // GTK keeps the toplevel window reference to itself, so take our own
+            from_glib_none(dialog as *mut glib::gobject_ffi::GObject)
+        };
 
         Self {
-            ptr,
+            object,
             buttons: opt.buttons,
         }
     }
 
+    fn ptr(&self) -> *mut gtk_sys::GtkDialog {
+        self.object.as_ptr() as *mut _
+    }
+
     pub fn run(self) -> MessageDialogResult {
-        let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr) };
+        let res = unsafe { gtk_sys::gtk_dialog_run(self.ptr()) };
 
         use MessageButtons::*;
         match (&self.buttons, res) {
@@ -161,39 +165,35 @@ impl GtkMessageDialog {
     }
 }
 
-unsafe fn is_label(type_instance: *const gobject_sys::GTypeInstance) -> bool {
-    (*(*type_instance).g_class).g_type == gtk_sys::gtk_label_get_type()
-}
-
 /// Sets the child labels of a widget selectable
 unsafe fn set_child_labels_selectable(dialog: *mut gtk_sys::GtkDialog) {
+    let label_type: glib::Type = from_glib(gtk_sys::gtk_label_get_type());
+
     let area = gtk_sys::gtk_message_dialog_get_message_area(dialog as _);
-    let children = gtk_sys::gtk_container_get_children(area as _);
-    let mut current = children;
-    while !current.is_null() {
-        let child = (*current).data;
-        if is_label(child as _) {
-            gtk_sys::gtk_label_set_selectable(child as _, 1);
+    let children: Vec<glib::Object> =
+        FromGlibPtrContainer::from_glib_container(gtk_sys::gtk_container_get_children(area as _));
+
+    for child in children {
+        if child.type_().is_a(label_type) {
+            gtk_sys::gtk_label_set_selectable(child.as_ptr() as _, glib::ffi::GTRUE);
         }
-        current = (*current).next;
     }
-    glib_sys::g_list_free(children);
 }
 
 impl Drop for GtkMessageDialog {
     fn drop(&mut self) {
         unsafe {
-            gtk_sys::gtk_widget_destroy(self.ptr as *mut _);
+            gtk_sys::gtk_widget_destroy(self.ptr() as *mut _);
         }
     }
 }
 
 impl AsGtkDialog for GtkMessageDialog {
-    fn gtk_dialog_ptr(&self) -> *mut gtk_sys::GtkDialog {
-        self.ptr as *mut _
+    fn object(&self) -> &glib::Object {
+        &self.object
     }
     unsafe fn show(&self) {
-        gtk_sys::gtk_widget_show_all(self.ptr as *mut _);
+        gtk_sys::gtk_widget_show_all(self.ptr() as *mut _);
     }
 }
 
