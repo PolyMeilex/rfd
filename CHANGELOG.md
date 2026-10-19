@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Fix the zenity fallback returning `None` for a file name that isn't valid UTF-8. zenity's output is now kept as bytes.
+- Return `None` instead of `Some(vec![])` when `pick_files` or `pick_folders` is cancelled in the zenity fallback, as the XDG portal backend does since #323.
 
 ## 0.18.0
 
