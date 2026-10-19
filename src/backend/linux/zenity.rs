@@ -59,13 +59,26 @@ fn file_dialog_command(dialog: &FileDialog) -> Command {
         command.arg(format!("{} | {}", name, extensions.join(" ")));
     }
 
-    if let Some(name) = dialog.file_name.as_ref() {
-        command.arg("--filename");
-        command.arg(name);
-    }
+    // zenity starts in the folder of an absolute `--filename`, or in the path itself when it ends
+    // with `/`, whatever GTK's file chooser `startup-mode` is
+    let path = match (&dialog.starting_directory, &dialog.file_name) {
+        (Some(dir), name) => {
+            let dir = std::path::absolute(dir).unwrap_or_else(|_| dir.clone());
+            // Joining an empty name adds the trailing `/`
+            let path = dir.join(name.as_deref().unwrap_or_default());
+            // zenity 4 ignores `/`, as it's its own base name
+            Some(if path.as_os_str() == "/" {
+                "/./".into()
+            } else {
+                path
+            })
+        }
+        (None, name) => name.as_ref().map(PathBuf::from),
+    };
 
-    if let Some(dir) = dialog.starting_directory.as_ref() {
-        command.current_dir(dir);
+    if let Some(path) = path {
+        command.arg("--filename");
+        command.arg(path);
     }
 
     command
@@ -341,6 +354,54 @@ mod tests {
                 "--file-filter",
                 "Text / Markdown | *.txt *.md"
             ]
+        );
+    }
+
+    #[test]
+    fn file_dialog_starting_directory() {
+        let dialog = FileDialog::new().set_directory("/home/user/Documents");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["--no-markup", "--filename", "/home/user/Documents/"]
+        );
+        assert_eq!(command.get_current_dir(), None);
+
+        let dialog = dialog.set_file_name("report.txt");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                "--no-markup",
+                "--filename",
+                "/home/user/Documents/report.txt"
+            ]
+        );
+
+        let dialog = FileDialog::new().set_directory("Documents");
+        let command = super::file_dialog_command(&dialog);
+        let documents = std::env::current_dir().unwrap().join("Documents/");
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                "--no-markup".as_ref(),
+                "--filename".as_ref(),
+                documents.as_os_str()
+            ]
+        );
+
+        let dialog = FileDialog::new().set_directory("/");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["--no-markup", "--filename", "/./"]
+        );
+
+        let dialog = FileDialog::new().set_file_name("report.txt");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["--no-markup", "--filename", "report.txt"]
         );
     }
 }

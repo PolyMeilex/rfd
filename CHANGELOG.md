@@ -11,6 +11,7 @@
 - Fix the zenity fallback returning `None` for a file name that isn't valid UTF-8. zenity's output is now kept as bytes.
 - Return `None` instead of `Some(vec![])` when `pick_files` or `pick_folders` is cancelled in the zenity fallback, as the XDG portal backend does since #323.
 - Fix filter names that contain `|` in the zenity fallback, which zenity cut off at the `|`, reading the rest as file patterns. `|` in a filter name is now shown as `/`.
+- Open the directory set with `set_directory` in the zenity fallback's open and folder dialogs, which could start on Recent with GTK's default file chooser settings. The directory is now passed with `--filename` rather than as zenity's working directory, and a directory that doesn't exist no longer stops the dialog from opening.
 - Fix `liblary` typo in docs
 - Change wasm title to sanitize text contents via `title_el.set_text_content()` rather than `title_el.set_inner_html()`.
 - Set wasm dialog styles via `set_text_content()` rather than `set_inner_html()`, so rfd no longer uses `innerHTML`.
