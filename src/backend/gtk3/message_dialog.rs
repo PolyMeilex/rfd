@@ -168,14 +168,16 @@ unsafe fn is_label(type_instance: *const gobject_sys::GTypeInstance) -> bool {
 /// Sets the child labels of a widget selectable
 unsafe fn set_child_labels_selectable(dialog: *mut gtk_sys::GtkDialog) {
     let area = gtk_sys::gtk_message_dialog_get_message_area(dialog as _);
-    let mut children = gtk_sys::gtk_container_get_children(area as _);
-    while !children.is_null() {
-        let child = (*children).data;
+    let children = gtk_sys::gtk_container_get_children(area as _);
+    let mut current = children;
+    while !current.is_null() {
+        let child = (*current).data;
         if is_label(child as _) {
             gtk_sys::gtk_label_set_selectable(child as _, 1);
         }
-        children = (*children).next;
+        current = (*current).next;
     }
+    glib_sys::g_list_free(children);
 }
 
 impl Drop for GtkMessageDialog {

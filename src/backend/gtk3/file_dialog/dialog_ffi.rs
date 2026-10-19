@@ -3,8 +3,9 @@ use crate::FileDialog;
 use gtk_sys::GtkFileChooserNative;
 
 use std::{
-    ffi::{CStr, CString},
+    ffi::{c_char, CStr, CString, OsStr},
     ops::Deref,
+    os::unix::ffi::OsStrExt,
     path::{Path, PathBuf},
 };
 
@@ -110,60 +111,41 @@ impl GtkFileDialog {
     }
 
     pub fn get_result(&self) -> Option<PathBuf> {
-        let cstr = unsafe {
-            let chosen_filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as _);
-            CStr::from_ptr(chosen_filename).to_str()
-        };
+        unsafe {
+            let filename = gtk_sys::gtk_file_chooser_get_filename(self.ptr as _);
+            if filename.is_null() {
+                return None;
+            }
 
-        if let Ok(cstr) = cstr {
-            Some(PathBuf::from(cstr.to_owned()))
-        } else {
-            None
+            let path = filename_to_path(filename);
+            glib_sys::g_free(filename as _);
+            Some(path)
         }
     }
 
     pub fn get_results(&self) -> Vec<PathBuf> {
-        #[derive(Debug)]
-        struct FileList(*mut glib_sys::GSList);
+        unsafe {
+            let filenames = gtk_sys::gtk_file_chooser_get_filenames(self.ptr as _);
 
-        impl Iterator for FileList {
-            type Item = glib_sys::GSList;
-            fn next(&mut self) -> Option<Self::Item> {
-                let curr_ptr = self.0;
-
-                if !curr_ptr.is_null() {
-                    let curr = unsafe { *curr_ptr };
-
-                    self.0 = curr.next;
-
-                    Some(curr)
-                } else {
-                    None
-                }
+            let mut paths = Vec::new();
+            let mut current = filenames;
+            while !current.is_null() {
+                paths.push(filename_to_path((*current).data as *const c_char));
+                current = (*current).next;
             }
+
+            glib_sys::g_slist_free_full(filenames, Some(glib_sys::g_free));
+            paths
         }
-
-        let chosen_filenames =
-            unsafe { gtk_sys::gtk_file_chooser_get_filenames(self.ptr as *mut _) };
-
-        let paths: Vec<PathBuf> = FileList(chosen_filenames)
-            .filter_map(|item| {
-                let cstr = unsafe { CStr::from_ptr(item.data as _).to_str() };
-
-                if let Ok(cstr) = cstr {
-                    Some(PathBuf::from(cstr.to_owned()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        paths
     }
 
     pub fn run(&self) -> i32 {
         unsafe { gtk_sys::gtk_native_dialog_run(self.ptr as *mut _) }
     }
+}
+
+unsafe fn filename_to_path(filename: *const c_char) -> PathBuf {
+    PathBuf::from(OsStr::from_bytes(CStr::from_ptr(filename).to_bytes()))
 }
 
 fn parent_gtk_window(opt: &FileDialog) -> *mut gtk_sys::GtkWindow {
