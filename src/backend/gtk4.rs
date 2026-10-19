@@ -77,10 +77,14 @@ where
     Fut: Future<Output = R> + 'static,
     F: FnOnce() -> Fut + Send + 'static,
 {
-    assert!(
-        !glib::MainContext::default().is_owner(),
-        "sync rfd dialogs can't be shown from the GTK main thread, use the async API instead"
-    );
+    let context = glib::MainContext::default();
+    if context.is_owner() {
+        // We are already on GTK thread, so instead we run a nested main loop until the dialog responds
+        ensure_gtk_thread();
+        // SAFETY: GTK is initialized, and we are on the gtk thread
+        unsafe { gtk4::set_initialized() };
+        return context.block_on(f());
+    }
 
     let (tx, rx) = mpsc::channel();
     run_on_main(f, move |res| {
