@@ -109,7 +109,11 @@ impl GtkMessageDialog {
         };
 
         unsafe {
-            gtk_sys::gtk_message_dialog_format_secondary_text(ptr as *mut _, description.as_ptr());
+            gtk_sys::gtk_message_dialog_format_secondary_text(
+                ptr as *mut _,
+                b"%s\0".as_ptr() as *const _,
+                description.as_ptr(),
+            );
         }
 
         Self {

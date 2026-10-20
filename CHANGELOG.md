@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix GTK3 message dialogs using the description as a printf format string, which garbled text containing `%` and could crash. The description is now shown as given, so `%%` is no longer shown as `%`.
+
 ## 0.16.0
 
 - Fix regressions on Wayland due to `ashpd` upgrade (#255).
