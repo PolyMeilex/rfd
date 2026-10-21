@@ -76,14 +76,23 @@
 //! If you are packaging an application that uses RFD, ensure that both a supported portal backend and
 //! Zenity are installed with the package.
 //!
-//! # macOS non-windowed applications, async, and threading
+//! # macOS event loops and threading
 //!
-//! macOS async dialogs require an `NSApplication` instance, so the dialog is only truly async when
-//! opened in windowed environment like `winit` or `SDL2`. Otherwise, it will fallback to sync dialog.
-//! It is also recommended to spawn dialogs on your main thread. RFD can run dialogs from any thread
-//! but it is only possible in a windowed app and it adds a little bit of overhead. So it is recommended
-//! to [spawn on main and await in other thread](https://github.com/PolyMeilex/rfd/blob/master/examples/async.rs).
-//! Non-windowed apps will never be able to spawn async dialogs or from threads other than the main thread.
+//! File dialogs execute on the OS main thread. Their calls use the main thread directly or
+//! dispatch work to it; they do not take ownership of the application's event loop.
+//! A background caller requires the main thread to keep processing dispatch work. Calling from
+//! a worker without that processing can wait indefinitely. Do not block the main thread waiting
+//! for a worker that may call a dialog.
+//!
+//! ## Asynchronous file dialogs
+//!
+//! With a running application loop and a suitable parent window, `AsyncFileDialog` presents a
+//! sheet. Prefer an explicit `set_parent`; otherwise rfd looks for an application window.
+//! When a sheet cannot be used, it falls back to a synchronous modal dialog on main. Constructing
+//! that future can block until the dialog closes, including when called from a worker with a
+//! running host or standalone loop. Awaiting the returned future does not make this fallback
+//! asynchronous. `AsyncMessageDialog` without a parent uses a separate backend and does not
+//! follow this sheet/fallback selection.
 //!
 //! # Customize button texts of message dialog in Windows
 //!
