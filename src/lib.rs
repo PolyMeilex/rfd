@@ -140,6 +140,12 @@
 
 mod backend;
 
+/// Native event processing for standalone macOS applications.
+#[cfg(target_os = "macos")]
+pub mod macos {
+    pub use crate::backend::macos::native_events::{run_with_native_events, NativeLoopError};
+}
+
 mod file_handle;
 pub use file_handle::FileHandle;
 

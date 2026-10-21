@@ -41,7 +41,7 @@ mod gtk3;
 ))]
 mod gtk4;
 #[cfg(target_os = "macos")]
-mod macos;
+pub(crate) mod macos;
 #[cfg(target_family = "wasm")]
 mod wasm;
 #[cfg(target_os = "windows")]
