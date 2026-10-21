@@ -84,6 +84,28 @@
 //! a worker without that processing can wait indefinitely. Do not block the main thread waiting
 //! for a worker that may call a dialog.
 //!
+//! ## Applications with a GUI framework
+//!
+//! Let your framework, such as `winit` or `SDL2`, own the event loop and use the ordinary
+//! `FileDialog`, `AsyncFileDialog`, or message-dialog APIs. Do not call
+//! `macos::run_with_native_events` when a framework owns the application lifecycle,
+//! even before its loop starts.
+//!
+//! ## Standalone applications
+//!
+//! Call `macos::run_with_native_events` once from the OS main thread to explicitly let rfd own
+//! native event processing. It runs your closure on a worker while main processes AppKit events.
+//! Use the same ordinary dialog APIs inside that closure; no application window is required
+//! for synchronous file dialogs.
+//!
+//! Keep the closure running while the application needs native dialogs, including waits
+//! between requests. Returning requests shutdown; it does not confirm that dismissal animation
+//! has finished. See `macos::run_with_native_events` for the lifecycle requirements and
+//! a complete usage example. From a terminal on macOS, run:
+//!
+//! - `cargo run --example macos_native_events` for `FileDialog`.
+//! - `cargo run --example macos_native_events_async` for `AsyncFileDialog`.
+//!
 //! ## Asynchronous file dialogs
 //!
 //! With a running application loop and a suitable parent window, `AsyncFileDialog` presents a
@@ -93,6 +115,10 @@
 //! running host or standalone loop. Awaiting the returned future does not make this fallback
 //! asynchronous. `AsyncMessageDialog` without a parent uses a separate backend and does not
 //! follow this sheet/fallback selection.
+//!
+//! The basic `examples/async.rs` demonstrates the ordinary async API. It parks main after
+//! constructing the dialog future, so it does not provide continuing native event processing
+//! on macOS. Use `examples/macos_native_events_async.rs` for standalone macOS lifecycle ownership.
 //!
 //! # Customize button texts of message dialog in Windows
 //!
