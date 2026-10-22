@@ -48,11 +48,10 @@ impl FileDialog {
     /// The name of the filter will be displayed on supported platforms:
     ///   * Windows
     ///   * Linux
-    ///   * Mac (`save_file` only, when two or more filters are registered)
+    ///   * Mac (when two or more filters are registered)
     ///
-    /// In every other case — other platforms, Mac's `pick_file`/`pick_files`/etc, or Mac's
-    /// `save_file` with fewer than two filters — all filters are merged into one flat
-    /// allowed-types list
+    /// In every other case — other platforms, or Mac with fewer than two filters — all
+    /// filters are merged into one flat allowed-types list
     pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.filters.push(Filter {
             name: name.into(),
@@ -124,7 +123,7 @@ impl FileDialog {
         self
     }
 
-    /// Set the label shown next to the format picker in `save_file`'s accessory view
+    /// Set the label shown next to the format picker in the dialog's accessory view
     /// (only shown when two or more filters are registered). Defaults to "Format:".
     /// Supported in: `macos`.
     pub fn set_format_label(mut self, label: impl Into<String>) -> Self {
@@ -224,11 +223,10 @@ impl AsyncFileDialog {
     /// The name of the filter will be displayed on supported platforms:
     ///   * Windows
     ///   * Linux
-    ///   * Mac (`save_file` only, when two or more filters are registered)
+    ///   * Mac (when two or more filters are registered)
     ///
-    /// In every other case — other platforms, Mac's `pick_file`/`pick_files`/etc, or Mac's
-    /// `save_file` with fewer than two filters — all filters are merged into one flat
-    /// allowed-types list
+    /// In every other case — other platforms, or Mac with fewer than two filters — all
+    /// filters are merged into one flat allowed-types list
     pub fn add_filter(mut self, name: impl Into<String>, extensions: &[impl ToString]) -> Self {
         self.file_dialog = self.file_dialog.add_filter(name, extensions);
         self
@@ -293,7 +291,7 @@ impl AsyncFileDialog {
         self
     }
 
-    /// Set the label shown next to the format picker in `save_file`'s accessory view
+    /// Set the label shown next to the format picker in the dialog's accessory view
     /// (only shown when two or more filters are registered). Defaults to "Format:".
     /// Supported in: `macos`.
     pub fn set_format_label(mut self, label: impl Into<String>) -> Self {

@@ -33,8 +33,8 @@ pub struct Panel {
     _focus_manager: FocusManager,
     _policy_manager: PolicyManager,
     // NSControl.target is an unretained (assign) reference, so this is the
-    // only thing keeping the save panel's format-picker handler alive.
-    _save_panel_handler: Option<Retained<SavePanelHandler>>,
+    // only thing keeping the panel's format-picker handler alive.
+    _format_handler: Option<Retained<FormatHandler>>,
 }
 
 impl AsModal for Panel {
@@ -69,7 +69,7 @@ impl Panel {
             parent: parent.map(window_from_raw_window_handle),
             _focus_manager,
             _policy_manager,
-            _save_panel_handler: None,
+            _format_handler: None,
         }
     }
 
@@ -187,7 +187,7 @@ struct FormatOption {
     types: Retained<NSArray<UTType>>,
 }
 
-struct SavePanelHandlerIvars {
+struct FormatHandlerIvars {
     panel: Retained<NSSavePanel>,
     options: Vec<FormatOption>,
 }
@@ -195,12 +195,12 @@ struct SavePanelHandlerIvars {
 define_class!(
     #[unsafe(super = NSObject)]
     #[thread_kind = MainThreadOnly]
-    #[ivars = SavePanelHandlerIvars]
-    struct SavePanelHandler;
+    #[ivars = FormatHandlerIvars]
+    struct FormatHandler;
 
-    unsafe impl NSObjectProtocol for SavePanelHandler {}
+    unsafe impl NSObjectProtocol for FormatHandler {}
 
-    impl SavePanelHandler {
+    impl FormatHandler {
         #[unsafe(method(formatChanged:))]
         fn format_changed(&self, sender: &NSPopUpButton) {
             let idx = unsafe { sender.indexOfSelectedItem() };
@@ -215,13 +215,13 @@ define_class!(
     }
 );
 
-impl SavePanelHandler {
+impl FormatHandler {
     fn new(
         mtm: MainThreadMarker,
         panel: Retained<NSSavePanel>,
         options: Vec<FormatOption>,
     ) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(SavePanelHandlerIvars { panel, options });
+        let this = Self::alloc(mtm).set_ivars(FormatHandlerIvars { panel, options });
         unsafe { msg_send![super(this), init] }
     }
 }
@@ -289,13 +289,61 @@ fn build_format_accessory_view(
     (view, popup)
 }
 
+fn add_format_picker(
+    mtm: MainThreadMarker,
+    panel: &Retained<NSSavePanel>,
+    filters: &[Filter],
+    opt: &FileDialog,
+) -> Retained<FormatHandler> {
+    let label_text = opt.format_label.as_deref().unwrap_or("Format:");
+    let (view, popup) = build_format_accessory_view(mtm, filters, label_text);
+
+    let options = filters
+        .iter()
+        .map(|filter| FormatOption {
+            types: utypes_for_filter(filter),
+        })
+        .collect();
+
+    let handler = FormatHandler::new(mtm, panel.clone(), options);
+
+    unsafe {
+        popup.setTarget(Some(&handler));
+        popup.setAction(Some(sel!(formatChanged:)));
+    }
+
+    unsafe {
+        panel.setAllowedContentTypes(&utypes_for_filter(&filters[0]));
+        popup.selectItemAtIndex(0);
+        panel.setAccessoryView(Some(&view));
+    }
+
+    handler
+}
+
+fn add_open_filters(
+    mtm: MainThreadMarker,
+    panel: &Retained<NSOpenPanel>,
+    opt: &FileDialog,
+) -> Option<Retained<FormatHandler>> {
+    match opt.filters.as_slice() {
+        [] => None,
+        [_] => {
+            panel.add_filters(opt);
+            None
+        }
+        multiple => {
+            let panel = Retained::into_super(panel.clone());
+            Some(add_format_picker(mtm, &panel, multiple, opt))
+        }
+    }
+}
+
 impl Panel {
     pub fn build_pick_file(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
-        if !opt.filters.is_empty() {
-            panel.add_filters(opt);
-        }
+        let format_handler = add_open_filters(mtm, &panel, opt);
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path);
@@ -320,44 +368,21 @@ impl Panel {
         unsafe { panel.setCanChooseDirectories(false) };
         unsafe { panel.setCanChooseFiles(true) };
 
-        Self::new(Retained::into_super(panel), opt.parent.as_ref())
+        let mut result = Self::new(Retained::into_super(panel), opt.parent.as_ref());
+        result._format_handler = format_handler;
+        result
     }
 
     pub fn build_save_file(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSSavePanel::savePanel(mtm) };
 
-        let save_panel_handler = match opt.filters.as_slice() {
+        let format_handler = match opt.filters.as_slice() {
             [] => None,
             [single] => {
                 unsafe { panel.setAllowedContentTypes(&utypes_for_filter(single)) };
                 None
             }
-            multiple => {
-                let label_text = opt.format_label.as_deref().unwrap_or("Format:");
-                let (view, popup) = build_format_accessory_view(mtm, multiple, label_text);
-
-                let options = multiple
-                    .iter()
-                    .map(|filter| FormatOption {
-                        types: utypes_for_filter(filter),
-                    })
-                    .collect();
-
-                let handler = SavePanelHandler::new(mtm, panel.clone(), options);
-
-                unsafe {
-                    popup.setTarget(Some(&handler));
-                    popup.setAction(Some(sel!(formatChanged:)));
-                }
-
-                unsafe {
-                    panel.setAllowedContentTypes(&utypes_for_filter(&multiple[0]));
-                    popup.selectItemAtIndex(0);
-                    panel.setAccessoryView(Some(&view));
-                }
-
-                Some(handler)
-            }
+            multiple => Some(add_format_picker(mtm, &panel, multiple, opt)),
         };
 
         if let Some(path) = &opt.starting_directory {
@@ -381,7 +406,7 @@ impl Panel {
         }
 
         let mut result = Self::new(panel, opt.parent.as_ref());
-        result._save_panel_handler = save_panel_handler;
+        result._format_handler = format_handler;
         result
     }
 
@@ -437,9 +462,7 @@ impl Panel {
     pub fn build_pick_files(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
-        if !opt.filters.is_empty() {
-            panel.add_filters(opt);
-        }
+        let format_handler = add_open_filters(mtm, &panel, opt);
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path);
@@ -461,15 +484,15 @@ impl Panel {
         unsafe { panel.setCanChooseFiles(true) };
         unsafe { panel.setAllowsMultipleSelection(true) };
 
-        Self::new(Retained::into_super(panel), opt.parent.as_ref())
+        let mut result = Self::new(Retained::into_super(panel), opt.parent.as_ref());
+        result._format_handler = format_handler;
+        result
     }
 
     pub fn build_pick_file_or_folder(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
-        if !opt.filters.is_empty() {
-            panel.add_filters(opt);
-        }
+        let format_handler = add_open_filters(mtm, &panel, opt);
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path);
@@ -490,15 +513,15 @@ impl Panel {
         unsafe { panel.setCanChooseFiles(true) };
         unsafe { panel.setAllowsMultipleSelection(false) };
 
-        Self::new(Retained::into_super(panel), opt.parent.as_ref())
+        let mut result = Self::new(Retained::into_super(panel), opt.parent.as_ref());
+        result._format_handler = format_handler;
+        result
     }
 
     pub fn build_pick_files_or_folders(opt: &FileDialog, mtm: MainThreadMarker) -> Self {
         let panel = unsafe { NSOpenPanel::openPanel(mtm) };
 
-        if !opt.filters.is_empty() {
-            panel.add_filters(opt);
-        }
+        let format_handler = add_open_filters(mtm, &panel, opt);
 
         if let Some(path) = &opt.starting_directory {
             panel.set_path(path);
@@ -519,6 +542,8 @@ impl Panel {
         unsafe { panel.setCanChooseFiles(true) };
         unsafe { panel.setAllowsMultipleSelection(true) };
 
-        Self::new(Retained::into_super(panel), opt.parent.as_ref())
+        let mut result = Self::new(Retained::into_super(panel), opt.parent.as_ref());
+        result._format_handler = format_handler;
+        result
     }
 }
