@@ -7,7 +7,7 @@ fn main() {
 
     match target_os.as_str() {
         "macos" => println!("cargo:rustc-link-lib=framework=AppKit"),
-        "windows" => {}
+        "windows" | "haiku" => {}
         _ if is_wasm => {}
         _ => {
             let backends = ["GTK3", "GTK4", "XDG_PORTAL"]
