@@ -5,6 +5,15 @@ fn main() {
         std::env::var("CARGO_CFG_TARGET_FAMILY").expect("target FAMILY not detected");
     let is_wasm = target_family.split(',').any(|f| f == "wasm");
 
+    println!("cargo:rustc-check-cfg=cfg(rfd_unixlike)");
+    // Keep in sync with Cargo.toml
+    if matches!(
+        target_os.as_str(),
+        "linux" | "freebsd" | "dragonfly" | "netbsd" | "openbsd" | "solaris" | "illumos"
+    ) {
+        println!("cargo:rustc-cfg=rfd_unixlike");
+    }
+
     match target_os.as_str() {
         "macos" => println!("cargo:rustc-link-lib=framework=AppKit"),
         "windows" => {}
