@@ -1,18 +1,21 @@
-use block2::Block;
-use dispatch2::run_on_main;
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task::{Context, Poll, Waker},
+};
+
+use block2::{Block, RcBlock};
 use objc2::rc::Retained;
 use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message};
 use objc2_app_kit::{NSApplication, NSModalResponse, NSWindow};
 
-use std::pin::Pin;
-use std::sync::{Arc, Mutex};
-
-use std::task::{Context, Poll, Waker};
-
-use super::utils::activate_cocoa_multithreading;
+use super::utils::{activate_cocoa_multithreading, run_on_main};
 
 pub(super) trait AsModal {
     fn inner_modal(&self) -> &(impl InnerModal + 'static);
+    /// Return the parent explicitly supplied by the caller.
+    fn parent(&self) -> Option<&Retained<NSWindow>>;
 }
 
 pub(super) trait InnerModal: ClassType + MainThreadOnly {
@@ -35,26 +38,24 @@ pub(super) struct ModalFuture<R, D> {
 unsafe impl<R, D> Send for ModalFuture<R, D> {}
 
 impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
-    pub fn new<F, DBULD: FnOnce(MainThreadMarker) -> D + Send>(
-        win: Option<Retained<NSWindow>>,
-        build_modal: DBULD,
-        cb: F,
-    ) -> Self
+    /// Start the dialog on the main thread.
+    ///
+    /// Use a sheet when the application is running and a parent is available;
+    /// otherwise wait for modal dismissal before returning this future.
+    pub fn new<F, DBULD: FnOnce(MainThreadMarker) -> D + Send>(build_modal: DBULD, cb: F) -> Self
     where
         F: Fn(&mut D, isize) -> R + Send + 'static,
     {
-        activate_cocoa_multithreading();
-
         let state = Arc::new(Mutex::new(FutureState {
             waker: None,
             data: None,
             modal: None,
         }));
 
-        let dialog_callback = move |state: Arc<Mutex<FutureState<R, D>>>,
-                                    result: NSModalResponse| {
+        // Shared completion path: store the result and drop the wrapper on main
+        // before waking the waiting task.
+        let dialog_callback = move |state: &Mutex<FutureState<R, D>>, result: NSModalResponse| {
             let mut state = state.lock().unwrap();
-            // take() to drop it when it's safe to do so
             state.data = if let Some(mut modal) = state.modal.take() {
                 Some((cb)(&mut modal, result))
             } else {
@@ -65,64 +66,48 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             }
         };
 
-        let mtm = unsafe { MainThreadMarker::new_unchecked() };
-        let app = NSApplication::sharedApplication(mtm);
-
-        let win = if let Some(win) = win {
-            Some(win)
-        } else {
-            unsafe { app.mainWindow() }.or_else(|| app.windows().firstObject())
-        };
-
-        // if async exec is possible start sheet modal
-        // otherwise fallback to sync
-        if unsafe { app.isRunning() } && win.is_some() {
-            let state = state.clone();
-
-            // Hack to work around us getting the window above
-            struct WindowWrapper(Retained<NSWindow>);
-            unsafe impl Send for WindowWrapper {}
-            let window = WindowWrapper(win.unwrap());
-
-            run_on_main(move |mtm| {
-                let window = window;
-
-                let completion = {
-                    let state = state.clone();
-                    block2::RcBlock::new(move |result| {
-                        dialog_callback(state.clone(), result);
-                    })
-                };
-
-                let modal = build_modal(mtm);
-                let inner = modal.inner_modal().retain();
-
-                state.lock().unwrap().modal = Some(modal);
-
-                inner.begin_modal(&window.0, &completion);
-            });
-        } else {
-            eprintln!("\n Hi! It looks like you are running async dialog in unsupported environment, I will fallback to sync dialog for you. \n");
-
-            if let Some(mtm) = MainThreadMarker::new() {
-                let modal = build_modal(mtm);
-                let inner = modal.inner_modal().retain();
-
-                state.lock().unwrap().modal = Some(modal);
-
-                let ret = inner.run_modal();
-
-                dialog_callback(state.clone(), ret);
+        let dialog_state = Arc::clone(&state);
+        run_on_main(move |main| {
+            activate_cocoa_multithreading();
+            let app = NSApplication::sharedApplication(main);
+            let running = app.isRunning();
+            // Look up existing host windows before building the dialog: the new
+            // panel must not become its own fallback sheet parent.
+            let default_parent = if running {
+                app.mainWindow().or_else(|| app.windows().firstObject())
             } else {
-                panic!("Fallback Sync Dialog Must Be Spawned On Main Thread (Why? If async dialog is unsupported in this env, it also means that spawning dialogs outside of main thread is also inpossible");
+                None
+            };
+            let modal = build_modal(main);
+            let parent = if running {
+                modal.parent().cloned().or(default_parent)
+            } else {
+                None
+            };
+            // Keep the native dialog alive during the call, even if completion
+            // drops its wrapper.
+            let inner = modal.inner_modal().retain();
+            // Make the wrapper available before native completion can run.
+            // Release the mutex before presenting the dialog: completion locks it too.
+            dialog_state.lock().unwrap().modal = Some(modal);
+
+            if let Some(window) = parent {
+                let completion = RcBlock::new(move |result| {
+                    dialog_callback(&dialog_state, result);
+                });
+                inner.begin_modal(&window, &completion);
+                return;
             }
-        }
+
+            let result = inner.run_modal();
+            dialog_callback(&dialog_state, result);
+        });
 
         Self { state }
     }
 }
 
-impl<R, D> std::future::Future for ModalFuture<R, D> {
+impl<R, D> Future for ModalFuture<R, D> {
     type Output = R;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {

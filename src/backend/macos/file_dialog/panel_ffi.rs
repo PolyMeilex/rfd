@@ -1,8 +1,7 @@
 use core::str;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use block2::Block;
+use block2::{Block, StackBlock};
 use objc2::rc::Retained;
 use objc2::runtime::{NSObject, NSObjectProtocol};
 use objc2::{define_class, msg_send, sel, DefinedClass, MainThreadMarker, MainThreadOnly};
@@ -16,9 +15,8 @@ use raw_window_handle::RawWindowHandle;
 
 use super::super::{
     modal_future::{AsModal, InnerModal},
-    utils::{FocusManager, PolicyManager},
+    utils::{window_from_raw_window_handle, FocusManager, PolicyManager},
 };
-use crate::backend::macos::utils::window_from_raw_window_handle;
 use crate::file_dialog::Filter;
 use crate::FileDialog;
 
@@ -41,6 +39,10 @@ impl AsModal for Panel {
     fn inner_modal(&self) -> &(impl InnerModal + 'static) {
         &*self.panel
     }
+
+    fn parent(&self) -> Option<&Retained<NSWindow>> {
+        self.parent.as_ref()
+    }
 }
 
 impl InnerModal for NSSavePanel {
@@ -59,14 +61,15 @@ impl Panel {
     }
 
     pub fn new(panel: Retained<NSSavePanel>, parent: Option<&RawWindowHandle>) -> Self {
-        let _policy_manager = PolicyManager::new(MainThreadMarker::from(&*panel));
+        let main = MainThreadMarker::from(&*panel);
+        let _policy_manager = PolicyManager::new(main);
 
         let _focus_manager = FocusManager::new(MainThreadMarker::from(&*panel));
 
         panel.setLevel(unsafe { CGShieldingWindowLevel() } as NSWindowLevel);
         Self {
             panel,
-            parent: parent.map(window_from_raw_window_handle),
+            parent: parent.map(|parent| window_from_raw_window_handle(parent, main)),
             _focus_manager,
             _policy_manager,
             _save_panel_handler: None,
@@ -75,7 +78,7 @@ impl Panel {
 
     pub fn run_modal(&self) -> NSModalResponse {
         if let Some(parent) = self.parent.clone() {
-            let completion = block2::StackBlock::new(|_: isize| {});
+            let completion = StackBlock::new(|_: isize| {});
 
             unsafe {
                 self.panel

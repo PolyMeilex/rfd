@@ -1,14 +1,4 @@
-use crate::backend::DialogFutureType;
-use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
-
-use super::modal_future::AsModal;
-use super::{
-    modal_future::{InnerModal, ModalFuture},
-    utils::{self, run_on_main, FocusManager, PolicyManager},
-};
-
-use super::utils::window_from_raw_window_handle;
-use block2::Block;
+use block2::{Block, StackBlock};
 use objc2::rc::{autoreleasepool, Retained};
 use objc2::MainThreadMarker;
 use objc2_app_kit::{
@@ -16,6 +6,16 @@ use objc2_app_kit::{
     NSAlertThirdButtonReturn, NSApplication, NSModalResponse, NSWindow,
 };
 use objc2_foundation::NSString;
+
+use super::{
+    modal_future::{AsModal, InnerModal, ModalFuture},
+    utils::{
+        async_pop_dialog, run_on_main, sync_pop_dialog, window_from_raw_window_handle,
+        FocusManager, PolicyManager,
+    },
+};
+use crate::backend::{AsyncMessageDialogImpl, DialogFutureType, MessageDialogImpl};
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
 pub struct Alert {
     buttons: MessageButtons,
@@ -75,7 +75,9 @@ impl Alert {
 
         Self {
             alert,
-            parent: opt.parent.map(|x| window_from_raw_window_handle(&x)),
+            parent: opt
+                .parent
+                .map(|parent| window_from_raw_window_handle(&parent, mtm)),
             buttons: opt.buttons,
             _focus_manager,
             _policy_manager,
@@ -87,7 +89,7 @@ impl Alert {
 
         if let Some(parent) = self.parent.take() {
             let completion = {
-                block2::StackBlock::new(move |result| unsafe {
+                StackBlock::new(move |result| unsafe {
                     NSApplication::sharedApplication(mtm).stopModalWithCode(result);
                 })
             };
@@ -140,6 +142,10 @@ impl AsModal for Alert {
     fn inner_modal(&self) -> &(impl InnerModal + 'static) {
         &*self.alert
     }
+
+    fn parent(&self) -> Option<&Retained<NSWindow>> {
+        self.parent.as_ref()
+    }
 }
 
 impl InnerModal for NSAlert {
@@ -152,13 +158,12 @@ impl InnerModal for NSAlert {
     }
 }
 
-use crate::backend::MessageDialogImpl;
 impl MessageDialogImpl for MessageDialog {
     fn show(self) -> MessageDialogResult {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
                 if self.parent.is_none() {
-                    utils::sync_pop_dialog(self, mtm)
+                    sync_pop_dialog(self, mtm)
                 } else {
                     Alert::new(self, mtm).run()
                 }
@@ -167,15 +172,12 @@ impl MessageDialogImpl for MessageDialog {
     }
 }
 
-use crate::backend::AsyncMessageDialogImpl;
-
 impl AsyncMessageDialogImpl for MessageDialog {
     fn show_async(self) -> DialogFutureType<MessageDialogResult> {
         if self.parent.is_none() {
-            utils::async_pop_dialog(self)
+            async_pop_dialog(self)
         } else {
             Box::pin(ModalFuture::new(
-                self.parent.as_ref().map(window_from_raw_window_handle),
                 move |mtm| Alert::new(self, mtm),
                 |dialog, ret| dialog_result(&dialog.buttons, ret),
             ))

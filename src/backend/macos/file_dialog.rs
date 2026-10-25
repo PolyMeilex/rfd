@@ -6,15 +6,18 @@ mod panel_ffi;
 
 use self::panel_ffi::Panel;
 use super::modal_future::ModalFuture;
-use super::utils::{run_on_main, window_from_raw_window_handle};
-use crate::backend::DialogFutureType;
+use super::utils::run_on_main;
+use crate::backend::{
+    AsyncFileOrFolderPickerDialogImpl, AsyncFilePickerDialogImpl, AsyncFileSaveDialogImpl,
+    AsyncFolderPickerDialogImpl, DialogFutureType, FileOrFolderPickerDialogImpl,
+    FilePickerDialogImpl, FileSaveDialogImpl, FolderPickerDialogImpl,
+};
 use crate::{FileDialog, FileHandle};
 
 //
 // File Picker
 //
 
-use crate::backend::FilePickerDialogImpl;
 impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
@@ -45,13 +48,9 @@ impl FilePickerDialogImpl for FileDialog {
     }
 }
 
-use crate::backend::AsyncFilePickerDialogImpl;
 impl AsyncFilePickerDialogImpl for FileDialog {
     fn pick_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_pick_file(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
@@ -66,10 +65,7 @@ impl AsyncFilePickerDialogImpl for FileDialog {
     }
 
     fn pick_files_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_pick_files(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
@@ -94,7 +90,6 @@ impl AsyncFilePickerDialogImpl for FileDialog {
 // Folder Picker
 //
 
-use crate::backend::FolderPickerDialogImpl;
 impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
@@ -127,7 +122,6 @@ impl FolderPickerDialogImpl for FileDialog {
 // File or Folder Picker
 //
 
-use crate::backend::FileOrFolderPickerDialogImpl;
 impl FileOrFolderPickerDialogImpl for FileDialog {
     fn pick_file_or_folder(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
@@ -156,13 +150,9 @@ impl FileOrFolderPickerDialogImpl for FileDialog {
     }
 }
 
-use crate::backend::AsyncFolderPickerDialogImpl;
 impl AsyncFolderPickerDialogImpl for FileDialog {
     fn pick_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_pick_folder(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
@@ -177,10 +167,7 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
     }
 
     fn pick_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_pick_folders(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
@@ -201,13 +188,9 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
     }
 }
 
-use crate::backend::AsyncFileOrFolderPickerDialogImpl;
 impl AsyncFileOrFolderPickerDialogImpl for FileDialog {
     fn pick_file_or_folder_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_pick_file_or_folder(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
@@ -222,10 +205,7 @@ impl AsyncFileOrFolderPickerDialogImpl for FileDialog {
     }
 
     fn pick_files_or_folders_async(self) -> DialogFutureType<Option<Vec<FileHandle>>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_pick_files_or_folders(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
@@ -250,7 +230,6 @@ impl AsyncFileOrFolderPickerDialogImpl for FileDialog {
 // File Save
 //
 
-use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
@@ -266,13 +245,9 @@ impl FileSaveDialogImpl for FileDialog {
     }
 }
 
-use crate::backend::AsyncFileSaveDialogImpl;
 impl AsyncFileSaveDialogImpl for FileDialog {
     fn save_file_async(self) -> DialogFutureType<Option<FileHandle>> {
-        let win = self.parent.as_ref().map(window_from_raw_window_handle);
-
         let future = ModalFuture::new(
-            win,
             move |mtm| Panel::build_save_file(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
