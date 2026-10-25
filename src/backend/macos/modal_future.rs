@@ -2,7 +2,7 @@ use block2::Block;
 use dispatch2::run_on_main;
 use objc2::rc::Retained;
 use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message};
-use objc2_app_kit::{NSApplication, NSModalResponse, NSWindow};
+use objc2_app_kit::{NSApplication, NSModalResponse, NSModalResponseCancel, NSWindow};
 
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -35,7 +35,7 @@ pub(super) struct ModalFuture<R, D> {
 unsafe impl<R, D> Send for ModalFuture<R, D> {}
 
 impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
-    pub fn new<F, DBULD: FnOnce(MainThreadMarker) -> D + Send>(
+    pub fn new<F, DBULD: FnOnce(MainThreadMarker) -> Option<D> + Send>(
         win: Option<Retained<NSWindow>>,
         build_modal: DBULD,
         cb: F,
@@ -87,6 +87,13 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             run_on_main(move |mtm| {
                 let window = window;
 
+                // No modal (AppKit returned nil for the panel): finish now,
+                // with the default result, as if it was cancelled.
+                let Some(modal) = build_modal(mtm) else {
+                    dialog_callback(state, NSModalResponseCancel);
+                    return;
+                };
+
                 let completion = {
                     let state = state.clone();
                     block2::RcBlock::new(move |result| {
@@ -94,7 +101,6 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
                     })
                 };
 
-                let modal = build_modal(mtm);
                 let inner = modal.inner_modal().retain();
 
                 state.lock().unwrap().modal = Some(modal);
@@ -105,14 +111,17 @@ impl<R: 'static + Default, D: AsModal + 'static> ModalFuture<R, D> {
             eprintln!("\n Hi! It looks like you are running async dialog in unsupported environment, I will fallback to sync dialog for you. \n");
 
             if let Some(mtm) = MainThreadMarker::new() {
-                let modal = build_modal(mtm);
-                let inner = modal.inner_modal().retain();
+                if let Some(modal) = build_modal(mtm) {
+                    let inner = modal.inner_modal().retain();
 
-                state.lock().unwrap().modal = Some(modal);
+                    state.lock().unwrap().modal = Some(modal);
 
-                let ret = inner.run_modal();
+                    let ret = inner.run_modal();
 
-                dialog_callback(state.clone(), ret);
+                    dialog_callback(state.clone(), ret);
+                } else {
+                    dialog_callback(state.clone(), NSModalResponseCancel);
+                }
             } else {
                 panic!("Fallback Sync Dialog Must Be Spawned On Main Thread (Why? If async dialog is unsupported in this env, it also means that spawning dialogs outside of main thread is also inpossible");
             }
