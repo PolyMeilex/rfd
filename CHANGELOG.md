@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.18.0
+
 - Fix some GTK3 memory leaks
 - Add GTK4 backend behind the `gtk4` feature
 - MSRV is now 1.92
