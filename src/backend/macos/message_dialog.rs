@@ -176,7 +176,7 @@ impl AsyncMessageDialogImpl for MessageDialog {
         } else {
             Box::pin(ModalFuture::new(
                 self.parent.as_ref().map(window_from_raw_window_handle),
-                move |mtm| Alert::new(self, mtm),
+                move |mtm| Some(Alert::new(self, mtm)),
                 |dialog, ret| dialog_result(&dialog.buttons, ret),
             ))
         }

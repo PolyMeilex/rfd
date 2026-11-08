@@ -19,7 +19,7 @@ impl FilePickerDialogImpl for FileDialog {
     fn pick_file(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_pick_file(&self, mtm);
+                let panel = Panel::build_pick_file(&self, mtm)?;
 
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_result())
@@ -33,7 +33,7 @@ impl FilePickerDialogImpl for FileDialog {
     fn pick_files(self) -> Option<Vec<PathBuf>> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_pick_files(&self, mtm);
+                let panel = Panel::build_pick_files(&self, mtm)?;
 
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_results())
@@ -99,7 +99,7 @@ impl FolderPickerDialogImpl for FileDialog {
     fn pick_folder(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_pick_folder(&self, mtm);
+                let panel = Panel::build_pick_folder(&self, mtm)?;
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_result())
                 } else {
@@ -112,7 +112,7 @@ impl FolderPickerDialogImpl for FileDialog {
     fn pick_folders(self) -> Option<Vec<PathBuf>> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_pick_folders(&self, mtm);
+                let panel = Panel::build_pick_folders(&self, mtm)?;
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_results())
                 } else {
@@ -132,7 +132,7 @@ impl FileOrFolderPickerDialogImpl for FileDialog {
     fn pick_file_or_folder(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_pick_file_or_folder(&self, mtm);
+                let panel = Panel::build_pick_file_or_folder(&self, mtm)?;
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_result())
                 } else {
@@ -145,7 +145,7 @@ impl FileOrFolderPickerDialogImpl for FileDialog {
     fn pick_files_or_folders(self) -> Option<Vec<PathBuf>> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_pick_files_or_folders(&self, mtm);
+                let panel = Panel::build_pick_files_or_folders(&self, mtm)?;
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_results())
                 } else {
@@ -255,7 +255,7 @@ impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
         autoreleasepool(move |_| {
             run_on_main(move |mtm| {
-                let panel = Panel::build_save_file(&self, mtm);
+                let panel = Panel::build_save_file(&self, mtm)?;
                 if panel.run_modal() == NSModalResponseOK {
                     Some(panel.get_result())
                 } else {
