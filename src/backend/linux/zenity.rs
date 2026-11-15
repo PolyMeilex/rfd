@@ -1,4 +1,7 @@
-use std::{error::Error, fmt::Display, path::PathBuf, process::Command};
+use std::{
+    error::Error, ffi::OsStr, fmt::Display, os::unix::ffi::OsStrExt, path::PathBuf,
+    process::Command,
+};
 
 use crate::{
     message_dialog::{MessageButtons, MessageLevel},
@@ -8,7 +11,6 @@ use crate::{
 #[derive(Debug)]
 pub enum ZenityError {
     Io(std::io::Error),
-    FromUtf8Error(std::string::FromUtf8Error),
 }
 
 impl Error for ZenityError {}
@@ -17,7 +19,6 @@ impl Display for ZenityError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ZenityError::Io(io) => write!(f, "{io}"),
-            ZenityError::FromUtf8Error(err) => err.fmt(f),
         }
     }
 }
@@ -25,12 +26,6 @@ impl Display for ZenityError {
 impl From<std::io::Error> for ZenityError {
     fn from(value: std::io::Error) -> Self {
         Self::Io(value)
-    }
-}
-
-impl From<std::string::FromUtf8Error> for ZenityError {
-    fn from(value: std::string::FromUtf8Error) -> Self {
-        Self::FromUtf8Error(value)
     }
 }
 
@@ -58,22 +53,38 @@ fn file_dialog_command(dialog: &FileDialog) -> Command {
                 }
             })
             .collect();
-        command.arg(format!("{} | {}", filter.name, extensions.join(" ")));
+        // zenity ends the name at the first `|`, with no way to escape it, so show `/` instead.
+        // A non-ASCII lookalike would stop zenity from starting in the C locale.
+        let name = filter.name.replace('|', "/");
+        command.arg(format!("{} | {}", name, extensions.join(" ")));
     }
 
-    if let Some(name) = dialog.file_name.as_ref() {
+    // zenity starts in the folder of an absolute `--filename`, or in the path itself when it ends
+    // with `/`, whatever GTK's file chooser `startup-mode` is
+    let path = match (&dialog.starting_directory, &dialog.file_name) {
+        (Some(dir), name) => {
+            let dir = std::path::absolute(dir).unwrap_or_else(|_| dir.clone());
+            // Joining an empty name adds the trailing `/`
+            let path = dir.join(name.as_deref().unwrap_or_default());
+            // zenity 4 ignores `/`, as it's its own base name
+            Some(if path.as_os_str() == "/" {
+                "/./".into()
+            } else {
+                path
+            })
+        }
+        (None, name) => name.as_ref().map(PathBuf::from),
+    };
+
+    if let Some(path) = path {
         command.arg("--filename");
-        command.arg(name);
-    }
-
-    if let Some(dir) = dialog.starting_directory.as_ref() {
-        command.current_dir(dir);
+        command.arg(path);
     }
 
     command
 }
 
-async fn run(mut command: Command) -> ZenityResult<Option<String>> {
+async fn run(mut command: Command) -> ZenityResult<Option<Vec<u8>>> {
     let res = {
         let (tx, rx) = crate::oneshot::channel();
         std::thread::spawn(move || {
@@ -81,14 +92,19 @@ async fn run(mut command: Command) -> ZenityResult<Option<String>> {
         });
         rx.await.map_err(std::io::Error::other)??
     };
-    let buffer = String::from_utf8(res.stdout)?;
+    let buffer = res.stdout;
 
     Ok((res.status.success() || !buffer.is_empty()).then_some(buffer))
 }
 
 /// Strip the single newline zenity prints after its output
-fn strip_newline(buffer: &str) -> &str {
-    buffer.strip_suffix('\n').unwrap_or(buffer)
+fn strip_newline(buffer: &[u8]) -> &[u8] {
+    buffer.strip_suffix(b"\n").unwrap_or(buffer)
+}
+
+/// Keep the bytes zenity prints as they are, as a file name doesn't have to be UTF-8
+fn to_path(bytes: &[u8]) -> PathBuf {
+    PathBuf::from(OsStr::from_bytes(bytes))
 }
 
 pub async fn pick_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
@@ -99,10 +115,10 @@ pub async fn pick_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(PathBuf::from))
+        .map(to_path))
 }
 
-pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
+pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Option<Vec<PathBuf>>> {
     let mut command = file_dialog_command(dialog);
     command.args(["--file-selection", "--multiple", "--separator=\n"]);
 
@@ -110,8 +126,7 @@ pub async fn pick_files(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(|s| s.split('\n').map(PathBuf::from).collect())
-        .unwrap_or_default())
+        .map(|s| s.split(|&byte| byte == b'\n').map(to_path).collect()))
 }
 
 pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
@@ -122,10 +137,10 @@ pub async fn pick_folder(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(PathBuf::from))
+        .map(to_path))
 }
 
-pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
+pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Option<Vec<PathBuf>>> {
     let mut command = file_dialog_command(dialog);
     command.args([
         "--file-selection",
@@ -138,8 +153,7 @@ pub async fn pick_folders(dialog: &FileDialog) -> ZenityResult<Vec<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(|s| s.split('\n').map(PathBuf::from).collect())
-        .unwrap_or_default())
+        .map(|s| s.split(|&byte| byte == b'\n').map(to_path).collect()))
 }
 
 pub async fn save_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
@@ -150,7 +164,7 @@ pub async fn save_file(dialog: &FileDialog) -> ZenityResult<Option<PathBuf>> {
         .await?
         .as_deref()
         .map(strip_newline)
-        .map(PathBuf::from))
+        .map(to_path))
 }
 
 pub async fn message(
@@ -245,6 +259,8 @@ pub async fn question(
 
 #[cfg(test)]
 mod tests {
+    use std::{ffi::OsStr, os::unix::ffi::OsStrExt, path::PathBuf};
+
     use crate::FileDialog;
 
     #[test]
@@ -316,5 +332,76 @@ mod tests {
     fn save_file() {
         let path = pollster::block_on(super::save_file(&FileDialog::default())).unwrap();
         dbg!(path);
+    }
+
+    #[test]
+    fn output_path() {
+        assert_eq!(
+            super::to_path(super::strip_newline(b"/home/user/caf\xe9.txt\n")),
+            PathBuf::from(OsStr::from_bytes(b"/home/user/caf\xe9.txt"))
+        );
+        assert_eq!(super::strip_newline(b"x\n\n"), b"x\n");
+    }
+
+    #[test]
+    fn file_filter_name_with_pipe() {
+        let dialog = FileDialog::new().add_filter("Text | Markdown", &["txt", "md"]);
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                "--no-markup",
+                "--file-filter",
+                "Text / Markdown | *.txt *.md"
+            ]
+        );
+    }
+
+    #[test]
+    fn file_dialog_starting_directory() {
+        let dialog = FileDialog::new().set_directory("/home/user/Documents");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["--no-markup", "--filename", "/home/user/Documents/"]
+        );
+        assert_eq!(command.get_current_dir(), None);
+
+        let dialog = dialog.set_file_name("report.txt");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                "--no-markup",
+                "--filename",
+                "/home/user/Documents/report.txt"
+            ]
+        );
+
+        let dialog = FileDialog::new().set_directory("Documents");
+        let command = super::file_dialog_command(&dialog);
+        let documents = std::env::current_dir().unwrap().join("Documents/");
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                "--no-markup".as_ref(),
+                "--filename".as_ref(),
+                documents.as_os_str()
+            ]
+        );
+
+        let dialog = FileDialog::new().set_directory("/");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["--no-markup", "--filename", "/./"]
+        );
+
+        let dialog = FileDialog::new().set_file_name("report.txt");
+        let command = super::file_dialog_command(&dialog);
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            ["--no-markup", "--filename", "report.txt"]
+        );
     }
 }
