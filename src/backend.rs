@@ -1,3 +1,6 @@
+#[cfg(target_os = "haiku")]
+mod haiku;
+
 use crate::message_dialog::MessageDialogResult;
 use crate::FileHandle;
 use std::future::Future;
