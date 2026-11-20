@@ -294,6 +294,7 @@ impl Drop for GtkFileDialog {
     fn drop(&mut self) {
         unsafe {
             gtk_sys::gtk_native_dialog_destroy(self.ptr as _);
+            gobject_sys::g_object_unref(self.ptr as _);
         }
     }
 }
