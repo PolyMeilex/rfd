@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix a GTK3 memory leak: every file dialog kept its `GtkFileChooserNative`, and a hidden `GtkFileChooserDialog`, alive
+
 ## 0.18.0
 
 - Fix some GTK3 memory leaks
