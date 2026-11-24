@@ -1,4 +1,5 @@
 use core::str;
+use std::cell::Cell;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -18,6 +19,7 @@ use super::super::{
     modal_future::{AsModal, InnerModal},
     utils::{FocusManager, PolicyManager},
 };
+use super::save_name;
 use crate::backend::macos::utils::window_from_raw_window_handle;
 use crate::file_dialog::Filter;
 use crate::FileDialog;
@@ -185,11 +187,16 @@ impl PanelExt for Retained<NSOpenPanel> {
 
 struct FormatOption {
     types: Retained<NSArray<UTType>>,
+    extensions: Vec<String>,
 }
 
 struct SavePanelHandlerIvars {
     panel: Retained<NSSavePanel>,
     options: Vec<FormatOption>,
+    // The name the panel was opened with, see `FileDialog::set_file_name`
+    file_name: Option<String>,
+    // Index in `options` of the selected format
+    selected: Cell<usize>,
 }
 
 define_class!(
@@ -208,8 +215,34 @@ define_class!(
                 return;
             }
 
-            if let Some(option) = self.ivars().options.get(idx as usize) {
-                unsafe { self.ivars().panel.setAllowedContentTypes(&option.types) };
+            let ivars = self.ivars();
+            let Some(option) = ivars.options.get(idx as usize) else {
+                return;
+            };
+            let previous = ivars.selected.replace(idx as usize);
+
+            // The name is read before the allowed types change, and set after them, so the panel
+            // never sees a name whose extension is not allowed.
+            let name = unsafe { ivars.panel.nameFieldStringValue() }.to_string();
+            let previous_extensions = ivars
+                .options
+                .get(previous)
+                .map_or(&[][..], |previous| &previous.extensions);
+            let renamed = save_name::name_for_format(
+                &name,
+                previous_extensions,
+                ivars.file_name.as_deref(),
+                &option.extensions,
+            );
+
+            unsafe { ivars.panel.setAllowedContentTypes(&option.types) };
+
+            if let Some(renamed) = renamed {
+                unsafe {
+                    ivars
+                        .panel
+                        .setNameFieldStringValue(&NSString::from_str(&renamed))
+                };
             }
         }
     }
@@ -220,8 +253,14 @@ impl SavePanelHandler {
         mtm: MainThreadMarker,
         panel: Retained<NSSavePanel>,
         options: Vec<FormatOption>,
+        file_name: Option<String>,
     ) -> Retained<Self> {
-        let this = Self::alloc(mtm).set_ivars(SavePanelHandlerIvars { panel, options });
+        let this = Self::alloc(mtm).set_ivars(SavePanelHandlerIvars {
+            panel,
+            options,
+            file_name,
+            selected: Cell::new(0),
+        });
         unsafe { msg_send![super(this), init] }
     }
 }
@@ -340,10 +379,12 @@ impl Panel {
                     .iter()
                     .map(|filter| FormatOption {
                         types: utypes_for_filter(filter),
+                        extensions: filter.extensions.clone(),
                     })
                     .collect();
 
-                let handler = SavePanelHandler::new(mtm, panel.clone(), options);
+                let handler =
+                    SavePanelHandler::new(mtm, panel.clone(), options, opt.file_name.clone());
 
                 unsafe {
                     popup.setTarget(Some(&handler));

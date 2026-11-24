@@ -3,6 +3,7 @@ use objc2_app_kit::NSModalResponseOK;
 use std::path::PathBuf;
 
 mod panel_ffi;
+mod save_name;
 
 use self::panel_ffi::Panel;
 use super::modal_future::ModalFuture;
