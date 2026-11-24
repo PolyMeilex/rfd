@@ -1,5 +1,6 @@
 mod com;
 pub mod dialog_ffi;
+mod save_extension;
 
 use dialog_ffi::{IDialog, Result};
 
@@ -117,6 +118,34 @@ impl AsyncFolderPickerDialogImpl for FileDialog {
 // File Save
 //
 
+/// The path the save dialog returned, with the extension of the file type that was selected.
+///
+/// Changing the file type in the dialog doesn't always change the extension of the name, so the
+/// path can still have the extension of the name given to `set_file_name`.
+fn save_result(dialog: &IDialog, opt: &FileDialog) -> Result<PathBuf> {
+    let path = dialog.get_result()?;
+    // Without the index the path stays as the dialog returned it
+    let index = dialog.get_file_type_index().ok();
+    Ok(with_selected_file_type(path, opt, index))
+}
+
+/// `index` is the 1-based index of the selected file type in `opt.filters`.
+fn with_selected_file_type(path: PathBuf, opt: &FileDialog, index: Option<u32>) -> PathBuf {
+    let renamed = save_extension::with_selected_file_type(
+        &path,
+        opt.file_name.as_deref(),
+        opt.filters
+            .iter()
+            .map(|filter| filter.extensions.as_slice()),
+        index,
+    );
+    match renamed {
+        // The dialog only asked to overwrite the path it returned
+        Some(renamed) if !renamed.exists() => renamed,
+        _ => path,
+    }
+}
+
 use crate::backend::FileSaveDialogImpl;
 impl FileSaveDialogImpl for FileDialog {
     fn save_file(self) -> Option<PathBuf> {
@@ -124,7 +153,7 @@ impl FileSaveDialogImpl for FileDialog {
             init_com(|| {
                 let dialog = IDialog::build_save_file(&opt)?;
                 dialog.show()?;
-                dialog.get_result()
+                save_result(&dialog, &opt)
             })?
         }
 

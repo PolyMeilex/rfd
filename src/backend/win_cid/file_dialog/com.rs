@@ -187,7 +187,8 @@ pub(super) struct IFileDialogV {
         rgfilterspec: *const COMDLG_FILTERSPEC,
     ) -> HRESULT,
     SetFileTypeIndex: unsafe extern "system" fn(this: *mut c_void, ifiletype: u32) -> HRESULT,
-    GetFileTypeIndex: unsafe extern "system" fn(this: *mut c_void, pifiletype: *mut u32) -> HRESULT,
+    pub(super) GetFileTypeIndex:
+        unsafe extern "system" fn(this: *mut c_void, pifiletype: *mut u32) -> HRESULT,
     Advise: unsafe extern "system" fn(
         this: *mut c_void,
         pfde: *mut c_void,

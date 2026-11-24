@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Windows: the extension of the path a save dialog returns now follows the file type selected in the dialog. The file type's first extension is added to a name that has none, and replaces the extension of the name given to `set_file_name`. An extension the user typed is kept, and so is one the file type lists. A file type whose first extension is `*` or empty changes nothing, and a name is never changed to one of an existing file.
+
 ## 0.18.0
 
 - Fix some GTK3 memory leaks
