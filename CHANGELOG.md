@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- macOS: a save dialog with a format picker now keeps the extension of the name field in step with the selected format. The format's first extension is added to a name that has none, and replaces the extension of the previous format or of the name given to `set_file_name`. An extension the user typed is kept, and so is one the selected format lists. A format whose first extension is `*` or empty changes nothing. Before, the panel refused a name whose extension the selected format did not allow. A format with an extension for which the system has no type, or a type that prefers another extension (an installed application can declare one), is no longer given to the panel as its allowed types, which would change the extension of the name to the preferred one when saving: the panel accepts any name then and shows the extension (the original settings are restored when an exact format is selected again), and the format's first extension is added to a returned name that has none. The panel can still return the preferred extension of such a type with the extension shown (measured on macOS 26.5 with an application that declares one), so when the name it returned does not end in an extension the format lists and its name field does, the name field's name is used. When a file has the name that is used instead of the one the panel asked about, the person is asked whether to replace it, with Cancel the default, and Cancel makes the save return `None`, as if the person had cancelled.
+
 ## 0.18.0
 
 - Fix some GTK3 memory leaks
