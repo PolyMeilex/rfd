@@ -99,7 +99,10 @@ impl Panel {
     pub fn get_save_result(&self) -> PathBuf {
         let path = self.get_result();
         match &self._save_panel_handler {
-            Some(handler) => handler.path_with_format_extension(path),
+            Some(handler) => {
+                let name_field = unsafe { self.panel.nameFieldStringValue() }.to_string();
+                handler.path_with_format_extension(path, &name_field)
+            }
             None => path,
         }
     }
@@ -217,19 +220,42 @@ impl FormatOption {
     }
 }
 
-/// Gives the panel what the format needs: its types when it is exact, and when it is not, every
-/// type, with other file types allowed. `allows_other_file_types` is the panel's own setting.
-fn apply_format(panel: &NSSavePanel, option: &FormatOption, allows_other_file_types: bool) {
+/// What the panel's own settings were before a format changed them.
+#[derive(Clone, Copy)]
+struct PanelSettings {
+    allows_other_file_types: bool,
+    extension_hidden: bool,
+}
+
+impl PanelSettings {
+    fn of(panel: &NSSavePanel) -> Self {
+        unsafe {
+            Self {
+                allows_other_file_types: panel.allowsOtherFileTypes(),
+                extension_hidden: panel.isExtensionHidden(),
+            }
+        }
+    }
+}
+
+/// Gives the panel what the format needs: its types when it is exact, and its own settings
+/// (`original`). When it is not exact, every type, with other file types allowed, and the
+/// extension shown: a panel that hides the extension takes the type of the name from the
+/// extension in the name field, and returns the preferred extension of that type, whatever types
+/// it is allowed.
+fn apply_format(panel: &NSSavePanel, option: &FormatOption, original: PanelSettings) {
     if option.exact {
         unsafe {
             panel.setAllowedContentTypes(&option.types);
-            panel.setAllowsOtherFileTypes(allows_other_file_types);
+            panel.setAllowsOtherFileTypes(original.allows_other_file_types);
+            panel.setExtensionHidden(original.extension_hidden);
         }
     } else {
         let any: Vec<Retained<UTType>> = Vec::new();
         unsafe {
             panel.setAllowedContentTypes(&NSArray::from_retained_slice(&any));
             panel.setAllowsOtherFileTypes(true);
+            panel.setExtensionHidden(false);
         }
     }
 }
@@ -241,8 +267,8 @@ struct SavePanelHandlerIvars {
     file_name: Option<String>,
     // Index in `options` of the selected format
     selected: Cell<usize>,
-    // What `allowsOtherFileTypes` was before a format changed it
-    allows_other_file_types: bool,
+    // What the panel's settings were before a format changed them
+    original: PanelSettings,
 }
 
 define_class!(
@@ -281,7 +307,7 @@ define_class!(
                 &option.extensions,
             );
 
-            apply_format(&ivars.panel, option, ivars.allows_other_file_types);
+            apply_format(&ivars.panel, option, ivars.original);
 
             if let Some(renamed) = renamed {
                 unsafe {
@@ -301,13 +327,13 @@ impl SavePanelHandler {
         options: Vec<FormatOption>,
         file_name: Option<String>,
     ) -> Retained<Self> {
-        let allows_other_file_types = unsafe { panel.allowsOtherFileTypes() };
+        let original = PanelSettings::of(&panel);
         let this = Self::alloc(mtm).set_ivars(SavePanelHandlerIvars {
             panel,
             options,
             file_name,
             selected: Cell::new(0),
-            allows_other_file_types,
+            original,
         });
         unsafe { msg_send![super(this), init] }
     }
@@ -316,15 +342,16 @@ impl SavePanelHandler {
     fn apply_first_format(&self) {
         let ivars = self.ivars();
         if let Some(first) = ivars.options.first() {
-            apply_format(&ivars.panel, first, ivars.allows_other_file_types);
+            apply_format(&ivars.panel, first, ivars.original);
         }
     }
 
-    /// `path`, a name the panel returned, with the first extension of the selected format when the
-    /// format is not exact and the name has none. The panel returns the name as it was typed then.
-    /// A name that would be another file's is left as the panel returned it, since the panel only
-    /// asked about overwriting that one.
-    fn path_with_format_extension(&self, path: PathBuf) -> PathBuf {
+    /// `path`, the file the panel returned, with the name `save_name::returned_name` gives for it
+    /// when the selected format is not exact: the panel may not have kept the extension of the
+    /// name field, or the name has none. `name_field` is what the name field holds. A name that
+    /// would be another file's is left as the panel returned it, since the panel only asked about
+    /// overwriting that one.
+    fn path_with_format_extension(&self, path: PathBuf, name_field: &str) -> PathBuf {
         let ivars = self.ivars();
         let Some(option) = ivars.options.get(ivars.selected.get()) else {
             return path;
@@ -335,7 +362,7 @@ impl SavePanelHandler {
         let renamed = path
             .file_name()
             .and_then(|name| name.to_str())
-            .and_then(|name| save_name::name_with_format_extension(name, &option.extensions))
+            .and_then(|name| save_name::returned_name(name, name_field, &option.extensions))
             .map(|name| path.with_file_name(name));
         match renamed {
             Some(renamed) if !renamed.exists() => renamed,

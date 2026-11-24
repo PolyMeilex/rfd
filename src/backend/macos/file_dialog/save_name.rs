@@ -75,6 +75,39 @@ pub(super) fn name_with_format_extension(name: &str, selected: &[String]) -> Opt
     name_for_format(name, &[], None, selected)
 }
 
+/// The name to return for a save panel that returned `raw`, or `None` when `raw` should stay.
+///
+/// - `raw` is the name of the file the panel returned.
+/// - `field` is what the panel's name field holds.
+/// - `selected` holds the extensions of the selected format.
+///
+/// This is for a format that is not exact. The panel may still return an extension of its own for
+/// the one in the name field (it does when it hides the extension: it takes the name's type
+/// from the extension, and the type may prefer another), so `field` is returned when `raw` does not
+/// end in an extension the format lists, `field` does, and both are names of the same file. Else a
+/// `raw` with no extension gets the first extension of the format, see
+/// [`name_with_format_extension`]. An extension the person typed is kept.
+pub(super) fn returned_name(raw: &str, field: &str, selected: &[String]) -> Option<String> {
+    let lists = |name: &str| {
+        split_extension(name).is_some_and(|(_, extension)| has_extension(selected, extension))
+    };
+    let usable = selected
+        .first()
+        .is_some_and(|ext| !ext.is_empty() && ext != "*");
+    if !usable || lists(raw) {
+        return None;
+    }
+    if lists(field) && stem(raw) == stem(field) {
+        return Some(field.to_string());
+    }
+    name_with_format_extension(raw, selected)
+}
+
+/// The part of `name` before its extension, or the whole name when it has none.
+fn stem(name: &str) -> &str {
+    split_extension(name).map_or_else(|| name.trim_end_matches('.'), |(stem, _)| stem)
+}
+
 /// The part of `name` before its extension, and the extension. A leading dot does not start an
 /// extension (`.plan` has none), and neither does a dot at the end.
 fn split_extension(name: &str) -> Option<(&str, &str)> {
@@ -346,5 +379,85 @@ mod tests {
         assert_eq!(named("Untitled", &[""]), None);
         assert_eq!(named("Untitled", &[]), None);
         assert_eq!(named("", &["fancy"]), None);
+    }
+
+    #[test]
+    fn the_name_field_is_returned_when_the_panel_changed_its_extension() {
+        let returned = |raw: &str, field: &str| returned_name(raw, field, &exts(&["fancy", "fz"]));
+        assert_eq!(
+            returned("Untitled.other", "Untitled.fancy"),
+            Some("Untitled.fancy".to_string())
+        );
+        // Any extension the format lists, whatever its case
+        assert_eq!(
+            returned("Untitled.OTHER", "Untitled.FZ"),
+            Some("Untitled.FZ".to_string())
+        );
+        assert_eq!(
+            returned("a.b.other", "a.b.fancy"),
+            Some("a.b.fancy".to_string())
+        );
+        // A panel that took the extension away
+        assert_eq!(
+            returned("Untitled", "Untitled.fz"),
+            Some("Untitled.fz".to_string())
+        );
+        assert_eq!(
+            returned(".notes", ".notes.fancy"),
+            Some(".notes.fancy".to_string())
+        );
+    }
+
+    #[test]
+    fn a_returned_name_that_has_an_extension_the_format_lists_stays() {
+        let returned = |raw: &str, field: &str| returned_name(raw, field, &exts(&["fancy", "fz"]));
+        assert_eq!(returned("Untitled.fancy", "Untitled.fancy"), None);
+        assert_eq!(returned("Untitled.FZ", "Untitled.fancy"), None);
+        assert_eq!(returned("Untitled.fz", ""), None);
+    }
+
+    #[test]
+    fn a_name_field_that_is_not_the_returned_file_is_not_used() {
+        let returned = |raw: &str, field: &str| returned_name(raw, field, &exts(&["fancy"]));
+        // Another stem
+        assert_eq!(returned("Holiday.other", "Untitled.fancy"), None);
+        // An extension the format does not list
+        assert_eq!(returned("Untitled.other", "Untitled.txt"), None);
+        assert_eq!(returned("Untitled.other", "Untitled"), None);
+        assert_eq!(returned("Untitled.other", ""), None);
+    }
+
+    #[test]
+    fn a_typed_extension_stays_when_the_name_field_has_it_too() {
+        let returned = |raw: &str, field: &str| returned_name(raw, field, &exts(&["fancy"]));
+        assert_eq!(returned("Untitled.txt", "Untitled.txt"), None);
+    }
+
+    #[test]
+    fn a_returned_name_with_no_extension_gets_the_first_extension_when_the_name_field_has_none() {
+        let returned = |raw: &str, field: &str| returned_name(raw, field, &exts(&["fancy", "fz"]));
+        assert_eq!(
+            returned("Untitled", "Untitled"),
+            Some("Untitled.fancy".to_string())
+        );
+        assert_eq!(returned("Untitled", ""), Some("Untitled.fancy".to_string()));
+        assert_eq!(
+            returned("Untitled", "Holiday.txt"),
+            Some("Untitled.fancy".to_string())
+        );
+    }
+
+    #[test]
+    fn a_format_that_accepts_any_name_never_changes_a_returned_name() {
+        for any in [&[][..], &["*"][..], &[""][..]] {
+            assert_eq!(
+                returned_name("Untitled", "Untitled.fancy", &exts(any)),
+                None
+            );
+            assert_eq!(
+                returned_name("Untitled.other", "Untitled.fancy", &exts(any)),
+                None
+            );
+        }
     }
 }
