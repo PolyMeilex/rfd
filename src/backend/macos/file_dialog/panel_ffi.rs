@@ -95,6 +95,15 @@ impl Panel {
         }
     }
 
+    /// The file a save panel chose, with the extension of the selected format.
+    pub fn get_save_result(&self) -> PathBuf {
+        let path = self.get_result();
+        match &self._save_panel_handler {
+            Some(handler) => handler.path_with_format_extension(path),
+            None => path,
+        }
+    }
+
     pub fn get_results(&self) -> Vec<PathBuf> {
         unsafe {
             let urls = self.as_open_panel().unwrap().URLs();
@@ -188,6 +197,41 @@ impl PanelExt for Retained<NSOpenPanel> {
 struct FormatOption {
     types: Retained<NSArray<UTType>>,
     extensions: Vec<String>,
+    // Whether the panel can be given `types`, see `save_name::format_is_exact`. When it can't, the
+    // panel would change the extension of the name to the one its type prefers, so it is left to
+    // accept any name.
+    exact: bool,
+}
+
+impl FormatOption {
+    fn new(filter: &Filter) -> Self {
+        let exact = save_name::format_is_exact(&filter.extensions, |ext| {
+            let preferred = unsafe { utype_for_extension(ext)?.preferredFilenameExtension() };
+            preferred.map(|preferred| preferred.to_string())
+        });
+        Self {
+            types: utypes_for_filter(filter),
+            extensions: filter.extensions.clone(),
+            exact,
+        }
+    }
+}
+
+/// Gives the panel what the format needs: its types when it is exact, and when it is not, every
+/// type, with other file types allowed. `allows_other_file_types` is the panel's own setting.
+fn apply_format(panel: &NSSavePanel, option: &FormatOption, allows_other_file_types: bool) {
+    if option.exact {
+        unsafe {
+            panel.setAllowedContentTypes(&option.types);
+            panel.setAllowsOtherFileTypes(allows_other_file_types);
+        }
+    } else {
+        let any: Vec<Retained<UTType>> = Vec::new();
+        unsafe {
+            panel.setAllowedContentTypes(&NSArray::from_retained_slice(&any));
+            panel.setAllowsOtherFileTypes(true);
+        }
+    }
 }
 
 struct SavePanelHandlerIvars {
@@ -197,6 +241,8 @@ struct SavePanelHandlerIvars {
     file_name: Option<String>,
     // Index in `options` of the selected format
     selected: Cell<usize>,
+    // What `allowsOtherFileTypes` was before a format changed it
+    allows_other_file_types: bool,
 }
 
 define_class!(
@@ -235,7 +281,7 @@ define_class!(
                 &option.extensions,
             );
 
-            unsafe { ivars.panel.setAllowedContentTypes(&option.types) };
+            apply_format(&ivars.panel, option, ivars.allows_other_file_types);
 
             if let Some(renamed) = renamed {
                 unsafe {
@@ -255,13 +301,46 @@ impl SavePanelHandler {
         options: Vec<FormatOption>,
         file_name: Option<String>,
     ) -> Retained<Self> {
+        let allows_other_file_types = unsafe { panel.allowsOtherFileTypes() };
         let this = Self::alloc(mtm).set_ivars(SavePanelHandlerIvars {
             panel,
             options,
             file_name,
             selected: Cell::new(0),
+            allows_other_file_types,
         });
         unsafe { msg_send![super(this), init] }
+    }
+
+    /// Gives the panel what the first format needs, the one that is selected when it opens.
+    fn apply_first_format(&self) {
+        let ivars = self.ivars();
+        if let Some(first) = ivars.options.first() {
+            apply_format(&ivars.panel, first, ivars.allows_other_file_types);
+        }
+    }
+
+    /// `path`, a name the panel returned, with the first extension of the selected format when the
+    /// format is not exact and the name has none. The panel returns the name as it was typed then.
+    /// A name that would be another file's is left as the panel returned it, since the panel only
+    /// asked about overwriting that one.
+    fn path_with_format_extension(&self, path: PathBuf) -> PathBuf {
+        let ivars = self.ivars();
+        let Some(option) = ivars.options.get(ivars.selected.get()) else {
+            return path;
+        };
+        if option.exact {
+            return path;
+        }
+        let renamed = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .and_then(|name| save_name::name_with_format_extension(name, &option.extensions))
+            .map(|name| path.with_file_name(name));
+        match renamed {
+            Some(renamed) if !renamed.exists() => renamed,
+            _ => path,
+        }
     }
 }
 
@@ -367,34 +446,25 @@ impl Panel {
 
         let save_panel_handler = match opt.filters.as_slice() {
             [] => None,
-            [single] => {
-                unsafe { panel.setAllowedContentTypes(&utypes_for_filter(single)) };
-                None
-            }
-            multiple => {
-                let label_text = opt.format_label.as_deref().unwrap_or("Format:");
-                let (view, popup) = build_format_accessory_view(mtm, multiple, label_text);
-
-                let options = multiple
-                    .iter()
-                    .map(|filter| FormatOption {
-                        types: utypes_for_filter(filter),
-                        extensions: filter.extensions.clone(),
-                    })
-                    .collect();
-
+            filters => {
+                let options = filters.iter().map(FormatOption::new).collect();
                 let handler =
                     SavePanelHandler::new(mtm, panel.clone(), options, opt.file_name.clone());
+                handler.apply_first_format();
 
-                unsafe {
-                    popup.setTarget(Some(&handler));
-                    popup.setAction(Some(sel!(formatChanged:)));
-                }
+                if filters.len() > 1 {
+                    let label_text = opt.format_label.as_deref().unwrap_or("Format:");
+                    let (view, popup) = build_format_accessory_view(mtm, filters, label_text);
 
-                unsafe {
-                    panel.setAllowedContentTypes(&utypes_for_filter(&multiple[0]));
-                    popup.selectItemAtIndex(0);
-                    panel.setAccessoryView(Some(&view));
+                    unsafe {
+                        popup.setTarget(Some(&handler));
+                        popup.setAction(Some(sel!(formatChanged:)));
+                    }
+
+                    unsafe {
+                        popup.selectItemAtIndex(0);
+                        panel.setAccessoryView(Some(&view));
+                    }
                 }
 
                 Some(handler)
@@ -561,5 +631,32 @@ impl Panel {
         unsafe { panel.setAllowsMultipleSelection(true) };
 
         Self::new(Retained::into_super(panel), opt.parent.as_ref())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn exact(extensions: &[&str]) -> bool {
+        FormatOption::new(&Filter {
+            name: "Format".to_string(),
+            extensions: extensions.iter().map(|ext| ext.to_string()).collect(),
+        })
+        .exact
+    }
+
+    /// The types the system itself declares for these extensions prefer them.
+    #[test]
+    fn formats_of_the_systems_own_types_are_exact() {
+        assert!(exact(&["png"]));
+        assert!(exact(&["pdf"]));
+    }
+
+    #[test]
+    fn a_format_that_accepts_any_name_is_not_exact() {
+        assert!(!exact(&["*"]));
+        assert!(!exact(&[""]));
+        assert!(!exact(&[]));
     }
 }
