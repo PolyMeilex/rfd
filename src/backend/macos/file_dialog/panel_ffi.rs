@@ -16,12 +16,14 @@ use objc2_uniform_type_identifiers::UTType;
 use raw_window_handle::RawWindowHandle;
 
 use super::super::{
+    message_dialog::Alert,
     modal_future::{AsModal, InnerModal},
     utils::{FocusManager, PolicyManager},
 };
-use super::save_name;
+use super::save_name::{self, Correction};
 use crate::backend::macos::utils::window_from_raw_window_handle;
 use crate::file_dialog::Filter;
+use crate::message_dialog::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use crate::FileDialog;
 
 extern "C" {
@@ -95,16 +97,39 @@ impl Panel {
         }
     }
 
-    /// The file a save panel chose, with the extension of the selected format.
-    pub fn get_save_result(&self) -> PathBuf {
+    /// The file a save panel chose, with the extension of the selected format, or `None` when the
+    /// file that name gives it exists and the person does not want to replace it.
+    pub fn get_save_result(&self) -> Option<PathBuf> {
         let path = self.get_result();
-        match &self._save_panel_handler {
-            Some(handler) => {
-                let name_field = unsafe { self.panel.nameFieldStringValue() }.to_string();
-                handler.path_with_format_extension(path, &name_field)
-            }
-            None => path,
+        let Some(handler) = &self._save_panel_handler else {
+            return Some(path);
+        };
+        let name_field = unsafe { self.panel.nameFieldStringValue() }.to_string();
+        match handler.corrected_path(&path, &name_field) {
+            Correction::Panels => Some(path),
+            Correction::Use(corrected) => Some(corrected),
+            // The panel asked about replacing the file it returned, which is not this one
+            Correction::Ask(corrected) => self.confirm_replace(&corrected).then_some(corrected),
         }
+    }
+
+    /// Asks whether to replace the file at `path`, as the panel does for the file it returned.
+    /// Cancel is the default button.
+    fn confirm_replace(&self, path: &Path) -> bool {
+        let (title, description) = save_name::replace_question(path);
+        let dialog = MessageDialog::new()
+            .set_level(MessageLevel::Info)
+            .set_title(title)
+            .set_description(description)
+            .set_buttons(MessageButtons::OkCancelCustom(
+                "Cancel".to_string(),
+                "Replace".to_string(),
+            ));
+        let mtm = MainThreadMarker::from(&*self.panel);
+        matches!(
+            Alert::new(dialog, mtm).run(),
+            MessageDialogResult::Custom(answer) if answer == "Replace"
+        )
     }
 
     pub fn get_results(&self) -> Vec<PathBuf> {
@@ -346,28 +371,24 @@ impl SavePanelHandler {
         }
     }
 
-    /// `path`, the file the panel returned, with the name `save_name::returned_name` gives for it
-    /// when the selected format is not exact: the panel may not have kept the extension of the
-    /// name field, or the name has none. `name_field` is what the name field holds. A name that
-    /// would be another file's is left as the panel returned it, since the panel only asked about
-    /// overwriting that one.
-    fn path_with_format_extension(&self, path: PathBuf, name_field: &str) -> PathBuf {
+    /// What to do with `path`, the file the panel returned, when the selected format is not
+    /// exact: the name `save_name::returned_name` gives for it, if it is not the panel's, and
+    /// whether a file has that name. The panel may not have kept the extension of the name field,
+    /// or the name has none. `name_field` is what the name field holds.
+    fn corrected_path(&self, path: &Path, name_field: &str) -> Correction {
         let ivars = self.ivars();
         let Some(option) = ivars.options.get(ivars.selected.get()) else {
-            return path;
+            return Correction::Panels;
         };
         if option.exact {
-            return path;
+            return Correction::Panels;
         }
         let renamed = path
             .file_name()
             .and_then(|name| name.to_str())
             .and_then(|name| save_name::returned_name(name, name_field, &option.extensions))
             .map(|name| path.with_file_name(name));
-        match renamed {
-            Some(renamed) if !renamed.exists() => renamed,
-            _ => path,
-        }
+        save_name::correction(path, renamed, Path::exists)
     }
 }
 

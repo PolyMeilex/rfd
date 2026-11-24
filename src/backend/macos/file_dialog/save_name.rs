@@ -1,5 +1,7 @@
 //! Keeps the extension of a save panel's name in step with the selected format.
 
+use std::path::{Path, PathBuf};
+
 /// The name to show in a save panel once the user has selected another format, or `None` when the
 /// name should stay as it is.
 ///
@@ -101,6 +103,59 @@ pub(super) fn returned_name(raw: &str, field: &str, selected: &[String]) -> Opti
         return Some(field.to_string());
     }
     name_with_format_extension(raw, selected)
+}
+
+/// What to do with the path a save panel returned, once the name has been corrected.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum Correction {
+    /// Return the path the panel returned: nothing was corrected, or the corrected path is it.
+    Panels,
+    /// Return this path, the panel's with its name corrected.
+    Use(PathBuf),
+    /// Another file has the corrected name, and the panel asked about replacing the one it
+    /// returned: ask whether to replace this one, and return it if the answer is yes.
+    Ask(PathBuf),
+}
+
+/// What to do with `path`, which the panel returned, when `renamed` is the path with the name
+/// corrected (`None` when it needs no correction) and `exists` says whether a file has a path.
+pub(super) fn correction(
+    path: &Path,
+    renamed: Option<PathBuf>,
+    exists: impl Fn(&Path) -> bool,
+) -> Correction {
+    match renamed {
+        Some(renamed) if renamed != path => {
+            if exists(&renamed) {
+                Correction::Ask(renamed)
+            } else {
+                Correction::Use(renamed)
+            }
+        }
+        _ => Correction::Panels,
+    }
+}
+
+/// What to ask the person who is to replace the file at `path`: the question and its explanation.
+pub(super) fn replace_question(path: &Path) -> (String, String) {
+    let name = path
+        .file_name()
+        .map_or_else(String::new, |name| name.to_string_lossy().into_owned());
+    let title = format!("\u{201c}{name}\u{201d} already exists. Do you want to replace it?");
+    let folder = path
+        .parent()
+        .and_then(Path::file_name)
+        .map(|folder| {
+            format!(
+                " in the folder \u{201c}{}\u{201d}",
+                folder.to_string_lossy()
+            )
+        })
+        .unwrap_or_default();
+    let text = format!(
+        "A file or folder with the same name already exists{folder}. Replacing it will overwrite its current contents."
+    );
+    (title, text)
 }
 
 /// The part of `name` before its extension, or the whole name when it has none.
@@ -459,5 +514,99 @@ mod tests {
                 None
             );
         }
+    }
+
+    fn corrected(path: &str, renamed: Option<&str>, existing: &[&str]) -> Correction {
+        correction(Path::new(path), renamed.map(PathBuf::from), |checked| {
+            existing.iter().any(|file| Path::new(file) == checked)
+        })
+    }
+
+    #[test]
+    fn a_path_that_needs_no_correction_is_the_panels() {
+        assert_eq!(
+            corrected("/d/Untitled.other", None, &[]),
+            Correction::Panels
+        );
+        // Whatever exists, the panel already asked about its own path
+        assert_eq!(
+            corrected(
+                "/d/Untitled.other",
+                None,
+                &["/d/Untitled.other", "/d/Untitled.fancy"]
+            ),
+            Correction::Panels
+        );
+    }
+
+    #[test]
+    fn a_corrected_path_nothing_has_is_used() {
+        assert_eq!(
+            corrected(
+                "/d/Untitled.other",
+                Some("/d/Untitled.fancy"),
+                &["/d/Untitled.other"]
+            ),
+            Correction::Use(PathBuf::from("/d/Untitled.fancy"))
+        );
+    }
+
+    #[test]
+    fn a_corrected_path_a_file_has_is_asked_about() {
+        assert_eq!(
+            corrected(
+                "/d/Untitled.other",
+                Some("/d/Untitled.fancy"),
+                &["/d/Untitled.fancy"]
+            ),
+            Correction::Ask(PathBuf::from("/d/Untitled.fancy"))
+        );
+        // A name that had no extension, and now has one
+        assert_eq!(
+            corrected(
+                "/d/Untitled",
+                Some("/d/Untitled.fancy"),
+                &["/d/Untitled.fancy"]
+            ),
+            Correction::Ask(PathBuf::from("/d/Untitled.fancy"))
+        );
+    }
+
+    #[test]
+    fn a_correction_that_is_the_panels_own_path_is_the_panels() {
+        assert_eq!(
+            corrected(
+                "/d/Untitled.fancy",
+                Some("/d/Untitled.fancy"),
+                &["/d/Untitled.fancy"]
+            ),
+            Correction::Panels
+        );
+    }
+
+    #[test]
+    fn the_question_names_the_file_and_its_folder() {
+        let (title, text) = replace_question(Path::new("/home/me/Documents/Untitled.fancy"));
+        assert_eq!(
+            title,
+            "\u{201c}Untitled.fancy\u{201d} already exists. Do you want to replace it?"
+        );
+        assert_eq!(
+            text,
+            "A file or folder with the same name already exists in the folder \u{201c}Documents\u{201d}. Replacing it will overwrite its current contents."
+        );
+    }
+
+    #[test]
+    fn the_question_has_no_folder_to_name_for_a_file_at_the_root() {
+        let (title, text) = replace_question(Path::new("/Untitled.fancy"));
+        assert_eq!(
+            title,
+            "\u{201c}Untitled.fancy\u{201d} already exists. Do you want to replace it?"
+        );
+        assert_eq!(
+            text,
+            "A file or folder with the same name already exists. Replacing it will overwrite its current contents."
+        );
     }
 }

@@ -258,7 +258,7 @@ impl FileSaveDialogImpl for FileDialog {
             run_on_main(move |mtm| {
                 let panel = Panel::build_save_file(&self, mtm);
                 if panel.run_modal() == NSModalResponseOK {
-                    Some(panel.get_save_result())
+                    panel.get_save_result()
                 } else {
                     None
                 }
@@ -277,7 +277,7 @@ impl AsyncFileSaveDialogImpl for FileDialog {
             move |mtm| Panel::build_save_file(&self, mtm),
             |panel, res_id| {
                 if res_id == NSModalResponseOK {
-                    Some(panel.get_save_result().into())
+                    panel.get_save_result().map(FileHandle::wrap)
                 } else {
                     None
                 }
