@@ -131,6 +131,16 @@ impl DialogInner {
         wrap_err((v.base.Show)(d, parent.unwrap_or(std::ptr::null_mut())))
     }
 
+    /// The file type selected in the dialog, as a 1-based index into the types given to
+    /// `SetFileTypes`
+    #[inline]
+    unsafe fn get_file_type_index(&self) -> Result<u32> {
+        let (d, v) = self.fd();
+        let mut index = 0;
+        wrap_err((v.GetFileTypeIndex)(d, &mut index))?;
+        Ok(index)
+    }
+
     #[inline]
     unsafe fn get_result(&self) -> Result<PathBuf> {
         let (d, v) = self.fd();
@@ -302,6 +312,11 @@ impl IDialog {
 
     pub fn get_result(&self) -> Result<PathBuf> {
         unsafe { self.0.get_result() }
+    }
+
+    /// The 1-based index of the selected file type in the filters the dialog was built with
+    pub fn get_file_type_index(&self) -> Result<u32> {
+        unsafe { self.0.get_file_type_index() }
     }
 
     pub fn show(&self) -> Result<()> {
